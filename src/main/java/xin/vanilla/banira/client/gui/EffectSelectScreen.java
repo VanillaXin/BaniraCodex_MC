@@ -13,8 +13,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -32,6 +34,10 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -46,7 +52,11 @@ import java.util.function.Supplier;
 /**
  * 药水效果选择界面。支持搜索、玩家/全部模式切换、时长与等级编辑、列表滚动选择。
  */
-public class EffectSelectScreen extends BaniraScreen {
+public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
+    private final SelectorUiSession uiSession;
+    private UiViewState uiState;
+    private boolean restoreUiScroll;
+    private long uiVersion = -1;
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final int INPUT_H = 16;
@@ -68,6 +78,7 @@ public class EffectSelectScreen extends BaniraScreen {
     @Nullable
     private InputWidget searchInputWidget;
     private final List<ButtonWidget> effectButtonWidgets = new ArrayList<>();
+    private final List<EffectRow> effectRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
     private MobEffectInstance currentEffect;
@@ -80,6 +91,7 @@ public class EffectSelectScreen extends BaniraScreen {
     private TooltipWidget effectTooltip;
     private TooltipWidget durationTooltip;
     private TooltipWidget amplifierTooltip;
+    private boolean effectButtonsDirty = true;
 
     private int panelLeft;
     private int panelTop;
@@ -111,8 +123,62 @@ public class EffectSelectScreen extends BaniraScreen {
         Objects.requireNonNull(args);
         args.validate();
         this.args = args;
+        this.uiSession = new SelectorUiSession(args);
+        this.uiSession.attachNative(this);
+        previousScreen(args.parentScreen());
         this.currentEffect = args.defaultEffect() != null ? EffectUtils.copyEffectInstance(args.defaultEffect()) : new MobEffectInstance(MobEffects.LUCK, 600, 0);
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
+    }
+
+
+    @Override
+    public SelectorUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:" + uiSession.surface();
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        captureUiState(uiState);
+        return uiSession.spec();
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        uiState = state;
+        restoreUiScroll = true;
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (searchInputWidget != null) {
+            uiSession.query(searchInputWidget.value());
+            if (state != null && searchInputWidget.focused())
+                state.selection("search", searchInputWidget.cursorPosition(), searchInputWidget.highlightPos());
+        }
+        if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() * 1);
+    }
+
+    private void restoreUiSelection() {
+        currentEffect = uiSession.effect();
+        uiVersion = uiSession.version();
+    }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        Minecraft.getInstance().setScreen(args.parentScreen());
     }
 
     @Data
@@ -153,8 +219,13 @@ public class EffectSelectScreen extends BaniraScreen {
 
     @Override
     protected void onInit() {
+        searchInputWidget = null;
+        scrollbarWidget = null;
+        restoreUiSelection();
+        inputFieldText = uiSession.query();
+        playerMode = uiSession.mode();
         if (args.shouldClose() != null && Boolean.TRUE.equals(args.shouldClose().get()))
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            onClose();
 
         this.updateSearchResults();
     }
@@ -195,7 +266,7 @@ public class EffectSelectScreen extends BaniraScreen {
         searchInputWidget.id("search_input");
         searchInputWidget.bounds(new ScreenCoordinate(inputX, inputY, inputW, INPUT_H));
         searchInputWidget.value(this.inputFieldText);
-        searchInputWidget.text(Text.transAuto(BaniraCodex.MODID, "search_effect"));
+        searchInputWidget.text(Text.transAuto(Banira.MOD_ID, "search_effect"));
         searchInputWidget.onTextChanged(text -> {
             if (!text.equals(this.inputFieldText)) {
                 this.inputFieldText = text;
@@ -203,6 +274,10 @@ public class EffectSelectScreen extends BaniraScreen {
             }
         });
         addWidget(searchInputWidget);
+        if (uiState != null && uiState.focusedField().equals("search")) {
+            requestFocus(searchInputWidget);
+            searchInputWidget.setSelectionRange(uiState.selectionStart(), uiState.selectionEnd());
+        }
 
         scrollbarWidget = new ScrollbarWidget(this);
         scrollbarWidget.id("scroll");
@@ -212,11 +287,12 @@ public class EffectSelectScreen extends BaniraScreen {
         scrollbarWidget.maxValue(0);
         scrollbarWidget.visibleSize(MAX_LINES);
         scrollbarWidget.scrollStep(1.0);
-        scrollbarWidget.onValueChanged(v -> refreshEffectButtons());
+        scrollbarWidget.onValueChanged(v -> markEffectButtonsDirty());
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
         effectButtonWidgets.clear();
+        effectRows.clear();
         int iconW = AbstractGuiUtils.ITEM_ICON_SIZE + 4;
         int textMaxW = listItemW - iconW - 4;
         for (int i = 0; i < MAX_LINES; i++) {
@@ -249,46 +325,30 @@ public class EffectSelectScreen extends BaniraScreen {
 
             btn.onClick(b -> {
                 Object effectId = b.property("effectId");
-                if (effectId instanceof String) {
-                    handleEffect((String) effectId);
+                if (effectId instanceof String s) {
+                    handleEffect(s);
                     if (selectedEffectWidget != null) selectedEffectWidget.focused(false);
                     selectedEffectWidget = btn;
                 }
             });
 
             effectButtonWidgets.add(btn);
+            effectRows.add(new EffectRow(btn, iconWidget, labelWidget, itemTooltip));
             addWidget(btn);
         }
 
         ButtonWidget cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
         cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "cancel"));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
         addWidget(cancelButtonWidget);
 
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
-        submitButtonWidget.text(Text.transAuto(BaniraCodex.MODID, "submit"));
-        submitButtonWidget.onClick(b -> {
-            if (this.currentEffect == null) {
-                Minecraft.getInstance().setScreen(args.parentScreen());
-            } else {
-                MobEffectInstance effectInstance = EffectUtils.copyEffectInstance(this.currentEffect);
-                if (args.onDataReceived1() != null) {
-                    args.onDataReceived1().accept(effectInstance);
-                    LOGGER.debug("MobEffect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                    closeAfterSubmit(args.closeAfterSubmit(), () -> Minecraft.getInstance().setScreen(args.parentScreen()));
-                } else if (args.onDataReceived2() != null) {
-                    String result = args.onDataReceived2().apply(effectInstance);
-                    if (StringUtils.isNullOrEmpty(result)) {
-                        LOGGER.debug("MobEffect selected: {}", EffectUtils.serializeEffectInstance(effectInstance));
-                        closeAfterSubmit(args.closeAfterSubmit(), () -> Minecraft.getInstance().setScreen(args.parentScreen()));
-                    }
-                }
-            }
-        });
+        submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
+        submitButtonWidget.onClick(b -> uiSession.submitNative());
         addWidget(submitButtonWidget);
 
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
@@ -310,7 +370,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 typeButtonItemWidget.enableTooltip(false);
                 typeTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 typeTooltip.seasonTooltip(useSeasonTooltip);
-                typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+                typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                         (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                         (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
                 btn.addChild(typeTooltip);
@@ -322,7 +382,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 effectButtonIconWidget.enableTooltip(false);
                 effectTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 effectTooltip.seasonTooltip(useSeasonTooltip);
-                effectTooltip.text(Text.transAuto(BaniraCodex.MODID, "effect_select_effect"));
+                effectTooltip.text(Text.transAuto(Banira.MOD_ID, "effect_select_effect"));
                 btn.addChild(effectTooltip);
                 btn.addChild(effectButtonIconWidget);
             } else if (opCode == ButtonType.DURATION.code()) {
@@ -332,7 +392,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 durationTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 durationTooltip.seasonTooltip(useSeasonTooltip);
-                durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", this.currentEffect.getDuration()));
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", EffectDurationModel.clockText(this.currentEffect.getDuration())));
                 btn.addChild(durationTooltip);
                 btn.addChild(iconWidget);
             } else if (opCode == ButtonType.AMPLIFIER.code()) {
@@ -342,7 +402,7 @@ public class EffectSelectScreen extends BaniraScreen {
                 iconWidget.enableTooltip(false);
                 amplifierTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, OP_BTN_SIZE, OP_BTN_SIZE));
                 amplifierTooltip.seasonTooltip(useSeasonTooltip);
-                amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(this.currentEffect.getAmplifier() + 1)));
                 btn.addChild(amplifierTooltip);
                 btn.addChild(iconWidget);
             }
@@ -364,26 +424,30 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     @Override
-    public void onRender(PoseStack stack, float partialTicks) {
+    public void onRender(PoseStack graphics, float partialTicks) {
+        if (uiVersion != uiSession.version()) {
+            restoreUiSelection();
+            markEffectButtonsDirty();
+        }
+        PoseStack stack = graphics;
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
-
-        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
-        super.renderWidgets(stack, partialTicks);
 
         if (searchInputWidget != null) {
             this.inputFieldText = searchInputWidget.value();
         }
 
-        refreshEffectButtons();
+        refreshEffectButtonsIfDirty();
+        if (selectedEffectWidget != null) selectedEffectWidget.focused(true);
+        super.renderWidgets(graphics, partialTicks);
     }
 
     @Override
     public void onMouseClicked(MouseClickedHandleArgs eventArgs) {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (inputState.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_4)) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            onClose();
             flag.set(true);
         }
         eventArgs.consumed(flag.get());
@@ -408,7 +472,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (super.inputState.isEscapePressed() ||
                 (super.inputState.isBackspacePressed() &&
                         (searchInputWidget == null || !searchInputWidget.focused()))) {
-            Minecraft.getInstance().setScreen(args.parentScreen());
+            onClose();
             eventArgs.consumed(true);
         } else if (super.inputState.isEnterPressed() && searchInputWidget != null && searchInputWidget.focused()) {
             this.updateSearchResults();
@@ -423,18 +487,18 @@ public class EffectSelectScreen extends BaniraScreen {
     }
 
     private void refreshEffectButtons() {
-        if (effectButtonWidgets.isEmpty()) return;
+        if (effectRows.isEmpty()) return;
 
         int scrollOffset = scrollbarWidget != null ? (int) scrollbarWidget.value() : 0;
 
         boolean found = false;
-        for (int i = 0; i < effectButtonWidgets.size(); i++) {
-            ButtonWidget buttonWidget = effectButtonWidgets.get(i);
+        for (int i = 0; i < effectRows.size(); i++) {
+            EffectRow row = effectRows.get(i);
+            ButtonWidget buttonWidget = row.button;
             int index = scrollOffset + i;
-            EffectIconWidget ew = buttonWidget.findChildByType(EffectIconWidget.class);
-            LabelWidget lw = buttonWidget.findChildByType(LabelWidget.class);
-            TooltipWidget tw = buttonWidget.findChildByType(TooltipWidget.class);
-            if (ew == null || lw == null) continue;
+            EffectIconWidget ew = row.icon;
+            LabelWidget lw = row.label;
+            TooltipWidget tw = row.tooltip;
 
             if (index >= 0 && index < effectList.size()) {
                 MobEffect effect = effectList.get(index);
@@ -475,7 +539,7 @@ public class EffectSelectScreen extends BaniraScreen {
         if (!found) selectedEffectWidget = null;
 
         if (typeTooltip != null) {
-            typeTooltip.text(Text.transAuto(BaniraCodex.MODID,
+            typeTooltip.text(Text.transAuto(Banira.MOD_ID,
                     (this.playerMode ? "effect_display_mode_player" : "effect_display_mode_all"),
                     (this.playerMode ? EffectUtils.getPlayerEffects().size() : EffectUtils.getAllEffects().size())));
         }
@@ -490,10 +554,37 @@ public class EffectSelectScreen extends BaniraScreen {
                     + NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
         }
         if (durationTooltip != null) {
-            durationTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_duration", currentEffect.getDuration()));
+            if (currentEffect != null) {
+                durationTooltip.text(Text.transAuto(Banira.MOD_ID, "set_duration", EffectDurationModel.clockText(currentEffect.getDuration())));
+            }
         }
         if (amplifierTooltip != null) {
-            amplifierTooltip.text(Text.transAuto(BaniraCodex.MODID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
+            if (currentEffect != null) {
+                amplifierTooltip.text(Text.transAuto(Banira.MOD_ID, "set_amplifier", NumberUtils.intToRoman(currentEffect.getAmplifier() + 1)));
+            }
+        }
+        effectButtonsDirty = false;
+    }
+
+    private void markEffectButtonsDirty() {
+        effectButtonsDirty = true;
+    }
+
+    private void refreshEffectButtonsIfDirty() {
+        if (effectButtonsDirty) refreshEffectButtons();
+    }
+
+    private static final class EffectRow {
+        private final ButtonWidget button;
+        private final EffectIconWidget icon;
+        private final LabelWidget label;
+        private final TooltipWidget tooltip;
+
+        private EffectRow(ButtonWidget button, EffectIconWidget icon, LabelWidget label, TooltipWidget tooltip) {
+            this.button = button;
+            this.icon = icon;
+            this.label = label;
+            this.tooltip = tooltip;
         }
     }
 
@@ -508,6 +599,8 @@ public class EffectSelectScreen extends BaniraScreen {
 
     private void updateSearchResults() {
         String s = this.searchInputWidget != null ? this.searchInputWidget.value() : this.inputFieldText;
+        uiSession.query(s);
+        uiSession.mode(playerMode);
         this.effectList.clear();
 
         if (this.playerMode) {
@@ -535,17 +628,22 @@ public class EffectSelectScreen extends BaniraScreen {
             }
         }
 
-        refreshEffectButtons();
-        LOGGER.debug("MobEffect search results updated: count={}, query={}", effectList.size(), s);
+        if (restoreUiScroll && uiState != null && scrollbarWidget != null) {
+            scrollbarWidget.setValue(Math.min(scrollbarWidget.maxValue(), uiState.rowPosition() / 1));
+            restoreUiScroll = false;
+        }
+        markEffectButtonsDirty();
+        LOGGER.debug("Effect search results updated: count={}, query={}", effectList.size(), s);
     }
 
     private void handleEffect(String effectId) {
         if (StringUtils.isNotNullOrEmpty(effectId)) {
             MobEffect effect = EffectUtils.getEffectFromRegistry(effectId);
             if (effect != null) {
-                this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
+                uiSession.select(effectId);
+                this.currentEffect = uiSession.effect();
                 LOGGER.debug("Select effect: {}", EffectUtils.getEffectDisplayName(effect));
-                refreshEffectButtons();
+                markEffectButtonsDirty();
             }
         }
     }
@@ -566,73 +664,14 @@ public class EffectSelectScreen extends BaniraScreen {
     private void handleOperationInternal(int operationCode) {
         if (operationCode == ButtonType.TYPE.code()) {
             this.playerMode = !this.playerMode;
-            this.updateSearchResults();
+            uiSession.mode(this.playerMode);
+            updateSearchResults();
         } else if (operationCode == ButtonType.EFFECT.code()) {
-            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_id"))
-                            .hint(Text.transAuto(BaniraCodex.MODID, "enter_something"))
-                            .defaultValue(EffectUtils.getEffectRegistryString(this.currentEffect))
-                            .validator((input) -> {
-                                MobEffect e = EffectUtils.getEffectFromRegistry(input.value());
-                                if (e == null) {
-                                    return BaniraComponent.get().transClientAuto("enter_effect_id_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        String id = input.firstValue();
-                        MobEffect effect = EffectUtils.getEffectFromRegistry(id);
-                        if (effect != null) {
-                            this.currentEffect = new MobEffectInstance(effect, this.currentEffect.getDuration(), this.currentEffect.getAmplifier());
-                        }
-                    });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            uiSession.openEditor("effect");
         } else if (operationCode == ButtonType.DURATION.code()) {
-            final int currentTicks = this.currentEffect.getDuration();
-            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_duration"))
-                            .maxLength(EffectDurationModel.inputDigits(currentTicks))
-                            .regex("[0-9]{0," + EffectDurationModel.inputDigits(currentTicks) + "}")
-                            .defaultValue(String.valueOf(currentTicks))
-                            .validator((input) -> {
-                                try {
-                                    EffectDurationModel.parseTicks(input.value(), currentTicks);
-                                } catch (IllegalArgumentException invalid) {
-                                    return BaniraComponent.get().transClientAuto("enter_effect_duration_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        int duration = EffectDurationModel.parseTicks(input.firstValue(), currentTicks);
-                        this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), duration, this.currentEffect.getAmplifier());
-                    });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            uiSession.openEditor("duration");
         } else if (operationCode == ButtonType.AMPLIFIER.code()) {
-            InputFormScreen.Args inputArgs = new InputFormScreen.Args()
-                    .setParentScreen(this)
-                    .addWidget(new InputFormScreen.Widget()
-                            .title(Text.transAuto(BaniraCodex.MODID, "enter_effect_amplifier"))
-                            .regex("\\d{0,3}")
-                            .defaultValue(String.valueOf(this.currentEffect.getAmplifier() + 1))
-                            .validator((input) -> {
-                                int amplifier = NumberUtils.toInt(input.value());
-                                if (amplifier <= 0 || amplifier > 100) {
-                                    return BaniraComponent.get().transClientAuto("enter_effect_amplifier_error", input.value()).toString();
-                                }
-                                return null;
-                            })
-                    )
-                    .setCallback(input -> {
-                        int amplifier = NumberUtils.toInt(input.firstValue());
-                        this.currentEffect = new MobEffectInstance(this.currentEffect.getEffect(), this.currentEffect.getDuration(), amplifier - 1);
-                    });
-            Minecraft.getInstance().setScreen(new InputFormScreen(inputArgs));
+            uiSession.openEditor("amplifier");
         }
     }
 }

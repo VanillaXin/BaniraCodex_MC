@@ -30,6 +30,23 @@ public final class ForgeBaniraClientEventBridge {
     private ForgeBaniraClientEventBridge() {
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onOwnedPointerButton(InputEvent.RawMouseEvent event) {
+        if (Minecraft.getInstance().screen instanceof xin.vanilla.banira.internal.client.ui.UiPointerFeedback
+                && (event.getAction() == GLFW.GLFW_PRESS || event.getAction() == GLFW.GLFW_RELEASE)) {
+            ((xin.vanilla.banira.internal.client.ui.UiPointerFeedback) Minecraft.getInstance().screen)
+                    .pointerButton(event.getButton(), event.getAction() == GLFW.GLFW_PRESS);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onOwnedPointerScroll(GuiScreenEvent.MouseScrollEvent.Pre event) {
+        if (event.getGui() == Minecraft.getInstance().screen
+                && event.getGui() instanceof xin.vanilla.banira.internal.client.ui.UiPointerFeedback) {
+            ((xin.vanilla.banira.internal.client.ui.UiPointerFeedback) event.getGui()).pointerScroll(event.getScrollDelta());
+        }
+    }
+
     @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {

@@ -4,10 +4,11 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.util.text.Style;
+import net.minecraft.util.IReorderingProcessor;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -29,7 +30,6 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ public class Notification extends NotificationData {
     // 缓存字段
     private transient double cachedWidth = -1;
     private transient double cachedHeight = -1;
-    private transient ITextComponent vanillaDrawText;
+    private transient net.minecraft.util.text.ITextComponent vanillaDrawText;
     private transient List<IReorderingProcessor> richDrawLines = new ArrayList<>();
     private transient int richTextMaxLineW;
     private transient int richDefaultTextArgb = 0xFFFFFFFF;
@@ -108,6 +108,49 @@ public class Notification extends NotificationData {
      * 首行文字顶部 GUI Y，用于 {@link #styleAtTextPoint}（文字相对通知垂直居中时与 {@link #bodyTop} 不同）
      */
     private transient double bodyTextTop;
+    private transient boolean auiLayout;
+    private transient List<TextHit> auiTextHits = com.google.common.collect.ImmutableList.of();
+    private transient boolean auiHitReady;
+
+    @lombok.Value
+    @Accessors(fluent = true)
+    public static class TextHit {
+        ScreenCoordinate bounds;
+        Style style;
+    }
+
+    public boolean usesAuiLayout() {
+        return auiLayout;
+    }
+
+    public boolean supportsAuiText() {
+        return xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(richDrawLines);
+    }
+
+    public void auiLayout(boolean enabled) {
+        if (auiLayout != enabled) {
+            auiLayout = enabled;
+            auiTextHits = com.google.common.collect.ImmutableList.of();
+            auiHitReady = false;
+            updateRichLayout();
+        }
+    }
+
+    public void auiHitLayout(ScreenCoordinate card, ScreenCoordinate close, ScreenCoordinate body, List<TextHit> text) {
+        hitX = card.x();
+        hitY = card.y();
+        hitW = card.width();
+        hitH = card.height();
+        closeBtnLeft = close.x();
+        closeBtnTop = close.y();
+        closeBtnSize = close.width();
+        bodyLeft = body.x();
+        bodyTop = body.y();
+        bodyW = body.width();
+        bodyH = body.height();
+        auiTextHits = com.google.common.collect.ImmutableList.copyOf(text);
+        auiHitReady = true;
+    }
 
     private Notification(Component component) {
         super(component);
@@ -270,7 +313,11 @@ public class Notification extends NotificationData {
 
     private void updateRichLayout() {
         FontRenderer font = AbstractGuiUtils.getFont();
-        int sw = Math.max(320, BaniraClientAccess.guiScaledSize().key());
+        Minecraft mc = Minecraft.getInstance();
+        int sw = 320;
+        if (mc != null && mc.getWindow() != null) {
+            sw = mc.getWindow().getGuiScaledWidth();
+        }
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
         int maxTextW = layoutMaxWidth > 0 ? Math.max(1, layoutMaxWidth - reserve) : Math.max(40, sw - reserve);
         String lang = Translator.getClientLanguage();
@@ -281,7 +328,8 @@ public class Notification extends NotificationData {
         this.richDefaultTextArgb = ColorUtils.ensureReadableTextArgb(sourceTextArgb, this.bgColor().argb());
         this.richDrawLines = font.split(this.vanillaDrawText, maxTextW);
         if (layoutMaxHeight > 0) {
-            int maxLines = Math.max(1, (int) ((layoutMaxHeight - padding() * 2) / font.lineHeight));
+            int maxLines = auiLayout ? xin.vanilla.banira.client.notification.NotificationBubbleLayout.lineLimit(layoutMaxHeight)
+                    : Math.max(1, (int) ((layoutMaxHeight - padding() * 2) / font.lineHeight));
             if (richDrawLines.size() > maxLines) {
                 richDrawLines = new ArrayList<>(richDrawLines.subList(0, maxLines));
                 richDrawLines.set(maxLines - 1, new net.minecraft.util.text.StringTextComponent("...").getVisualOrderText());
@@ -295,6 +343,11 @@ public class Notification extends NotificationData {
         double textH = this.richDrawLines.size() * lineH;
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
+        if (auiLayout) {
+            cachedWidth = Math.min(layoutMaxWidth > 0 ? layoutMaxWidth : sw,
+                    Math.max(120, cachedWidth + 2));
+            cachedHeight = xin.vanilla.banira.client.notification.NotificationBubbleLayout.height(richDrawLines.size());
+        }
     }
 
     public void fitToRegion(int width, int height) {
@@ -309,33 +362,71 @@ public class Notification extends NotificationData {
         if (animationState.started() && calculateProgress(nowMs) < 0) finished = true;
     }
 
+    public boolean acceptsInput(long nowMs) {
+        return !finished && animationState.acceptsInput(nowMs);
+    }
+
     public void renderInRegion(MatrixStack stack,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
-        if (finished || nowMs < scheduledTime()) return;
+        ScreenCoordinate coordinate = prepareInRegion(target, region, nowMs, Minecraft.getInstance().font.lineHeight);
+        if (coordinate == null) return;
+        AbstractGuiUtils.pushScissor(region.x, region.y, region.width, region.height);
+        try {
+            doRender(stack, coordinate);
+        } finally {
+            AbstractGuiUtils.popScissor();
+        }
+    }
+
+    public ScreenCoordinate prepareInRegion(xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
+                                            xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region,
+                                            long nowMs, int lineHeight) {
+        if (finished || nowMs < scheduledTime()) return null;
         if (!animationState.started()) animationState.start(nowMs, animationTime(), durationTime());
         double progress = calculateProgress(nowMs);
         if (progress < 0) {
             finished = true;
-            return;
+            return null;
         }
         renderClip = region;
         ScreenCoordinate coordinate = new ScreenCoordinate(target.x, target.y, target.width, target.height);
         applyAnimationEffect(coordinate, progress);
         applyMergeAnimation(nowMs);
         handlePositionTransition(coordinate, nowMs);
-        xin.vanilla.banira.internal.client.GuiScissorStack.push(region.x, region.y, region.width, region.height);
-        try {
-            doRender(stack, coordinate);
-        } finally {
-            xin.vanilla.banira.internal.client.GuiScissorStack.pop();
-        }
+        updateHitBounds(coordinate, lineHeight);
         lastY = coordinate.y();
         lastIndex = index;
         lastRenderTime = nowMs;
+        return coordinate;
+    }
+
+    private void updateHitBounds(ScreenCoordinate coordinate, int lineHeight) {
+        auiTextHits = com.google.common.collect.ImmutableList.of();
+        auiHitReady = false;
+        hitX = coordinate.x();
+        hitY = coordinate.y();
+        hitW = cachedWidth;
+        hitH = cachedHeight;
+        closeBtnLeft = hitX + hitW - padding() - CLOSE_BTN;
+        closeBtnTop = hitY + padding() + Math.max(0, (hitH - 2 * padding() - CLOSE_BTN) * .5);
+        closeBtnSize = CLOSE_BTN;
+        bodyLeft = hitX + padding();
+        bodyTop = hitY + padding();
+        bodyW = hitW - 2 * padding() - CLOSE_GAP - CLOSE_BTN;
+        bodyH = hitH - 2 * padding();
+        bodyTextTop = bodyTop + Math.max(0, (bodyH - richDrawLines.size() * lineHeight) * .5);
     }
 
     public void render(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+        renderAt(stack, preInfo, screenInfo, currentTime, calculatePosition(screenInfo, preInfo));
+    }
+
+    /**
+     * 使用调用方已计算的坐标渲染，通知队列无需在同一帧重复布局。
+     */
+    public void renderAt(MatrixStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo,
+                         long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
         if (currentTime < this.scheduledTime()) return;
         if (!this.animationState.started()) {
@@ -348,7 +439,6 @@ public class Notification extends NotificationData {
             return;
         }
 
-        ScreenCoordinate coordinate = this.calculatePosition(screenInfo, preInfo);
         this.applyAnimationEffect(coordinate, progress);
         this.applyMergeAnimation(currentTime);
         this.handlePositionTransition(coordinate, currentTime);
@@ -536,6 +626,12 @@ public class Notification extends NotificationData {
     }
 
     private void doRender(MatrixStack stack, ScreenCoordinate coordinate) {
+        paintPrepared(stack, coordinate, true);
+    }
+
+    public void paintPrepared(MatrixStack stack, ScreenCoordinate coordinate, boolean nativeShell) {
+        auiTextHits = com.google.common.collect.ImmutableList.of();
+        auiHitReady = false;
         double scale = Math.max(0.01, this.renderScale);
         int alpha = this.renderAlpha < 0 ? 0xFF : (this.renderAlpha < 0xFF ? Math.max(0x01, this.renderAlpha) : 0xFF);
         EnumPosition center = this.renderScaleCenter != null ? this.renderScaleCenter : EnumPosition.TOP_LEFT;
@@ -557,15 +653,17 @@ public class Notification extends NotificationData {
                         ? ColorUtils.applyAlphaToArgb(this.richDefaultTextArgb, drawAlpha)
                         : this.richDefaultTextArgb;
 
-                ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
-                rect.rect().radius(this.radius());
-                BaseShapeWidget.drawShape(rect);
+                if (nativeShell) {
+                    ShapeDrawArgs rect = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, bgArgb);
+                    rect.rect().radius(this.radius());
+                    BaseShapeWidget.drawShape(rect);
 
-                ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
-                rectBorder.rect().radius(this.radius()).border(this.borderSize());
-                BaseShapeWidget.drawShape(rectBorder);
+                    ShapeDrawArgs rectBorder = ShapeDrawArgs.rect(drawArgs.stack(), x, y, w, h, borderArgb);
+                    rectBorder.rect().radius(this.radius()).border(this.borderSize());
+                    BaseShapeWidget.drawShape(rectBorder);
+                }
 
-                FontRenderer font = AbstractGuiUtils.getFont();
+                FontRenderer font = Minecraft.getInstance().font;
                 float pad = (float) this.padding();
                 float lineH = font.lineHeight;
                 float textBlockH = this.richDrawLines.size() * lineH;
@@ -573,10 +671,22 @@ public class Notification extends NotificationData {
                 float textTopLocal = y + pad + Math.max(0f, (innerH - textBlockH) * 0.5f);
                 float textX = x + pad;
                 float textY = textTopLocal;
+                IRenderTypeBuffer.Impl bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
                 for (IReorderingProcessor line : this.richDrawLines) {
-                    font.draw(drawArgs.stack(), line, textX, textY, textArgb);
+                    font.drawInBatch(
+                            line,
+                            textX,
+                            textY,
+                            textArgb,
+                            false,
+                            drawArgs.stack().last().pose(),
+                            bufferSource,
+                            false,
+                            0,
+                            15728880);
                     textY += lineH;
                 }
+                bufferSource.endBatch();
 
                 float cbSize = CLOSE_BTN;
                 float closeX = x + w - pad - cbSize;
@@ -644,10 +754,18 @@ public class Notification extends NotificationData {
 
     @Nullable
     public Style styleAtTextPoint(double guiMouseX, double guiMouseY) {
+        if (auiHitReady) {
+            for (TextHit hit : auiTextHits) {
+                ScreenCoordinate b = hit.bounds();
+                if (isBodyHit(guiMouseX, guiMouseY) && guiMouseX >= b.x() && guiMouseX < b.x() + b.width()
+                        && guiMouseY >= b.y() && guiMouseY < b.y() + b.height()) return hit.style();
+            }
+            return null;
+        }
         if (!isBodyHit(guiMouseX, guiMouseY) || richDrawLines.isEmpty()) {
             return null;
         }
-        FontRenderer font = AbstractGuiUtils.getFont();
+        FontRenderer font = Minecraft.getInstance().font;
         double rx = guiMouseX - this.bodyLeft;
         double ry = guiMouseY - this.bodyTextTop;
         if (rx < 0 || ry < 0 || ry >= this.richDrawLines.size() * font.lineHeight) {

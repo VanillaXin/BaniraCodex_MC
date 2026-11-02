@@ -267,6 +267,7 @@ public final class BaniraClientEventHub {
             if (screen instanceof net.minecraft.client.gui.screen.ChatScreen) {
                 xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
             }
+            xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(nativeGraphics);
             fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
             TooltipWidget.flushPopupFrame(nativeGraphics);
         }
@@ -276,6 +277,7 @@ public final class BaniraClientEventHub {
             if (element == HudOverlayElement.ALL && !screenOpen) {
                 NotificationManager.get().render(nativeGraphics);
                 xin.vanilla.banira.client.notification.NotificationUnreadHud.render(nativeGraphics);
+                xin.vanilla.banira.internal.client.ui.SharedHudHosts.renderOthers(nativeGraphics);
             }
             fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
         }

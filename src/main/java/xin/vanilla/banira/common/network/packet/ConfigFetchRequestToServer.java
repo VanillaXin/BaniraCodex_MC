@@ -49,6 +49,12 @@ public class ConfigFetchRequestToServer implements NetworkPacket {
             if (sender == null) {
                 return;
             }
+            if (xin.vanilla.banira.internal.config.CustomConfig.PLAYER_PREFERENCES_CONFIG.equals(packet.configName)) {
+                String uuid = ServerSenderAccess.uuidString(sender);
+                if (uuid != null) ServerSenderAccess.sendPacket(sender, new ConfigSnapshotToClient(packet.configName,
+                        xin.vanilla.banira.internal.config.CustomConfig.playerPreferencesSnapshot(uuid)));
+                return;
+            }
             if (!ServerSenderAccess.canAccessServerConfigEditor(sender)) {
                 sendErr(sender, "config_editor_sync_server_no_permission");
                 return;

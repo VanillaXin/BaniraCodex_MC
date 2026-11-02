@@ -29,4 +29,18 @@ public class EffectDurationModelTest {
         assertEquals(0.75f, EffectDurationModel.scaleToFit(10, 16), 0);
         assertTrue(EffectDurationModel.scaleToFit(54, 16) * 54 <= 14.00001f);
     }
+
+    @Test public void clockRoundTripsWithoutLosingTickPrecision() {
+        for (int ticks : new int[]{1, 19, 20, 21, 601, 1201, EffectDurationModel.MAX_TICKS, Integer.MAX_VALUE, -1}) {
+            assertEquals(ticks, EffectDurationModel.parseTime(EffectDurationModel.clockText(ticks), ticks));
+        }
+        assertEquals("0:00:30.05", EffectDurationModel.clockText(601));
+        assertEquals(1300, EffectDurationModel.parseTime("0:01:05", 600));
+    }
+
+    @Test public void clockRejectsInvalidComponentsAndNonTickPrecision() {
+        for (String value : new String[]{"0", "1:60", "1:00:60", "0.01", "-1", "\u221e", "720:00:00.05", "99999999999999999", " 1"}) {
+            assertThrows(IllegalArgumentException.class, () -> EffectDurationModel.parseTime(value, 600));
+        }
+    }
 }

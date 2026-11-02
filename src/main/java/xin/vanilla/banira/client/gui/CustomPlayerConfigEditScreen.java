@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
@@ -22,6 +22,8 @@ import xin.vanilla.banira.common.network.packet.CustomPlayerConfigSyncToServer;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.PlayerConfigUiSession;
 import xin.vanilla.banira.internal.config.CustomConfig;
 
 import javax.annotation.Nullable;
@@ -44,6 +46,68 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
     private List<String> languageOptions = new ArrayList<>();
     private String labelBaniraMode;
     private String labelVanillaMode;
+    private PlayerConfigUiSession uiSession;
+
+    @Override
+    public PlayerConfigUiSession playerUiSession() {
+        if (uiSession == null) {
+            initializeOptions();
+            String uuid = currentPlayerUuid();
+            String language = uuid.isEmpty() ? "client" : CustomConfig.getPlayerLanguageClient(uuid);
+            if (!languageOptions.contains(language)) language = languageOptions.get(0);
+            String mode = uuid.isEmpty() ? CustomConfig.notificationReceiveModeNotification : CustomConfig.getPlayerNotificationReceiveModeClient(uuid);
+            InputFormScreen.Args form = new InputFormScreen.Args().setParentScreen(this)
+                    .setHeaderTitle(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_title")))
+                    .addWidget(new InputFormScreen.Widget().name("language").type(InputFormScreen.WidgetType.DROPDOWN)
+                            .title(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_language")))
+                            .tooltip(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_language_description")))
+                            .dropdownOptions(languageOptions).defaultValue(language))
+                    .addWidget(new InputFormScreen.Widget().name("notificationReceiveMode").type(InputFormScreen.WidgetType.DROPDOWN)
+                            .title(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_notification_mode")))
+                            .tooltip(Text.from(BaniraComponent.get().transClientAuto("custom_player_config_notification_mode_description")))
+                            .dropdownOptionEntries(Arrays.asList(
+                                    new DropdownOption(CustomConfig.notificationReceiveModeNotification, labelBaniraMode),
+                                    new DropdownOption(CustomConfig.notificationReceiveModeVanillaMessage, labelVanillaMode)))
+                            .defaultValue(CustomConfig.notificationReceiveModeVanillaMessage.equals(mode)
+                                    ? CustomConfig.notificationReceiveModeVanillaMessage : CustomConfig.notificationReceiveModeNotification))
+                    .setCallback(this::persistPlayerConfig);
+            uiSession = new PlayerConfigUiSession(form, () -> CustomConfig.playerPreferencesClient(uuid));
+        }
+        return uiSession;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (uiSession == null || languageDropdown == null || modeDropdown == null) return;
+        captureUiState(null);
+        refreshPlayerControls();
+        playerSaveEnabled(uiSession.fields().canSubmit());
+    }
+
+    private void refreshPlayerControls() {
+        if (!uiSession.refresh()) return;
+        languageDropdown.selectedValues(Collections.singletonList(uiSession.fields().draft("language")));
+        modeDropdown.selectedValues(Collections.singletonList(CustomConfig.notificationReceiveModeVanillaMessage
+                .equals(uiSession.fields().draft("notificationReceiveMode")) ? labelVanillaMode : labelBaniraMode));
+    }
+
+    @Override
+    protected void afterPlayerConfigBuilt() {
+        playerSaveEnabled(playerUiSession().fields().canSubmit());
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (languageDropdown != null && modeDropdown != null) {
+            List<String> languages = languageDropdown.getSelectedValues();
+            List<String> modes = modeDropdown.getSelectedValues();
+            playerUiSession().fields().acceptNative(0, languages.isEmpty() ? "client" : languages.get(0));
+            playerUiSession().fields().acceptNative(1, !modes.isEmpty() && labelVanillaMode.equals(modes.get(0))
+                    ? CustomConfig.notificationReceiveModeVanillaMessage : CustomConfig.notificationReceiveModeNotification);
+        }
+        super.captureUiState(state);
+    }
 
     public CustomPlayerConfigEditScreen(@Nullable Args args) {
         this(args != null ? args : new Args(), true);
@@ -85,8 +149,7 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         languageDropdown.bounds(new ScreenCoordinate(valueStartX(rowWidth), 0,
                 valueWidgetWidth(rowWidth), ROW_HEIGHT));
         languageDropdown.options(languageOptions);
-        String selectedLanguage = currentPlayerUuid().isEmpty()
-                ? "client" : CustomConfig.getPlayerLanguageClient(currentPlayerUuid());
+        String selectedLanguage = playerUiSession().fields().draft("language");
         if (!languageOptions.contains(selectedLanguage)) selectedLanguage = languageOptions.get(0);
         languageDropdown.selectedValues(Collections.singletonList(selectedLanguage));
         languageRow.addChild(languageDropdown);
@@ -108,9 +171,7 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         modeDropdown.bounds(new ScreenCoordinate(valueStartX(rowWidth), 0,
                 valueWidgetWidth(rowWidth), ROW_HEIGHT));
         modeDropdown.options(Arrays.asList(labelBaniraMode, labelVanillaMode));
-        String currentMode = currentPlayerUuid().isEmpty()
-                ? CustomConfig.notificationReceiveModeNotification
-                : CustomConfig.getPlayerNotificationReceiveModeClient(currentPlayerUuid());
+        String currentMode = playerUiSession().fields().draft("notificationReceiveMode");
         modeDropdown.selectedValues(Collections.singletonList(
                 CustomConfig.notificationReceiveModeVanillaMessage.equals(currentMode)
                         ? labelVanillaMode : labelBaniraMode));
@@ -174,27 +235,29 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
 
     @Override
     protected void savePlayerConfig() {
+        captureUiState(null);
+        refreshPlayerControls();
+        if (playerUiSession().fields().submit()) onClose();
+    }
+
+    private void persistPlayerConfig(InputFormScreen.Results result) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.getConnection() == null) {
             notifySyncFailure("custom_player_config_sync_not_connected", "");
+            result.runningResult(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected").getString(Translator.getClientLanguage()));
             return;
         }
-        if (minecraft.player == null) return;
+        if (minecraft.player == null) {
+            result.runningResult(BaniraComponent.get().transClientAuto("custom_player_config_sync_not_connected").getString(Translator.getClientLanguage()));
+            return;
+        }
 
-        String uuid = PlayerUtils.getPlayerUUIDString(minecraft.player);
-        List<String> languageSelection = languageDropdown.getSelectedValues();
-        String language = languageSelection.isEmpty() ? "client" : languageSelection.get(0);
-        List<String> modeSelection = modeDropdown.getSelectedValues();
-        String modeLabel = modeSelection.isEmpty() ? labelBaniraMode : modeSelection.get(0);
-        String mode = labelVanillaMode.equals(modeLabel)
-                ? CustomConfig.notificationReceiveModeVanillaMessage
-                : CustomConfig.notificationReceiveModeNotification;
+        String language = result.value("language");
+        String mode = result.value("notificationReceiveMode");
         try {
             PacketUtils.sendPacketToServer(new CustomPlayerConfigSyncToServer(language, mode));
-            CustomConfig.setPlayerLanguageClient(uuid, language);
-            CustomConfig.setPlayerNotificationReceiveModeClient(uuid, mode);
-            onClose();
         } catch (Exception exception) {
+            result.runningResult(exception);
             notifySyncFailure("custom_player_config_sync_failed",
                     exception.getMessage() != null ? exception.getMessage() : "");
         }
@@ -234,8 +297,8 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         }
 
         @Override
-        public void render(MatrixStack stack, float partialTicks) {
-            if (visible()) renderChildren(stack, partialTicks);
+        public void render(MatrixStack graphics, float partialTicks) {
+            if (visible()) renderChildren(graphics, partialTicks);
         }
     }
 }

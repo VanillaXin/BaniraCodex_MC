@@ -67,6 +67,8 @@ public class CustomPlayerConfigSyncToServer implements NetworkPacket {
             CustomConfig.setPlayerLanguage(uuid, lang);
             CustomConfig.setPlayerNotificationReceiveMode(uuid, packet.notificationReceiveMode);
             CustomConfig.saveCustomConfig();
+            ServerSenderAccess.sendPacket(sender, new ConfigSnapshotToClient(
+                    CustomConfig.PLAYER_PREFERENCES_CONFIG, CustomConfig.playerPreferencesSnapshot(uuid)));
             ServerSenderAccess.sendDefaultNotification(sender,
                     BaniraComponent.get().transAuto("custom_player_config_sync_ok").languageCode(ServerSenderAccess.language(sender)),
                     EnumPosition.TOP_RIGHT, EnumMoveType.AUTO, NOTIFY_OK_MS);

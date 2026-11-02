@@ -4,6 +4,8 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.api.quickaction.CustomQuickActionDefinition;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -16,6 +18,11 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.common.util.ColorUtils;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.UiViewState;
+import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
+import xin.vanilla.banira.internal.client.ui.page.QuickActionEditUiSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +30,7 @@ import java.util.List;
 /**
  * 玩家自定义快捷入口的列表与持久化入口。
  */
-public final class CustomQuickActionConfigScreen extends BaniraScreen {
+public final class CustomQuickActionConfigScreen extends BaniraScreen implements UiNativePage {
     private static final int MARGIN = 18;
     private static final int PAD = 10;
     private static final int TITLE_H = 16;
@@ -47,6 +54,55 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
     private int listW;
     private int visibleRows;
     private int scrollIndex;
+    private QuickActionEditUiSession uiSession;
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:quick-actions";
+    }
+
+    @Override
+    public QuickActionEditUiSession uiSession() {
+        if (uiSession == null)
+            uiSession = new QuickActionEditUiSession(BaniraComponent.get().transClientAuto("custom_quick_action_title"), () -> {
+                List<NavigationUiSession.Action> rows = new ArrayList<>();
+                for (int index = 0; index < definitions.size(); index++) {
+                    int selected = index;
+                    rows.add(new NavigationUiSession.Action(definitions.get(index).getId(), BaniraComponent.get().literal(rowText(index)),
+                            () -> openEditor(selected), () -> delete(selected)));
+                }
+                return rows;
+            }, java.util.Collections.singletonList(new NavigationUiSession.Action("add", BaniraComponent.get().transClientAuto("add"), this::add, null)));
+        return uiSession;
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession().spec(this, uiSurfaceId(), "banira_codex/ui/quick-actions.html");
+    }
+
+    @Override
+    public void captureUiState(UiViewState state) {
+        if (state != null) state.rowPosition(scrollIndex);
+    }
+
+    @Override
+    public void prepareUiState(UiViewState state) {
+        scrollIndex = (int) state.rowPosition();
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        if (uiSession != null) uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
+    }
+
+    @Override
+    protected void onRemoved() {
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
 
     public CustomQuickActionConfigScreen(Screen parent) {
         super(BaniraComponent.get().transClientAuto("custom_quick_action_title").toVanilla());
@@ -74,6 +130,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
         listW = panelW - PAD * 2 - SCROLL_W - 3;
         int listH = panelH - PAD * 3 - TITLE_H - BOTTOM_H;
         visibleRows = Math.max(1, listH / (ROW_H + ROW_GAP));
+        scrollIndex = Math.max(0, Math.min(scrollIndex, Math.max(0, definitions.size() - visibleRows)));
 
         rowButtons.clear();
         deleteButtons.clear();
@@ -102,7 +159,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
         scrollbar.id("scroll");
         scrollbar.orientation(EnumOrientation.VERTICAL).minValue(0)
                 .maxValue(Math.max(0, definitions.size() - visibleRows)).visibleSize(visibleRows)
-                .scrollStep(1).onValueChanged(value -> {
+                .scrollStep(1).value(scrollIndex).onValueChanged(value -> {
                     scrollIndex = (int) Math.round(value);
                     updateRows();
                 });
@@ -153,7 +210,9 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
         if (index < 0 || index >= definitions.size()) return;
         definitions.remove(index);
         persist();
-        Minecraft.getInstance().setScreen(new CustomQuickActionConfigScreen(parent));
+        if (uiSession != null && xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap.uiBackend().usesAui(uiSurfaceId()))
+            uiSession.refresh();
+        else Minecraft.getInstance().setScreen(this);
     }
 
     void saveDefinition(int originalIndex, CustomQuickActionDefinition definition) {
@@ -170,7 +229,9 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
         }
         if (!replaced) values.add(definition);
         CustomQuickActionManager.get().replaceDefinitions(values);
-        Minecraft.getInstance().setScreen(new CustomQuickActionConfigScreen(parent));
+        definitions.clear();
+        for (CustomQuickActionDefinition value : CustomQuickActionManager.get().definitions())
+            definitions.add(CustomQuickActionEditor.copy(value));
     }
 
     private void persist() {
@@ -187,8 +248,7 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
             ButtonWidget row = rowButtons.get(i);
             row.visible(visible);
             row.bounds(new ScreenCoordinate(listX, y, listW - deleteW - 3, ROW_H));
-            String fullText = (definition.isEnabled() ? "" : "[x] ") + definition.getLabel()
-                    + (definition.getKeyChord().isEmpty() ? "" : "  [" + definition.getKeyChord() + "]");
+            String fullText = rowText(i);
             int maxTextWidth = Math.max(0, (int) row.bounds().width() - 12);
             String displayText = QuickActionTextLayout.ellipsize(fullText, maxTextWidth, font::width);
             row.text(displayText);
@@ -208,6 +268,12 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
         }
     }
 
+    private String rowText(int index) {
+        CustomQuickActionDefinition definition = definitions.get(index);
+        return (definition.isEnabled() ? "" : "[x] ") + definition.getLabel()
+                + (definition.getKeyChord().isEmpty() ? "" : "  [" + definition.getKeyChord() + "]");
+    }
+
     @Override
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
         if (scrollbar == null || scrollbar.maxValue() <= 0) return;
@@ -217,21 +283,23 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(MatrixStack graphics, float partialTicks) {
+        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
+        MatrixStack stack = graphics;
         BaniraColorConfig theme = getEffectiveTheme();
         ShapeDrawArgs panel = ShapeDrawArgs.rect(stack, panelX, panelY, panelW, panelH,
                 ColorUtils.applyAlphaToArgb(theme.panelBg(), 0xFF));
         panel.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panel);
         String title = CustomQuickActionEditor.t("custom_quick_action_title").content();
-        font.draw(stack, title, panelX + (panelW - font.width(title)) / 2f, panelY + PAD,
-                theme.textPrimary());
+        xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.drawString(graphics, font, title, panelX + (panelW - font.width(title)) / 2f, panelY + PAD,
+                theme.textPrimary(), false);
         if (definitions.isEmpty()) {
             String empty = CustomQuickActionEditor.t("custom_quick_action_empty").content();
-            font.draw(stack, empty, panelX + (panelW - font.width(empty)) / 2f,
-                    listY + 16, theme.textSecondary());
+            xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.drawString(graphics, font, empty, panelX + (panelW - font.width(empty)) / 2f,
+                    listY + 16, theme.textSecondary(), false);
         }
-        super.renderWidgets(stack, partialTicks);
+        super.renderWidgets(graphics, partialTicks);
     }
 
     @Override

@@ -18,6 +18,11 @@ public final class BaniraClientNetworkDefaults {
 
     public static void register() {
         BaniraClientPacketDispatch.registerConfigSnapshotHandler(ConfigSnapshotClientHandler::apply);
+        BaniraClientPacketDispatch.registerPlayerPreferencesHandler(ClientPlayerPreferences::apply);
+        BaniraClientEventHub.Client.onClientTick(event -> {
+            if (event == xin.vanilla.banira.api.client.event.BaniraClientTickEvent.END)
+                ClientPlayerPreferences.tick();
+        });
         BaniraClientPacketDispatch.registerNotificationHandler(ClientNotificationPacketHandler::handle);
         BaniraClientPacketDispatch.registerNotificationTypesHandler(ClientNotificationPacketHandler::handleTypes);
         ModLoadedToBoth.registerClientHandler(packet -> {
@@ -36,6 +41,7 @@ public final class BaniraClientNetworkDefaults {
             }
         });
         BaniraClientEventHub.Player.onClientLoggedOut(player -> {
+            ClientPlayerPreferences.disconnect();
             if (player == null) {
                 return;
             }

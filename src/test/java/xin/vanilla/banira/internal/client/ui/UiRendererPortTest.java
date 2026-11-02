@@ -30,7 +30,10 @@ public class UiRendererPortTest {
         ClassNode node = bytecode("internal/client/BaniraCodexClientBootstrap$1");
         for (String operation : com.google.common.collect.ImmutableList.of("open", "registerHud", "screenRemoved", "ownsScreen", "close")) assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
         assertTrue(calls(node, "internal/client/ui/UiContainerLayerHost", "create"));
-        assertFalse(node.methods.stream().anyMatch(method -> method.name.equals("mouseClicked") || method.name.equals("slotClicked") || method.name.equals("renderHud")));
+        assertFalse(node.methods.stream().anyMatch(method -> method.name.equals("mouseClicked") || method.name.equals("slotClicked")));
+        assertTrue(calls(node, "internal/client/ui/AuiHudHost", "renderManual"));
+        assertTrue(node.methods.stream().anyMatch(method -> method.name.equals("renderHud")
+                && method.desc.equals("(Ljava/lang/String;Lcom/mojang/blaze3d/matrix/MatrixStack;)Z")));
     }
 
     private static ClassNode bytecode(String type) throws Exception {

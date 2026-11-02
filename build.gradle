@@ -162,7 +162,7 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }
 processResources {
     inputs.property "mod_id", project.mod_id
     inputs.property "mod_name", project.mod_name
@@ -265,15 +265,15 @@ afterEvaluate {
     publishing.publications.named('mavenJava', MavenPublication) {
         // 子 mod 必须消费经过 Loom remap 的正式模组 JAR，开发 jar 只包含命名空间中间产物。
         artifact tasks.named('remapJar')
-        artifact tasks.named('sourcesJar')
+        artifact tasks.named('remapSourcesJar')
     }
     tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
-        dependsOn 'remapJar', 'sourcesJar'
+        dependsOn 'remapJar', 'remapSourcesJar'
     }
 }
 
 tasks.withType(PublishToMavenLocal).configureEach {
-    dependsOn 'remapJar', 'sourcesJar'
+    dependsOn 'remapJar', 'remapSourcesJar'
 }
 
 tasks.named('publishMavenJavaPublicationToPublicationContractRepository') {
@@ -301,3 +301,6 @@ tasks.named('test') {
 apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+apply from: 'gradle/aui-contract.gradle'
+apply from: 'gradle/aui-validation-output.gradle'

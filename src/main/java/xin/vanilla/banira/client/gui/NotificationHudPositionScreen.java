@@ -3,7 +3,8 @@ package xin.vanilla.banira.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.ui.UiCloseReason;
+import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.notification.NotificationHudState;
@@ -11,14 +12,16 @@ import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper
 import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.InputStateManager;
-import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.UiNativePage;
+import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class NotificationHudPositionScreen extends BaniraScreen {
-    private final double originalX, originalY;
-    private double x, y, grabX, grabY;
+public final class NotificationHudPositionScreen extends BaniraScreen implements UiNativePage {
+    private final NotificationUiSession uiSession;
+    private double grabX, grabY;
     private boolean dragging;
     private final List<ButtonWidget> controls = new ArrayList<>();
 
@@ -26,8 +29,37 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
         super(BaniraComponent.get().transClientAuto("notification_hud_position").toVanilla());
         previousScreen(parent);
         BaniraScreen.inheritThemeAndSeason(this, parent, null, null);
-        x = originalX = ClientConfig.get().notificationHud().x();
-        y = originalY = ClientConfig.get().notificationHud().y();
+        uiSession = NotificationUiSession.position();
+        uiSession.attachNative(this);
+    }
+
+    @Override
+    public NotificationUiSession uiSession() {
+        return uiSession;
+    }
+
+    @Override
+    public String uiSurfaceId() {
+        return "banira_codex:hud-position";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return uiSession.spec();
+    }
+
+    @Override
+    protected void onRemoved() {
+        dragging = false;
+        CommonUiPages.removed(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (CommonUiPages.close(this, UiCloseReason.CANCEL)) return;
+        uiSession.close(UiCloseReason.CANCEL);
+        super.onClose();
     }
 
     @Override
@@ -36,9 +68,7 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
         controls.clear();
         int w = Math.min(100, (width - 32) / 2);
         addButton("save", width / 2 - w - 2, w, () -> {
-            ClientConfig.get().notificationHud().x(x).y(y);
-            BaniraConfigs.save(ClientConfig.class);
-            onClose();
+            if (uiSession.save()) onClose();
         });
         addButton("cancel", width / 2 + 2, w, this::onClose);
     }
@@ -54,15 +84,15 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
     }
 
     private int toolbarY() {
-        return y > .5 ? 10 : height - 30;
+        return uiSession.y() > .5 ? 10 : height - 30;
     }
 
     private int pixelX() {
-        return NotificationHudState.position(x, width, NotificationUnreadHud.WIDTH);
+        return NotificationHudState.position(uiSession.x(), width, NotificationUnreadHud.WIDTH);
     }
 
     private int pixelY() {
-        return NotificationHudState.position(y, height, NotificationUnreadHud.HEIGHT);
+        return NotificationHudState.position(uiSession.y(), height, NotificationUnreadHud.HEIGHT);
     }
 
     private boolean hovered(double mx, double my) {
@@ -84,8 +114,8 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (dragging && button == 0) {
-            x = NotificationHudState.relative(mx - grabX, width, NotificationUnreadHud.WIDTH);
-            y = NotificationHudState.relative(my - grabY, height, NotificationUnreadHud.HEIGHT);
+            uiSession.moveTo(NotificationHudState.relative(mx - grabX, width, NotificationUnreadHud.WIDTH),
+                    NotificationHudState.relative(my - grabY, height, NotificationUnreadHud.HEIGHT));
             return true;
         }
         return super.mouseDragged(mx, my, button, dx, dy);
@@ -100,7 +130,7 @@ public final class NotificationHudPositionScreen extends BaniraScreen {
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return x == originalX && y == originalY;
+        return uiSession.canClose(UiCloseReason.USER_CLOSE);
     }
 
     @Override

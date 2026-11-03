@@ -29,8 +29,8 @@ dependencies {
         }
         auiContract files(artifact)
     } else {
-        auiContract('com.sighs:ApricityUI-forge-1.19.2:1.2.9') {
-            version { strictly('1.2.9') }
+        auiContract('com.sighs:ApricityUI-forge-1.19.2:1.3.0') {
+            version { strictly('1.3.0') }
         }
     }
 }
@@ -54,7 +54,7 @@ def verifyAuiContract = tasks.register('verifyAuiContract') {
     doLast {
         def artifact = configurations.auiContract.singleFile
         def actual = MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
-        if (!actual.equalsIgnoreCase('96B74BE66F36EC290B1B081A7198629973D72CAF73D713B6DA8A4BB8F46490D5')) {
+        if (!actual.equalsIgnoreCase('9F7A199D835EEC069E9C26D42AA8D65D2873ED219CA168750A69BD5408B42C53')) {
             throw new GradleException('AUI Forge 1.19.2 contract SHA-256 mismatch')
         }
     }

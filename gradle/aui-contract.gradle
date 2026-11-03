@@ -16,14 +16,14 @@ dependencies {
         if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('AUI contract must be an existing absolute file')
         auiContract files(artifact)
     } else {
-        auiContract('com.sighs:ApricityUI-fabric-1.21.1:1.2.9') { version { strictly('1.2.9') } }
+        auiContract('com.sighs:ApricityUI-fabric-1.21.1:1.3.0') { version { strictly('1.3.0') } }
     }
     modCompileOnly files(configurations.auiContract)
 }
 def verify = tasks.register('verifyAuiContract') {
     doLast {
         def hash = MessageDigest.getInstance('SHA-256').digest(configurations.auiContract.singleFile.bytes).encodeHex().toString()
-        if (!hash.equalsIgnoreCase('8F509752EEBB58DC801B782C67476E13119350CA47170C7E681D3B6A66B4B9CE'))
+        if (!hash.equalsIgnoreCase('284C6697F492982752AF9F6AC045F2402D19BE601B1D3CD011AC463716C15925'))
             throw new GradleException('AUI Fabric 1.21.1 contract SHA-256 mismatch')
     }
 }
@@ -31,6 +31,7 @@ tasks.named('compileJava') { dependsOn verify }
 tasks.withType(Test).configureEach {
     dependsOn verify
     doFirst {
+        systemProperty 'banira.aui.officialContractJar', configurations.auiContract.singleFile.absolutePath
         // Loom's named copy matches the development Minecraft namespace.
         def contracts = sourceSets.main.compileClasspath.files.findAll { artifact ->
             if (!artifact.name.endsWith('.jar')) return false

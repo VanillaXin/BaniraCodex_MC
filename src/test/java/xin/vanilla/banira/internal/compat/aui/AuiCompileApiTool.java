@@ -8,6 +8,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.signature.SignatureReader;
+import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -29,7 +32,7 @@ import java.util.zip.ZipFile;
  */
 public final class AuiCompileApiTool {
     static final String ROOT = "com/sighs/apricityui/";
-    static final String SOURCE = "080AC4987E2EEBEF174287F106AD53132D1B874728F0BBD6A8AB1F74F7188EBF";
+    static final String SOURCE = "2C2A8B47B87E6397EEC823DBE978CA8AB1E96C1AD57EA61C1CC83E5FCABFA210";
     static final String MARKER = "META-INF/banira-aui-compile-api.properties";
     static final String[][] FIELDS = {{"init/Element", "isVisible", "Z"}, {"init/Element", "scrollHeight", "D"},
             {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
@@ -56,19 +59,60 @@ public final class AuiCompileApiTool {
         try (ZipFile zip = new ZipFile(official.toFile())) {
             for (var member : AuiCapabilityContract.requiredMembers()) addClass(zip, result, member.owner);
             for (String[] field : FIELDS) addClass(zip, result, ROOT + field[0]);
+            int count;
+            do {
+                count = result.size();
+                for (ClassNode node : java.util.List.copyOf(result.values())) {
+                    node.methods.removeIf(method -> AuiCapabilityContract.requiredMembers().stream().noneMatch(member -> member.owner.equals(node.name)
+                            && member.name.equals(method.name) && member.descriptor.equals(method.desc)));
+                    node.fields.removeIf(field -> Arrays.stream(FIELDS).noneMatch(required -> (ROOT + required[0]).equals(node.name)
+                            && required[1].equals(field.name) && required[2].equals(field.desc)));
+                    var referenced = new TreeSet<String>();
+                    signatureTypes(node.signature, referenced, false);
+                    for (MethodNode method : node.methods) signatureTypes(method.signature, referenced, false);
+                    for (FieldNode field : node.fields) signatureTypes(field.signature, referenced, true);
+                    for (String name : referenced) addClass(zip, result, name);
+                    for (var member : AuiCapabilityContract.requiredMembers())
+                        if (member.owner.equals(node.name)
+                                && node.methods.stream().noneMatch(method -> method.name.equals(member.name) && method.desc.equals(member.descriptor)))
+                            throw new IllegalArgumentException("Missing official member " + member.key());
+                }
+            } while (result.size() != count);
             for (ClassNode node : result.values()) {
-                node.methods.removeIf(method -> AuiCapabilityContract.requiredMembers().stream().noneMatch(member -> member.owner.equals(node.name)
-                        && member.name.equals(method.name) && member.descriptor.equals(method.desc)));
-                node.fields.removeIf(field -> Arrays.stream(FIELDS).noneMatch(required -> (ROOT + required[0]).equals(node.name)
-                        && required[1].equals(field.name) && required[2].equals(field.desc)));
                 node.innerClasses.removeIf(inner -> !result.containsKey(inner.name));
-                for (var member : AuiCapabilityContract.requiredMembers())
-                    if (member.owner.equals(node.name)
-                            && node.methods.stream().noneMatch(method -> method.name.equals(member.name) && method.desc.equals(member.descriptor)))
-                        throw new IllegalArgumentException("Missing official member " + member.key());
             }
         }
         return result;
+    }
+
+    private static void signatureTypes(String signature, java.util.Set<String> names, boolean field) {
+        if (signature == null) return;
+        SignatureVisitor visitor = signatureVisitor(names);
+        if (field) new SignatureReader(signature).acceptType(visitor);
+        else new SignatureReader(signature).accept(visitor);
+    }
+
+    private static SignatureVisitor signatureVisitor(java.util.Set<String> names) {
+        return new SignatureVisitor(Opcodes.ASM9) {
+            private String owner;
+
+            @Override
+            public void visitClassType(String name) {
+                owner = name;
+                names.add(name);
+            }
+
+            @Override
+            public void visitInnerClassType(String name) {
+                owner += "$" + name;
+                names.add(owner);
+            }
+
+            @Override
+            public SignatureVisitor visitTypeArgument(char wildcard) {
+                return signatureVisitor(names);
+            }
+        };
     }
 
     private static void addClass(ZipFile zip, Map<String, ClassNode> classes, String name) throws IOException {
@@ -196,8 +240,8 @@ public final class AuiCompileApiTool {
             source.append(");\n");
         }
         for (String[] field : FIELDS)
-            source.append(field[2].equals("D") ? "double" : "int").append(" value").append(source.length()).append("=((").append((ROOT + field[0]).replace('/', '.').replace('$', '.')).append(")null).").append(field[1]).append(";\n");
-        source.append("}}\n");
+            source.append(field[2].equals("Z") ? "boolean" : field[2].equals("D") ? "double" : "int").append(" value").append(source.length()).append("=((").append((ROOT + field[0]).replace('/', '.').replace('$', '.')).append(")null).").append(field[1]).append(";\n");
+        source.append("Object snapshot = com.sighs.apricityui.loader.ClientLoader.listFinalStaticResources();\n}}\n");
         Files.writeString(root.resolve("AuiDeclarationFixture.java"), source, StandardCharsets.UTF_8);
     }
 }

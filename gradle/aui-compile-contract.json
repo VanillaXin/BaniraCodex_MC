@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "sourceSha256": "080AC4987E2EEBEF174287F106AD53132D1B874728F0BBD6A8AB1F74F7188EBF",
+  "sourceSha256": "2C2A8B47B87E6397EEC823DBE978CA8AB1E96C1AD57EA61C1CC83E5FCABFA210",
   "classes": {
     "com/sighs/apricityui/element/AbstractText": {
       "super": "com/sighs/apricityui/init/Element",
@@ -570,6 +570,13 @@
     "com/sighs/apricityui/loader/Loader": {
       "super": "java/lang/Object",
       "access": 33,
+      "interfaces": [],
+      "methods": [],
+      "fields": []
+    },
+    "com/sighs/apricityui/loader/Loader$StaticResourceEntry": {
+      "super": "java/lang/Record",
+      "access": 49,
       "interfaces": [],
       "methods": [],
       "fields": []

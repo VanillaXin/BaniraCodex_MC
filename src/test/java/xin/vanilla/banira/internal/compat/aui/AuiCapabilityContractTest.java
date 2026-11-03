@@ -96,9 +96,43 @@ public class AuiCapabilityContractTest {
     public void everyRequiredOwnerRejectsNewerThanJava8Bytecode() {
         for (String name : declarations().keySet()) {
             for (int version : new int[]{Opcodes.V9, Opcodes.V17}) {
-                assertFalse(name, AuiCapabilityContract.inspect(fixture(nodes -> nodes.get(name).version = version, false)).compatible());
+                assertFalse(name, AuiCapabilityContract.inspect(fixture(nodes -> nodes.get(name).version = version, false), Opcodes.V1_8).compatible());
             }
         }
+    }
+
+    @Test
+    public void verifiedJava17ShapesAreAllowedOnlyOnCapableHosts() {
+        ClassLoader resources = fixture(nodes -> nodes.values().forEach(node -> node.version = Opcodes.V17), false);
+        assertFalse(AuiCapabilityContract.inspect(resources, Opcodes.V1_8).compatible());
+        assertTrue(AuiCapabilityContract.inspect(resources, Opcodes.V17).compatible());
+        assertTrue(AuiCapabilityContract.inspect(resources, Opcodes.V21).compatible());
+    }
+
+    @Test
+    public void unknownAndPreviewVersionsRemainRejectedOnModernHosts() {
+        for (String name : declarations().keySet()) {
+            for (int version : new int[]{0, 44, Opcodes.V18, Opcodes.V21, Opcodes.V17 | Opcodes.V_PREVIEW}) {
+                assertFalse(name, AuiCapabilityContract.inspect(
+                        fixture(nodes -> nodes.get(name).version = version, false), Opcodes.V21).compatible());
+            }
+        }
+    }
+
+    @Test
+    public void runtimeVersionParsingKeepsTheVerifiedCeiling() {
+        assertEquals(Opcodes.V1_8, AuiCapabilityContract.maximumClassVersion("52.0"));
+        assertEquals(Opcodes.V17, AuiCapabilityContract.maximumClassVersion("61.0"));
+        assertEquals(Opcodes.V17, AuiCapabilityContract.maximumClassVersion("65.0"));
+        for (String invalid : new String[]{null, "", "NaN", "+61.0", "61.1", "61", "0.0", "2147483648.0"}) {
+            assertEquals(Opcodes.V1_8, AuiCapabilityContract.maximumClassVersion(invalid));
+        }
+    }
+
+    @Test
+    public void declarationsStayRejectedOnModernHosts() {
+        assertFalse(AuiCapabilityContract.inspect(fixture(
+                nodes -> nodes.values().forEach(node -> node.version = Opcodes.V17), true), Opcodes.V17).compatible());
     }
 
     @Test

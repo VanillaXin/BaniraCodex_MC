@@ -19,6 +19,31 @@ public final class AuiCapabilityContract {
     }
 
     public static Result inspect(ClassLoader loader) {
+        int maximum = Opcodes.V1_8;
+        try {
+            maximum = maximumClassVersion(System.getProperty("java.class.version"));
+        } catch (SecurityException ignored) {
+        }
+        return inspect(loader, maximum);
+    }
+
+    static int maximumClassVersion(String runtimeVersion) {
+        if (runtimeVersion != null && runtimeVersion.matches("[0-9]+\\.0")) {
+            try {
+                int major = Integer.parseInt(runtimeVersion.substring(0, runtimeVersion.length() - 2));
+                if (major >= Opcodes.V1_8) return Math.min(major, Opcodes.V17);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return Opcodes.V1_8;
+    }
+
+    private static boolean supportedVersion(int version, int maximum) {
+        return version >= 45 && version <= maximum;
+    }
+
+    static Result inspect(ClassLoader loader, int runtimeMajor) {
+        int maximum = Math.min(runtimeMajor, Opcodes.V17);
         if (loader == null) return new Result(false, "Missing class loader");
         try (InputStream marker = loader.getResourceAsStream("META-INF/banira-aui-compile-api.properties")) {
             if (marker != null) return new Result(false, "Compile-only AUI declarations");
@@ -36,7 +61,7 @@ public final class AuiCapabilityContract {
                         new ClassReader(input).accept(owner, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
                     }
                     if (!member.owner.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0
-                            || owner.version > Opcodes.V1_8) {
+                            || !supportedVersion(owner.version, maximum)) {
                         return new Result(false, "Incompatible class " + member.owner);
                     }
                     classes.put(member.owner, owner);
@@ -67,7 +92,7 @@ public final class AuiCapabilityContract {
                         owner = new ClassNode();
                         new ClassReader(input).accept(owner, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
                     }
-                    if (!name.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0 || owner.version > Opcodes.V1_8)
+                    if (!name.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0 || !supportedVersion(owner.version, maximum))
                         return new Result(false, "Incompatible class " + name);
                     classes.put(name, owner);
                 }

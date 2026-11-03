@@ -16,7 +16,7 @@ buildscript {
 
 repositories.exclusiveContent {
     forRepository { project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' } }
-    filter { includeModule('com.sighs', 'ApricityUI-forge-1.18.2') }
+    filter { includeModule('com.sighs', 'ApricityUI-forge-1.16.5') }
 }
 configurations.create('auiReference') {
     canBeConsumed = false
@@ -28,11 +28,11 @@ if (localReference != null) {
     if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('Invalid AUI declaration reference')
     dependencies.add('auiReference', files(artifact))
 } else {
-    dependencies.add('auiReference', 'com.sighs:ApricityUI-forge-1.18.2:1.2.9') {
-        version { strictly('1.2.9') }
+    dependencies.add('auiReference', 'com.sighs:ApricityUI-forge-1.16.5:1.3.0') {
+        version { strictly('1.3.0') }
     }
 }
-def referenceHash = 'D557E54540C71D87920056D1F36A05480E4FEF0E0063A1D61D18DC8E2BC81D8B'
+def referenceHash = '37D5790453D0F28827555B3C6F9FE31328B6829EC4E07E6A4718365E9A5CFB6C'
 def declarations = layout.buildDirectory.file('aui-compile-api/forge-1.16.5-declarations.jar')
 def generateDeclarations = tasks.register('generateAuiCompileDeclarations') {
     inputs.files(configurations.auiReference)
@@ -43,15 +43,6 @@ def generateDeclarations = tasks.register('generateAuiCompileDeclarations') {
             throw new GradleException('Pinned AUI declaration reference SHA-256 mismatch')
         }
         def names = [
-                'com/mojang/blaze3d/vertex/PoseStack': 'com/mojang/blaze3d/matrix/MatrixStack',
-                'com/mojang/math/Matrix4f': 'net/minecraft/util/math/vector/Matrix4f',
-                'net/minecraft/client/gui/screens/Screen': 'net/minecraft/client/gui/screen/Screen',
-                'net/minecraft/client/gui/Font': 'net/minecraft/client/gui/FontRenderer',
-                'net/minecraft/network/chat/Component': 'net/minecraft/util/text/ITextComponent',
-                'net/minecraft/resources/ResourceLocation': 'net/minecraft/util/ResourceLocation',
-                'net/minecraft/world/item/ItemStack': 'net/minecraft/item/ItemStack',
-                'net/minecraft/world/inventory/Slot': 'net/minecraft/inventory/container/Slot',
-                'net/minecraft/world/inventory/AbstractContainerMenu': 'net/minecraft/inventory/container/Container',
                 'java/lang/Record': 'java/lang/Object'
         ]
         def remapper = new Remapper() {
@@ -147,4 +138,17 @@ tasks.register('auiFoundationArtifactTest', Test) {
     doFirst {
         systemProperty 'banira.aui.foundationArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
     }
+}
+
+tasks.register('auiJava17ContractTest', Test) {
+    dependsOn 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) })
+    filter {
+        includeTestsMatching '*AuiCapabilityContractTest'
+        includeTestsMatching '*AuiOfficialReferenceTest'
+    }
+    outputs.upToDateWhen { false }
+    systemProperty 'banira.aui.expectedHostMajor', '61.0'
 }

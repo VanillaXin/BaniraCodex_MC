@@ -393,6 +393,8 @@ public final class Component implements Cloneable, Serializable {
             Object obj = objs[i];
             if (obj instanceof Component) {
                 this.getChildren().add(index + i, ((Component) obj).withStyle(this));
+            } else if (obj instanceof ITextComponent) {
+                this.getChildren().add(index + i, object(obj).withStyle(this));
             } else {
                 this.getChildren().add(index + i, new Component(String.valueOf(obj)).withStyle(this));
             }
@@ -409,6 +411,8 @@ public final class Component implements Cloneable, Serializable {
             Object obj = objs[i];
             if (obj instanceof Component) {
                 this.getArgs().add(index + i, ((Component) obj).withStyle(this));
+            } else if (obj instanceof ITextComponent) {
+                this.getArgs().add(index + i, object(obj).withStyle(this));
             } else {
                 this.getArgs().add(index + i, new Component(String.valueOf(obj)).withStyle(this));
             }
@@ -590,96 +594,106 @@ public final class Component implements Cloneable, Serializable {
      * @param languageCode 语言代码
      */
     public ITextComponent toVanilla(String languageCode) {
-        List<IFormattableTextComponent> components = new ArrayList<>();
+        IFormattableTextComponent result = new StringTextComponent("");
         if (this.i18nType == EnumI18nType.ORIGINAL) {
-            components.add(((ITextComponent) this.original).copy());
-        } else {
-            // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
-            if (!this.color().isEmpty()) {
-                if (this.i18nType != EnumI18nType.PLAIN) {
-                    String text;
-                    if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                        // 未设置 modId 时，退化为直接输出 key
-                        text = this.text;
-                    } else {
-                        text = this.resolveTranslationTemplate(this.languageCodeOrDefault(languageCode));
-                    }
-                    String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
-                    for (String s : split) {
-                        components.add(new StringTextComponent(s).withStyle(this.getStyle()));
-                    }
-                    Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
-                    Matcher matcher = pattern.matcher(text);
-                    int i = 0;
-                    while (matcher.find()) {
-                        String placeholder = matcher.group();
-                        int index = placeholder.contains("$") ? NumberUtils.toInt(placeholder.split("\\$")[0].substring(1)) - 1 : -1;
-                        if (index == -1) {
-                            index = i;
+            result = ((ITextComponent) this.original).copy();
+        } else if (!this.color().isEmpty()) {
+            String language = this.languageCodeOrDefault(languageCode);
+            String template = this.i18nType == EnumI18nType.PLAIN ? this.text : this.resolveTranslationTemplate(language);
+            if (this.i18nType == EnumI18nType.NONE && VanillaComponentTranslations.isVanillaKey(this.text)) {
+                Object[] arguments = this.getArgs().stream()
+                        .map(arg -> arg == null ? new StringTextComponent("") : arg.toVanilla(language))
+                        .toArray();
+                result = new TranslationTextComponent(this.text, arguments);
+            } else {
+                result = formatTemplate(template, language);
+            }
+        }
+        for (Component child : this.getChildren()) {
+            result.append(child.toVanilla(languageCode));
+        }
+        return result.withStyle(this.getStyle());
+    }
+
+    private IFormattableTextComponent formatTemplate(String template, String languageCode) {
+        if (this.getArgs().isEmpty()) return new StringTextComponent(template);
+        IFormattableTextComponent result = new StringTextComponent("");
+        Matcher matcher = Pattern.compile(StringUtils.FORMAT_REGEX).matcher(template);
+        int cursor = 0;
+        int nextArgument = 0;
+        int previousArgument = -1;
+        Style formatStyle = Style.EMPTY;
+        while (matcher.find()) {
+            String segment = template.substring(cursor, matcher.start());
+            result.append(new StringTextComponent(segment));
+            formatStyle = templateArgumentStyle(segment, formatStyle);
+            String placeholder = matcher.group();
+            String format = placeholder.replaceFirst("^%\\d+\\$", "%");
+            if ("%%".equals(format) || "%n".equals(format)) {
+                result.append(new StringTextComponent("%%".equals(format) ? "%" : "\n"));
+            } else {
+                int index;
+                if (placeholder.contains("$")) {
+                    index = NumberUtils.toInt(placeholder.substring(1, placeholder.indexOf('$'))) - 1;
+                } else if (placeholder.contains("<")) {
+                    index = previousArgument;
+                } else {
+                    index = nextArgument++;
+                }
+                previousArgument = index;
+                if (index >= 0 && index < this.getArgs().size()) {
+                    Component argument = this.getArgs().get(index);
+                    if (argument != null) {
+                        IFormattableTextComponent nativeArgument = argument.toVanilla(languageCode).copy();
+                        // Keep native translations and rich-text actions intact inside mod templates.
+                        if ("%s".equals(format) || "%<s".equals(format) || argument.requiresStructuralFormatting()) {
+                            result.append(nativeArgument.setStyle(nativeArgument.getStyle().applyTo(formatStyle)));
+                        } else {
+                            result.append(new StringTextComponent(StringUtils.format(format.replace("<", ""),
+                                    nativeArgument.getString())).withStyle(nativeArgument.getStyle().applyTo(formatStyle)));
                         }
-                        Component formattedArg = new Component(placeholder).withStyle(this);
-                        if (index < this.getArgs().size()) {
-                            if (this.getArgs().get(index) == null) {
-                                formattedArg = new Component();
-                            } else {
-                                Component argComponent = this.getArgs().get(index);
-                                if (argComponent.i18nType() != EnumI18nType.PLAIN) {
-                                    // 语言代码传递
-                                    if (argComponent.isLanguageCodeEmpty()) {
-                                        argComponent.languageCode(languageCode);
-                                    }
-                                    try {
-                                        // 颜色代码传递
-                                        String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
-                                        formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent)).withStyle(argComponent);
-                                    } catch (Exception e) {
-                                        // 颜色传递
-                                        if (argComponent.color().isEmpty()) {
-                                            argComponent.color(this.color);
-                                        }
-                                        formattedArg = argComponent;
-                                    }
-                                } else {
-                                    // 颜色传递
-                                    if (argComponent.color().isEmpty()) {
-                                        argComponent.color(this.color);
-                                    }
-                                    formattedArg = argComponent;
-                                }
-                            }
-                        }
-                        if (components.size() > i) {
-                            components.get(i).append(formattedArg.toVanilla());
-                        }
-                        i++;
                     }
                 } else {
-                    for (Component arg : this.getArgs()) {
-                        if (arg != null) {
-                            arg.languageCodeIfEmpty(languageCode);
-                        }
-                    }
-                    components.add(new StringTextComponent(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
+                    result.append(new StringTextComponent(placeholder));
+                }
+            }
+            cursor = matcher.end();
+        }
+        return result.append(new StringTextComponent(template.substring(cursor)));
+    }
+
+    private boolean requiresStructuralFormatting() {
+        if (!requiresNativePreparation()) return false;
+        if (this.i18nType == EnumI18nType.ORIGINAL && this.original instanceof ITextComponent) {
+            ITextComponent source = (ITextComponent) this.original;
+            if (this.getChildren().isEmpty() && source.getSiblings().isEmpty()
+                    && source instanceof StringTextComponent) return false;
+        }
+        return true;
+    }
+
+    private static Style templateArgumentStyle(String segment, Style style) {
+        for (int index = 0; index + 1 < segment.length(); index++) {
+            if (segment.charAt(index) == '\u00a7') {
+                net.minecraft.util.text.TextFormatting formatting = net.minecraft.util.text.TextFormatting.getByCode(segment.charAt(++index));
+                if (formatting != null) {
+                    style = formatting == net.minecraft.util.text.TextFormatting.RESET ? Style.EMPTY : style.applyLegacyFormat(formatting);
                 }
             }
         }
-        components.addAll(this.getChildren().stream().map(component -> (IFormattableTextComponent) component.toVanilla(languageCode)).collect(Collectors.toList()));
-        if (components.isEmpty()) {
-            components.add(new StringTextComponent(""));
-        }
-        IFormattableTextComponent result = components.get(0);
-        for (int j = 1; j < components.size(); j++) {
-            result.append(components.get(j));
-        }
-        return result.withStyle(this.getStyle());
+        return style;
     }
 
     /**
      * 优先使用当前侧语言资源；来源 Mod 不存在时使用网络携带的服务端模板。
      */
     private String resolveTranslationTemplate(String languageCode) {
-        if (StringUtils.isNullOrEmptyEx(this.modId)) {
+        if (StringUtils.isNullOrEmptyEx(this.modId)
+                || this.i18nType == EnumI18nType.NONE && VanillaComponentTranslations.isVanillaKey(this.text)) {
             return this.text;
+        }
+        if (this.i18nType == EnumI18nType.NONE && "minecraft".equals(this.modId)) {
+            return StringUtils.isNullOrEmptyEx(this.translationFallback) ? this.text : this.translationFallback;
         }
         String fullKey = this.i18nType == EnumI18nType.PLAIN || this.i18nType == EnumI18nType.NONE
                 ? this.text
@@ -704,36 +718,7 @@ public final class Component implements Cloneable, Serializable {
      * 获取翻译文本组件
      */
     public ITextComponent toVanillaTrans() {
-        IFormattableTextComponent result = new StringTextComponent("");
-        if (!this.color().isEmpty() || !this.bgColor().isEmpty()) {
-            if (this.i18nType != EnumI18nType.PLAIN) {
-                Object[] objects = this.getArgs().stream().map(component -> {
-                    if (component.i18nType == EnumI18nType.PLAIN) {
-                        return component.toVanilla();
-                    } else {
-                        return component.toVanillaTrans();
-                    }
-                }).toArray();
-                if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                    // 未设置 modId 时，退化为直接输出 key
-                    result = new StringTextComponent(this.text).withStyle(this.getStyle());
-                } else {
-                    ITranslator helper = Translator.of(this.modId);
-                    String fullKey = helper.getKey(this.i18nType, this.text);
-                    if (CollectionUtils.isNotNullOrEmpty(objects)) {
-                        result = new TranslationTextComponent(fullKey, objects);
-                    } else {
-                        result = new TranslationTextComponent(fullKey);
-                    }
-                }
-            } else {
-                result = new StringTextComponent(this.text).withStyle(this.getStyle());
-            }
-        }
-        for (Component child : this.getChildren()) {
-            result.append(child.toVanillaTrans());
-        }
-        return result;
+        return preparedNativeMessage(this.languageCodeOrDefault());
     }
 
     /**
@@ -751,7 +736,99 @@ public final class Component implements Cloneable, Serializable {
      * @return 格式化颜色后的文本组件
      */
     public ITextComponent toChat(String languageCode) {
-        return rewriteColor(this.toVanilla(languageCode));
+        return rewriteColor(preparedNativeMessage(languageCode));
+    }
+
+    private ITextComponent preparedNativeMessage(String languageCode) {
+        ITextComponent message = this.toVanilla(languageCode);
+        if (requiresNativePreparation()) {
+            JsonElement prepared = prepareNativeJson(nativeComponentJson(message), this.languageCodeOrDefault(languageCode), true);
+            message = nativeComponentFromJson(prepared);
+        }
+        return message;
+    }
+
+    private boolean requiresNativePreparation() {
+        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null) return true;
+        for (Component child : this.getChildren()) if (child.requiresNativePreparation()) return true;
+        for (Component arg : this.getArgs()) if (arg != null && arg.requiresNativePreparation()) return true;
+        return false;
+    }
+
+    private static JsonElement nativeComponentJson(ITextComponent nativeComponent) {
+        return new com.google.gson.JsonParser().parse(ITextComponent.Serializer.toJson(nativeComponent));
+    }
+
+    static java.io.InputStream openVanillaLanguage() {
+        java.io.InputStream stream = ITextComponent.class.getResourceAsStream("/assets/minecraft/lang/en_us.json");
+        return stream != null ? stream : Component.class.getResourceAsStream("/assets/minecraft/lang/en_us.json");
+    }
+
+    private static ITextComponent nativeComponentFromJson(JsonElement json) {
+        JsonObject wrapper = new JsonObject();
+        wrapper.addProperty("text", "");
+        wrapper.addProperty("i18nType", EnumI18nType.ORIGINAL.name());
+        wrapper.add("original", json);
+        return (ITextComponent) deserialize(wrapper).original();
+    }
+
+    private static JsonElement prepareNativeJson(JsonElement json, String language, boolean vanillaOnly) {
+        return VanillaComponentTranslations.prepare(json, language, vanillaOnly, (template, arguments) -> {
+            Component formatted = literal(arguments.size() == 0 ? VanillaComponentTranslations.noArgumentTemplate(template) : template);
+            for (JsonElement argument : arguments) {
+                JsonElement value = argument.isJsonNull() ? new com.google.gson.JsonPrimitive("null")
+                        : argument.isJsonPrimitive() ? new com.google.gson.JsonPrimitive(argument.getAsString()) : argument;
+                formatted.appendArg(object(nativeComponentFromJson(value)));
+            }
+            IFormattableTextComponent nativeMessage = (IFormattableTextComponent) formatted.toVanilla(language);
+            nativeMessage.setStyle(Style.EMPTY);
+            return nativeComponentJson(nativeMessage);
+        });
+    }
+
+    private static JsonElement prepareNativeHover(JsonElement hover, String language) {
+        JsonObject wrapper = new JsonObject();
+        wrapper.addProperty("text", "");
+        wrapper.add("hoverEvent", hover);
+        return prepareNativeJson(wrapper, language, false).getAsJsonObject().get("hoverEvent");
+    }
+
+    static String prepareItemHoverTag(String encoded, String language, boolean vanillaOnly) {
+        try {
+            net.minecraft.nbt.CompoundNBT tag = net.minecraft.nbt.JsonToNBT.parseTag(encoded);
+            net.minecraft.nbt.CompoundNBT display = tag.getCompound("display");
+            boolean changed = false;
+            if (display.contains("Name", 8)) {
+                String before = display.getString("Name");
+                String after = prepareItemText(before, language, vanillaOnly);
+                if (!before.equals(after)) {
+                    display.putString("Name", after);
+                    changed = true;
+                }
+            }
+            net.minecraft.nbt.ListNBT lore = display.getList("Lore", 8);
+            for (int index = 0; index < lore.size(); index++) {
+                String before = lore.getString(index);
+                String after = prepareItemText(before, language, vanillaOnly);
+                if (!before.equals(after)) {
+                    lore.set(index, net.minecraft.nbt.StringNBT.valueOf(after));
+                    changed = true;
+                }
+            }
+            return changed ? tag.toString() : encoded;
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException | RuntimeException invalid) {
+            return encoded;
+        }
+    }
+
+    private static String prepareItemText(String encoded, String language, boolean vanillaOnly) {
+        try {
+            JsonElement before = new com.google.gson.JsonParser().parse(encoded);
+            JsonElement after = prepareNativeJson(before, language, vanillaOnly);
+            return before.equals(after) ? encoded : after.toString();
+        } catch (RuntimeException invalid) {
+            return encoded;
+        }
     }
 
     public static ITextComponent rewriteColor(ITextComponent component) {
@@ -968,12 +1045,14 @@ public final class Component implements Cloneable, Serializable {
             result.add("original", new com.google.gson.JsonParser().parse(
                     ITextComponent.Serializer.toJson((ITextComponent) component.original())));
         }
+        if (result.has("original")) result.add("original", prepareNativeJson(result.get("original"), component.languageCodeOrDefault(), false));
         if (!component.isModIdEmpty()) {
             JsonUtils.set(result, "modId", component.modId());
         }
         if (component.i18nType() != EnumI18nType.PLAIN && component.i18nType() != EnumI18nType.ORIGINAL) {
             String fallback = component.resolveTranslationTemplate(component.languageCodeOrDefault());
-            if (!StringUtils.isNullOrEmptyEx(fallback)) {
+            if (!StringUtils.isNullOrEmptyEx(fallback)
+                    && !(component.i18nType() == EnumI18nType.NONE && component.text().equals(fallback))) {
                 JsonUtils.set(result, "translationFallback", fallback);
             }
         }
@@ -1011,6 +1090,7 @@ public final class Component implements Cloneable, Serializable {
         if (component.hoverEvent() != null) {
             JsonUtils.set(result, "hoverEvent", component.hoverEvent().serialize());
         }
+        if (result.has("hoverEvent")) result.add("hoverEvent", prepareNativeHover(result.get("hoverEvent"), component.languageCodeOrDefault()));
         JsonArray children = new JsonArray();
         for (Component child : component.getChildren()) {
             children.add(serialize(child));

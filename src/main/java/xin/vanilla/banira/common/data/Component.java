@@ -399,6 +399,8 @@ public final class Component implements Cloneable, Serializable {
             Object obj = objs[i];
             if (obj instanceof Component c) {
                 this.getChildren().add(index + i, c.withStyle(this));
+            } else if (obj instanceof net.minecraft.network.chat.Component) {
+                this.getChildren().add(index + i, object(obj).withStyle(this));
             } else {
                 this.getChildren().add(index + i, new Component(obj.toString()).withStyle(this));
             }
@@ -415,6 +417,8 @@ public final class Component implements Cloneable, Serializable {
             Object obj = objs[i];
             if (obj instanceof Component c) {
                 this.getArgs().add(index + i, c.withStyle(this));
+            } else if (obj instanceof net.minecraft.network.chat.Component) {
+                this.getArgs().add(index + i, object(obj).withStyle(this));
             } else {
                 this.getArgs().add(index + i, new Component(obj.toString()).withStyle(this));
             }
@@ -596,95 +600,75 @@ public final class Component implements Cloneable, Serializable {
      * @param languageCode 语言代码
      */
     public net.minecraft.network.chat.Component toVanilla(String languageCode) {
-        List<MutableComponent> components = new ArrayList<>();
+        MutableComponent result = net.minecraft.network.chat.Component.literal("");
         if (this.i18nType == EnumI18nType.ORIGINAL) {
-            components.add(((net.minecraft.network.chat.Component) this.original).copy());
-        } else {
-            // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
-            if (!this.color().isEmpty()) {
-                if (this.i18nType != EnumI18nType.PLAIN) {
-                    String text;
-                    if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                        // 未设置 modId 时，退化为直接输出 key
-                        text = this.text;
-                    } else {
-                        text = this.resolveTranslationTemplate(this.languageCodeOrDefault(languageCode));
-                    }
-                    String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
-                    for (String s : split) {
-                        components.add(net.minecraft.network.chat.Component.literal(s).withStyle(this.getStyle()));
-                    }
-                    Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
-                    Matcher matcher = pattern.matcher(text);
-                    int i = 0;
-                    while (matcher.find()) {
-                        String placeholder = matcher.group();
-                        int index = placeholder.contains("$") ? NumberUtils.toInt(placeholder.split("\\$")[0].substring(1)) - 1 : -1;
-                        if (index == -1) {
-                            index = i;
-                        }
-                        Component formattedArg = new Component(placeholder).withStyle(this);
-                        if (index < this.getArgs().size()) {
-                            if (this.getArgs().get(index) == null) {
-                                formattedArg = new Component();
-                            } else {
-                                Component argComponent = this.getArgs().get(index);
-                                if (argComponent.i18nType() != EnumI18nType.PLAIN) {
-                                    // 语言代码传递
-                                    if (argComponent.isLanguageCodeEmpty()) {
-                                        argComponent.languageCode(languageCode);
-                                    }
-                                    try {
-                                        // 颜色代码传递
-                                        String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
-                                        formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent)).withStyle(argComponent);
-                                    } catch (Exception e) {
-                                        // 颜色传递
-                                        if (argComponent.color().isEmpty()) {
-                                            argComponent.color(this.color);
-                                        }
-                                        formattedArg = argComponent;
-                                    }
-                                } else {
-                                    // 颜色传递
-                                    if (argComponent.color().isEmpty()) {
-                                        argComponent.color(this.color);
-                                    }
-                                    formattedArg = argComponent;
-                                }
-                            }
-                        }
-                        if (components.size() > i) {
-                            components.get(i).append(formattedArg.toVanilla());
-                        }
-                        i++;
-                    }
-                } else {
-                    for (Component arg : this.getArgs()) {
-                        if (arg != null) {
-                            arg.languageCodeIfEmpty(languageCode);
-                        }
-                    }
-                    components.add(net.minecraft.network.chat.Component.literal(StringUtils.format(this.text, this.args.toArray())).withStyle(this.getStyle()));
-                }
+            result = ((net.minecraft.network.chat.Component) this.original).copy();
+        } else if (!this.color().isEmpty()) {
+            String language = this.languageCodeOrDefault(languageCode);
+            String template = this.i18nType == EnumI18nType.PLAIN ? this.text : this.resolveTranslationTemplate(language);
+            if (this.i18nType == EnumI18nType.NONE && this.text.equals(template)) {
+                Object[] arguments = this.getArgs().stream()
+                        .map(arg -> arg == null ? net.minecraft.network.chat.Component.literal("") : arg.toVanilla(language))
+                        .toArray();
+                result = net.minecraft.network.chat.Component.translatable(this.text, arguments);
+            } else {
+                result = formatTemplate(template, language);
             }
         }
-        components.addAll(this.getChildren().stream().map(component -> (MutableComponent) component.toVanilla(languageCode)).toList());
-        if (components.isEmpty()) {
-            components.add(net.minecraft.network.chat.Component.literal(""));
-        }
-        MutableComponent result = components.get(0);
-        for (int j = 1; j < components.size(); j++) {
-            result.append(components.get(j));
+        for (Component child : this.getChildren()) {
+            result.append(child.toVanilla(languageCode));
         }
         return result.withStyle(this.getStyle());
+    }
+
+    private MutableComponent formatTemplate(String template, String languageCode) {
+        MutableComponent result = net.minecraft.network.chat.Component.literal("");
+        Matcher matcher = Pattern.compile(StringUtils.FORMAT_REGEX).matcher(template);
+        int cursor = 0;
+        int nextArgument = 0;
+        int previousArgument = -1;
+        while (matcher.find()) {
+            result.append(net.minecraft.network.chat.Component.literal(template.substring(cursor, matcher.start())));
+            String placeholder = matcher.group();
+            String format = placeholder.replaceFirst("^%\\d+\\$", "%");
+            if ("%%".equals(format) || "%n".equals(format)) {
+                result.append(net.minecraft.network.chat.Component.literal("%%".equals(format) ? "%" : "\n"));
+            } else {
+                int index;
+                if (placeholder.contains("$")) {
+                    index = NumberUtils.toInt(placeholder.substring(1, placeholder.indexOf('$'))) - 1;
+                } else if (placeholder.contains("<")) {
+                    index = previousArgument;
+                } else {
+                    index = nextArgument++;
+                }
+                previousArgument = index;
+                if (index >= 0 && index < this.getArgs().size()) {
+                    Component argument = this.getArgs().get(index);
+                    if (argument != null) {
+                        // Keep native translations and rich-text actions intact inside mod templates.
+                        if ("%s".equals(format) || "%<s".equals(format)) {
+                            result.append(argument.toVanilla(languageCode));
+                        } else {
+                            result.append(net.minecraft.network.chat.Component.literal(StringUtils.format(format.replace("<", ""),
+                                    argument.getString(languageCode, true, true))).withStyle(argument.getStyle()));
+                        }
+                    }
+                } else {
+                    result.append(net.minecraft.network.chat.Component.literal(placeholder));
+                }
+            }
+            cursor = matcher.end();
+        }
+        return result.append(net.minecraft.network.chat.Component.literal(template.substring(cursor)));
     }
 
     /**
      * 优先使用当前侧语言资源；来源 Mod 不存在时使用网络携带的服务端模板。
      */
     private String resolveTranslationTemplate(String languageCode) {
-        if (StringUtils.isNullOrEmptyEx(this.modId)) {
+        if (StringUtils.isNullOrEmptyEx(this.modId)
+                || this.i18nType == EnumI18nType.NONE && "minecraft".equals(this.modId)) {
             return this.text;
         }
         String fullKey = this.i18nType == EnumI18nType.PLAIN || this.i18nType == EnumI18nType.NONE
@@ -710,6 +694,13 @@ public final class Component implements Cloneable, Serializable {
      * 获取翻译文本组件
      */
     public net.minecraft.network.chat.Component toVanillaTrans() {
+        if (this.i18nType == EnumI18nType.ORIGINAL) {
+            MutableComponent original = ((net.minecraft.network.chat.Component) this.original).copy();
+            for (Component child : this.getChildren()) {
+                original.append(child.toVanillaTrans());
+            }
+            return original.withStyle(this.getStyle());
+        }
         MutableComponent result = net.minecraft.network.chat.Component.literal("");
         if (!this.color().isEmpty() || !this.bgColor().isEmpty()) {
             if (this.i18nType != EnumI18nType.PLAIN) {
@@ -721,8 +712,7 @@ public final class Component implements Cloneable, Serializable {
                     }
                 }).toArray();
                 if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                    // 未设置 modId 时，退化为直接输出 key
-                    result = net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle());
+                    result = net.minecraft.network.chat.Component.translatable(this.text, objects);
                 } else {
                     ITranslator helper = Translator.of(this.modId);
                     String fullKey = helper.getKey(this.i18nType, this.text);
@@ -960,7 +950,8 @@ public final class Component implements Cloneable, Serializable {
         }
         if (component.i18nType() != EnumI18nType.PLAIN && component.i18nType() != EnumI18nType.ORIGINAL) {
             String fallback = component.resolveTranslationTemplate(component.languageCodeOrDefault());
-            if (!StringUtils.isNullOrEmptyEx(fallback)) {
+            if (!StringUtils.isNullOrEmptyEx(fallback)
+                    && !(component.i18nType() == EnumI18nType.NONE && component.text().equals(fallback))) {
                 JsonUtils.set(result, "translationFallback", fallback);
             }
         }

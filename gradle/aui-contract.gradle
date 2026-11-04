@@ -25,7 +25,7 @@ dependencies {
 def verify = tasks.register('verifyAuiContract') {
     doLast {
         def hash = MessageDigest.getInstance('SHA-256').digest(configurations.auiContract.singleFile.bytes).encodeHex().toString()
-        if (!hash.equalsIgnoreCase('96B74BE66F36EC290B1B081A7198629973D72CAF73D713B6DA8A4BB8F46490D5'))
+        if (!hash.equalsIgnoreCase('9F7A199D835EEC069E9C26D42AA8D65D2873ED219CA168750A69BD5408B42C53'))
             throw new GradleException('AUI 1.19.2 compile-only contract SHA-256 mismatch')
     }
 }

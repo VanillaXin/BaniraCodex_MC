@@ -62,6 +62,51 @@ public class UiManualHudTest {
         assertEquals(3, children.size());
     }
 
+@Test
+    public void sameIdSpriteBecomingTextKeepsItsPaintPosition() throws Exception {
+        for (int position = 0; position < 3; position++) {
+            var dom = dom();
+            var ui = new ProgressDomPresentation((UiDomAccess) dom.access, java.util.function.Function.identity());
+            var parts = new java.util.ArrayList<UiHudFrame.Part>(java.util.List.of(sprite("pole"), sprite("leaf")));
+            parts.add(position, sprite("countdown"));
+            ui.update(new UiHudFrame(parts));
+            var old = dom.created.get(position);
+            parts.set(position, text("00:59"));
+            ui.update(new UiHudFrame(parts));
+            assertTrue(old.removed);
+            assertPaintOrder(dom, parts);
+            int writes = dom.created.stream().mapToInt(node -> node.writes).sum();
+            ui.update(new UiHudFrame(parts));
+            assertEquals(writes, dom.created.stream().mapToInt(node -> node.writes).sum());
+        }
+    }
+
+    @Test
+    public void sameIdTextBecomingSpriteKeepsItsPaintPosition() throws Exception {
+        for (int position = 0; position < 3; position++) {
+            var dom = dom();
+            var ui = new ProgressDomPresentation((UiDomAccess) dom.access, java.util.function.Function.identity());
+            var parts = new java.util.ArrayList<UiHudFrame.Part>(java.util.List.of(sprite("pole"), sprite("leaf")));
+            parts.add(position, text("00:59"));
+            ui.update(new UiHudFrame(parts));
+            var old = dom.created.stream().filter(node -> "countdown".equals(node.attributes.get("id"))).findFirst().orElseThrow(AssertionError::new);
+            parts.set(position, sprite("countdown"));
+            ui.update(new UiHudFrame(parts));
+            assertTrue(old.removed);
+            assertPaintOrder(dom, parts);
+            ui.close();
+            assertTrue(dom.created.stream().allMatch(node -> node.removed));
+        }
+    }
+
+    private void assertPaintOrder(UiDomControlsTest.Dom dom, java.util.List<UiHudFrame.Part> parts) {
+        var ids = dom.ids.get("progress").children.stream()
+                .map(child -> dom.created.stream().filter(node -> node.proxy == child && !node.removed).findFirst().orElse(null))
+                .filter(java.util.Objects::nonNull).map(node -> node.attributes.get("id")).collect(java.util.stream.Collectors.toList());
+        assertEquals(parts.stream().map(UiHudFrame.Part::id).collect(java.util.stream.Collectors.toList()), ids);
+    }
+
+
     @Test
     public void textureProjectionAndRotationRetainOriginalIdentity() throws Exception {
         var dom = dom();

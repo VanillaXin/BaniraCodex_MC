@@ -28,11 +28,11 @@ if (localReference != null) {
     if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('Invalid AUI declaration reference')
     dependencies.add('auiReference', files(artifact))
 } else {
-    dependencies.add('auiReference', 'com.sighs:ApricityUI-forge-1.18.2:1.2.9') {
-        version { strictly('1.2.9') }
+    dependencies.add('auiReference', 'com.sighs:ApricityUI-forge-1.18.2:1.3.0') {
+        version { strictly('1.3.0') }
     }
 }
-def referenceHash = 'D557E54540C71D87920056D1F36A05480E4FEF0E0063A1D61D18DC8E2BC81D8B'
+def referenceHash = '03C89DCACBFF77F176F46B91457541FD10AE29343BD29DF1F1B7199BF6C3A111'
 def declarations = layout.buildDirectory.file('aui-compile-api/fabric-1.16.5-declarations.jar')
 def generateDeclarations = tasks.register('generateAuiCompileDeclarations') {
     inputs.files(configurations.auiReference)

@@ -13,9 +13,12 @@ public final class AuiCapabilityContract {
     private static final String ROOT = "com/sighs/apricityui/";
     private static final String DOCUMENT = "L" + ROOT + "init/Document;";
     private static final String ELEMENT = "L" + ROOT + "init/Element;";
-    private static final List<Member> MEMBERS = members();
 
     private AuiCapabilityContract() {
+    }
+
+    private static final class ClientMembers {
+        private static final List<Member> VALUES = members();
     }
 
     public static Result inspect(ClassLoader loader) {
@@ -25,9 +28,14 @@ public final class AuiCapabilityContract {
         } catch (IOException failure) {
             return new Result(false, "Cannot inspect AUI declaration marker");
         }
+        try (InputStream screen = loader.getResourceAsStream(ROOT + "screen/ApricityScreen.class")) {
+            if (screen == null) return new Result(false, "Missing AUI screen");
+        } catch (IOException failure) {
+            return new Result(false, "Cannot inspect AUI screen");
+        }
         try {
             Map<String, ClassNode> classes = new LinkedHashMap<>();
-            for (Member member : MEMBERS) {
+            for (Member member : requiredMembers()) {
                 ClassNode owner = classes.get(member.owner);
                 if (owner == null) {
                     try (InputStream input = loader.getResourceAsStream(member.owner + ".class")) {
@@ -82,7 +90,7 @@ public final class AuiCapabilityContract {
     }
 
     static List<Member> requiredMembers() {
-        return MEMBERS;
+        return ClientMembers.VALUES;
     }
 
     private static List<Member> members() {

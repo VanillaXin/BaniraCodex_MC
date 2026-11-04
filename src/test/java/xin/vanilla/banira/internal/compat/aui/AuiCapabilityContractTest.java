@@ -17,6 +17,55 @@ import java.util.function.Consumer;
 import static org.junit.Assert.*;
 
 public class AuiCapabilityContractTest {
+    private void assertIsolatedFallback(ClassLoader resources) throws Exception {
+        String contractName = AuiCapabilityContract.class.getName();
+        ClassLoader isolated = new ClassLoader(getClass().getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.startsWith("net.minecraft.client.") || name.startsWith("com.mojang.blaze3d.")) {
+                    throw new AssertionError("Fallback resolved client class: " + name);
+                }
+                if (!name.startsWith(contractName)) return super.loadClass(name, resolve);
+                synchronized (getClassLoadingLock(name)) {
+                    Class<?> type = findLoadedClass(name);
+                    if (type == null) {
+                        try (InputStream input = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
+                            if (input == null) throw new ClassNotFoundException(name);
+                            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+                            byte[] buffer = new byte[4096];
+                            for (int count; (count = input.read(buffer)) != -1;) bytes.write(buffer, 0, count);
+                            byte[] code = bytes.toByteArray();
+                            type = defineClass(name, code, 0, code.length);
+                        } catch (java.io.IOException failure) {
+                            throw new ClassNotFoundException(name, failure);
+                        }
+                    }
+                    if (resolve) resolveClass(type);
+                    return type;
+                }
+            }
+        };
+        Class<?> contract = Class.forName(contractName, true, isolated);
+        Object result = contract.getMethod("inspect", ClassLoader.class).invoke(null, resources);
+        assertEquals(false, result.getClass().getMethod("compatible").invoke(result));
+    }
+
+    @Test
+    public void absentEngineDoesNotResolveMinecraftClientTypes() throws Exception {
+        assertIsolatedFallback(new ClassLoader(null) {});
+    }
+
+    @Test
+    public void compileOnlyMarkerDoesNotResolveMinecraftClientTypes() throws Exception {
+        assertIsolatedFallback(new ClassLoader(null) {
+            @Override
+            public InputStream getResourceAsStream(String name) {
+                return name.equals("META-INF/banira-aui-compile-api.properties")
+                        ? new ByteArrayInputStream(new byte[]{1}) : null;
+            }
+        });
+    }
+
     public static Class<?> required(String name) {
         try {
             return Class.forName(name);

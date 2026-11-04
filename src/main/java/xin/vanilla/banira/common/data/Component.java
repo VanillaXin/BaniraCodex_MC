@@ -606,7 +606,7 @@ public final class Component implements Cloneable, Serializable {
         } else if (!this.color().isEmpty()) {
             String language = this.languageCodeOrDefault(languageCode);
             String template = this.i18nType == EnumI18nType.PLAIN ? this.text : this.resolveTranslationTemplate(language);
-            if (this.i18nType == EnumI18nType.NONE && this.text.equals(template)) {
+            if (this.i18nType == EnumI18nType.NONE && VanillaComponentTranslations.isVanillaKey(this.text)) {
                 Object[] arguments = this.getArgs().stream()
                         .map(arg -> arg == null ? net.minecraft.network.chat.Component.literal("") : arg.toVanilla(language))
                         .toArray();
@@ -622,13 +622,17 @@ public final class Component implements Cloneable, Serializable {
     }
 
     private MutableComponent formatTemplate(String template, String languageCode) {
+        if (this.getArgs().isEmpty()) return net.minecraft.network.chat.Component.literal(template);
         MutableComponent result = net.minecraft.network.chat.Component.literal("");
         Matcher matcher = Pattern.compile(StringUtils.FORMAT_REGEX).matcher(template);
         int cursor = 0;
         int nextArgument = 0;
         int previousArgument = -1;
+        Style formatStyle = Style.EMPTY;
         while (matcher.find()) {
-            result.append(net.minecraft.network.chat.Component.literal(template.substring(cursor, matcher.start())));
+            String segment = template.substring(cursor, matcher.start());
+            result.append(net.minecraft.network.chat.Component.literal(segment));
+            formatStyle = templateArgumentStyle(segment, formatStyle);
             String placeholder = matcher.group();
             String format = placeholder.replaceFirst("^%\\d+\\$", "%");
             if ("%%".equals(format) || "%n".equals(format)) {
@@ -646,12 +650,13 @@ public final class Component implements Cloneable, Serializable {
                 if (index >= 0 && index < this.getArgs().size()) {
                     Component argument = this.getArgs().get(index);
                     if (argument != null) {
+                        MutableComponent nativeArgument = argument.toVanilla(languageCode).copy();
                         // Keep native translations and rich-text actions intact inside mod templates.
-                        if ("%s".equals(format) || "%<s".equals(format)) {
-                            result.append(argument.toVanilla(languageCode));
+                        if ("%s".equals(format) || "%<s".equals(format) || argument.requiresStructuralFormatting()) {
+                            result.append(nativeArgument.setStyle(nativeArgument.getStyle().applyTo(formatStyle)));
                         } else {
                             result.append(net.minecraft.network.chat.Component.literal(StringUtils.format(format.replace("<", ""),
-                                    argument.getString(languageCode, true, true))).withStyle(argument.getStyle()));
+                                    nativeArgument.getString())).withStyle(nativeArgument.getStyle().applyTo(formatStyle)));
                         }
                     }
                 } else {
@@ -663,13 +668,38 @@ public final class Component implements Cloneable, Serializable {
         return result.append(net.minecraft.network.chat.Component.literal(template.substring(cursor)));
     }
 
+    private boolean requiresStructuralFormatting() {
+        if (!requiresNativePreparation()) return false;
+        if (this.i18nType == EnumI18nType.ORIGINAL && this.original instanceof net.minecraft.network.chat.Component) {
+            net.minecraft.network.chat.Component source = (net.minecraft.network.chat.Component) this.original;
+            if (this.getChildren().isEmpty() && source.getSiblings().isEmpty()
+                    && source.getContents() instanceof net.minecraft.network.chat.contents.LiteralContents) return false;
+        }
+        return true;
+    }
+
+    private static Style templateArgumentStyle(String segment, Style style) {
+        for (int index = 0; index + 1 < segment.length(); index++) {
+            if (segment.charAt(index) == '\u00a7') {
+                net.minecraft.ChatFormatting formatting = net.minecraft.ChatFormatting.getByCode(segment.charAt(++index));
+                if (formatting != null) {
+                    style = formatting == net.minecraft.ChatFormatting.RESET ? Style.EMPTY : style.applyLegacyFormat(formatting);
+                }
+            }
+        }
+        return style;
+    }
+
     /**
      * 优先使用当前侧语言资源；来源 Mod 不存在时使用网络携带的服务端模板。
      */
     private String resolveTranslationTemplate(String languageCode) {
         if (StringUtils.isNullOrEmptyEx(this.modId)
-                || this.i18nType == EnumI18nType.NONE && "minecraft".equals(this.modId)) {
+                || this.i18nType == EnumI18nType.NONE && VanillaComponentTranslations.isVanillaKey(this.text)) {
             return this.text;
+        }
+        if (this.i18nType == EnumI18nType.NONE && "minecraft".equals(this.modId)) {
+            return StringUtils.isNullOrEmptyEx(this.translationFallback) ? this.text : this.translationFallback;
         }
         String fullKey = this.i18nType == EnumI18nType.PLAIN || this.i18nType == EnumI18nType.NONE
                 ? this.text
@@ -694,42 +724,7 @@ public final class Component implements Cloneable, Serializable {
      * 获取翻译文本组件
      */
     public net.minecraft.network.chat.Component toVanillaTrans() {
-        if (this.i18nType == EnumI18nType.ORIGINAL) {
-            MutableComponent original = ((net.minecraft.network.chat.Component) this.original).copy();
-            for (Component child : this.getChildren()) {
-                original.append(child.toVanillaTrans());
-            }
-            return original.withStyle(this.getStyle());
-        }
-        MutableComponent result = net.minecraft.network.chat.Component.literal("");
-        if (!this.color().isEmpty() || !this.bgColor().isEmpty()) {
-            if (this.i18nType != EnumI18nType.PLAIN) {
-                Object[] objects = this.getArgs().stream().map(component -> {
-                    if (component.i18nType == EnumI18nType.PLAIN) {
-                        return component.toVanilla();
-                    } else {
-                        return component.toVanillaTrans();
-                    }
-                }).toArray();
-                if (StringUtils.isNullOrEmptyEx(this.modId)) {
-                    result = net.minecraft.network.chat.Component.translatable(this.text, objects);
-                } else {
-                    ITranslator helper = Translator.of(this.modId);
-                    String fullKey = helper.getKey(this.i18nType, this.text);
-                    if (CollectionUtils.isNotNullOrEmpty(objects)) {
-                        result = net.minecraft.network.chat.Component.translatable(fullKey, objects);
-                    } else {
-                        result = net.minecraft.network.chat.Component.translatable(fullKey);
-                    }
-                }
-            } else {
-                result = net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle());
-            }
-        }
-        for (Component child : this.getChildren()) {
-            result.append(child.toVanillaTrans());
-        }
-        return result;
+        return preparedNativeMessage(this.languageCodeOrDefault());
     }
 
     /**
@@ -747,7 +742,99 @@ public final class Component implements Cloneable, Serializable {
      * @return 格式化颜色后的文本组件
      */
     public net.minecraft.network.chat.Component toChat(String languageCode) {
-        return rewriteColor(this.toVanilla(languageCode));
+        return rewriteColor(preparedNativeMessage(languageCode));
+    }
+
+    private net.minecraft.network.chat.Component preparedNativeMessage(String languageCode) {
+        net.minecraft.network.chat.Component message = this.toVanilla(languageCode);
+        if (requiresNativePreparation()) {
+            JsonElement prepared = prepareNativeJson(nativeComponentJson(message), this.languageCodeOrDefault(languageCode), true);
+            message = nativeComponentFromJson(prepared);
+        }
+        return message;
+    }
+
+    private boolean requiresNativePreparation() {
+        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null) return true;
+        for (Component child : this.getChildren()) if (child.requiresNativePreparation()) return true;
+        for (Component arg : this.getArgs()) if (arg != null && arg.requiresNativePreparation()) return true;
+        return false;
+    }
+
+    private static JsonElement nativeComponentJson(net.minecraft.network.chat.Component nativeComponent) {
+        return net.minecraft.network.chat.Component.Serializer.toJsonTree(nativeComponent);
+    }
+
+    static java.io.InputStream openVanillaLanguage() {
+        java.io.InputStream stream = net.minecraft.network.chat.Component.class.getResourceAsStream("/assets/minecraft/lang/en_us.json");
+        return stream != null ? stream : Component.class.getResourceAsStream("/assets/minecraft/lang/en_us.json");
+    }
+
+    private static net.minecraft.network.chat.Component nativeComponentFromJson(JsonElement json) {
+        JsonObject wrapper = new JsonObject();
+        wrapper.addProperty("text", "");
+        wrapper.addProperty("i18nType", EnumI18nType.ORIGINAL.name());
+        wrapper.add("original", json);
+        return (net.minecraft.network.chat.Component) deserialize(wrapper).original();
+    }
+
+    private static JsonElement prepareNativeJson(JsonElement json, String language, boolean vanillaOnly) {
+        return VanillaComponentTranslations.prepare(json, language, vanillaOnly, (template, arguments) -> {
+            Component formatted = literal(arguments.size() == 0 ? VanillaComponentTranslations.noArgumentTemplate(template) : template);
+            for (JsonElement argument : arguments) {
+                JsonElement value = argument.isJsonNull() ? new com.google.gson.JsonPrimitive("null")
+                        : argument.isJsonPrimitive() ? new com.google.gson.JsonPrimitive(argument.getAsString()) : argument;
+                formatted.appendArg(object(nativeComponentFromJson(value)));
+            }
+            MutableComponent nativeMessage = (MutableComponent) formatted.toVanilla(language);
+            nativeMessage.setStyle(Style.EMPTY);
+            return nativeComponentJson(nativeMessage);
+        });
+    }
+
+    private static JsonElement prepareNativeHover(JsonElement hover, String language) {
+        JsonObject wrapper = new JsonObject();
+        wrapper.addProperty("text", "");
+        wrapper.add("hoverEvent", hover);
+        return prepareNativeJson(wrapper, language, false).getAsJsonObject().get("hoverEvent");
+    }
+
+    static String prepareItemHoverTag(String encoded, String language, boolean vanillaOnly) {
+        try {
+            net.minecraft.nbt.CompoundTag tag = net.minecraft.nbt.TagParser.parseTag(encoded);
+            net.minecraft.nbt.CompoundTag display = tag.getCompound("display");
+            boolean changed = false;
+            if (display.contains("Name", 8)) {
+                String before = display.getString("Name");
+                String after = prepareItemText(before, language, vanillaOnly);
+                if (!before.equals(after)) {
+                    display.putString("Name", after);
+                    changed = true;
+                }
+            }
+            net.minecraft.nbt.ListTag lore = display.getList("Lore", 8);
+            for (int index = 0; index < lore.size(); index++) {
+                String before = lore.getString(index);
+                String after = prepareItemText(before, language, vanillaOnly);
+                if (!before.equals(after)) {
+                    lore.set(index, net.minecraft.nbt.StringTag.valueOf(after));
+                    changed = true;
+                }
+            }
+            return changed ? tag.toString() : encoded;
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException | RuntimeException invalid) {
+            return encoded;
+        }
+    }
+
+    private static String prepareItemText(String encoded, String language, boolean vanillaOnly) {
+        try {
+            JsonElement before = new com.google.gson.JsonParser().parse(encoded);
+            JsonElement after = prepareNativeJson(before, language, vanillaOnly);
+            return before.equals(after) ? encoded : after.toString();
+        } catch (RuntimeException invalid) {
+            return encoded;
+        }
     }
 
     public static net.minecraft.network.chat.Component rewriteColor(net.minecraft.network.chat.Component component) {
@@ -943,7 +1030,7 @@ public final class Component implements Cloneable, Serializable {
             if (!(component.original() instanceof net.minecraft.network.chat.Component original)) {
                 throw new IllegalArgumentException("Expected a native original component");
             }
-            result.add("original", net.minecraft.network.chat.Component.Serializer.toJsonTree(original));
+            result.add("original", prepareNativeJson(nativeComponentJson(original), component.languageCodeOrDefault(), false));
         }
         if (!component.isModIdEmpty()) {
             JsonUtils.set(result, "modId", component.modId());
@@ -987,7 +1074,7 @@ public final class Component implements Cloneable, Serializable {
             JsonUtils.set(result, "clickEvent.value", component.clickEvent().getValue());
         }
         if (component.hoverEvent() != null) {
-            JsonUtils.set(result, "hoverEvent", component.hoverEvent().serialize());
+            JsonUtils.set(result, "hoverEvent", prepareNativeHover(component.hoverEvent().serialize(), component.languageCodeOrDefault()));
         }
         JsonArray children = new JsonArray();
         for (Component child : component.getChildren()) {

@@ -84,7 +84,7 @@ public class ComponentNativeTranslationTest {
         net.minecraft.network.chat.Component result = value.toVanilla("zh_cn");
         assertEquals(Arrays.asList("item.minecraft.apple"), keys(result));
         assertTrue(source.getSiblings().isEmpty());
-        assertFalse(source == result.getSiblings().get(1));
+        assertFalse(source == result.getSiblings().get(0));
     }
 
     @Test
@@ -123,6 +123,62 @@ public class ComponentNativeTranslationTest {
                 .translationFallback("奖励：%s");
         assertEquals(Arrays.asList("item.minecraft.apple"), keys(value.toVanilla("zh_cn")));
         assertTrue(value.toVanilla("zh_cn").getString().startsWith("奖励："));
+    }
+
+    @Test
+    public void templateColorAndResetReachNativeArgumentsWithoutFlattening() {
+        Component value = BaniraComponent.get().literal("\u00a7c%s \u00a7r%s").appendArg(
+                net.minecraft.network.chat.Component.translatable("item.minecraft.apple"),
+                net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"));
+        List<net.minecraft.network.chat.Component> parts = value.toVanilla("zh_cn").getSiblings().stream()
+                .filter(part -> part.getContents() instanceof TranslatableContents).collect(java.util.stream.Collectors.toList());
+        assertEquals(2, parts.size());
+        assertEquals(0xff5555, parts.get(0).getStyle().getColor().getValue());
+        assertNull(parts.get(1).getStyle().getColor());
+        assertEquals(Arrays.asList("item.minecraft.apple", "item.minecraft.diamond"), keys(value.toVanilla("zh_cn")));
+    }
+
+    @Test
+    public void plainLiteralKeepsItsCompactNativeShape() {
+        net.minecraft.network.chat.Component value = BaniraComponent.get().literal("plain").toVanilla("zh_cn");
+        assertEquals("plain", value.getString());
+        assertTrue(value.getSiblings().isEmpty());
+    }
+
+    @Test
+    public void nativeNamesAreNeverFlattenedForPrintfDecoration() {
+        Component value = BaniraComponent.get().literal("%20s").appendArg(
+                net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"));
+        assertEquals(Arrays.asList("item.minecraft.diamond"), keys(value.toVanilla("zh_cn")));
+    }
+
+    @Test
+    public void plainNativeArgumentsStillHonorPrintfCaseAndWidth() {
+        Component value = BaniraComponent.get().literal("%8S").appendArg(net.minecraft.network.chat.Component.literal("value"));
+        assertEquals("   VALUE", value.toVanilla("zh_cn").getString());
+    }
+
+    @Test
+    public void formattedNativeLiteralKeepsItsStyleAndClickAction() {
+        net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.literal("value")
+                .withStyle(style -> style.withBold(true).withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                        net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/value")));
+        net.minecraft.network.chat.Component result = BaniraComponent.get().literal("%8S").appendArg(original).toVanilla("zh_cn");
+        assertEquals("   VALUE", result.getString());
+        net.minecraft.network.chat.Component formatted = result.getSiblings().stream()
+                .filter(part -> "   VALUE".equals(part.getString())).findFirst().orElseThrow(AssertionError::new);
+        assertTrue(formatted.getStyle().isBold());
+        assertEquals("/value", formatted.getStyle().getClickEvent().getValue());
+        assertEquals("value", original.getString());
+    }
+
+    @Test
+    public void nativeLiteralWithAppendedTranslationsCannotBeFlattenedByPrintf() {
+        Component argument = BaniraComponent.get().object(net.minecraft.network.chat.Component.literal("base"))
+                .append(net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"));
+        net.minecraft.network.chat.Component result = BaniraComponent.get().literal("%8S").appendArg(argument).toVanilla("zh_cn");
+        assertEquals(Arrays.asList("item.minecraft.diamond"), keys(result));
+        assertTrue(result.getString().startsWith("base"));
     }
 
     private static List<String> keys(net.minecraft.network.chat.Component component) {

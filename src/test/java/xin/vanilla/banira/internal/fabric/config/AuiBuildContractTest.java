@@ -32,7 +32,7 @@ public class AuiBuildContractTest {
         assertFalse(build.contains("modCompileOnly"));
         assertFalse(build.contains("modRuntimeOnly"));
         assertFalse(build.contains("implementation files(configurations.auiContract)"));
-        assertTrue(build.contains("D557E54540C71D87920056D1F36A05480E4FEF0E0063A1D61D18DC8E2BC81D8B"));
+        assertTrue(build.contains("03C89DCACBFF77F176F46B91457541FD10AE29343BD29DF1F1B7199BF6C3A111"));
     }
 
     @Test

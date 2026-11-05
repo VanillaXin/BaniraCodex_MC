@@ -1,14 +1,20 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
@@ -156,22 +162,22 @@ public abstract class BaniraScreen extends Screen {
         super(component.toVanilla(Translator.getClientLanguage()));
     }
 
-    public void renderButtons(GuiGraphics graphics, float partialTicks) {
+    public void renderButtons(GuiGraphicsExtractor graphics, float partialTicks) {
         this.renderButtons(graphics, inputState.mouseX(), inputState.mouseY(), partialTicks);
     }
 
-    public void renderButtons(GuiGraphics graphics, double mouseX, double mouseY, float partialTicks) {
+    public void renderButtons(GuiGraphicsExtractor graphics, double mouseX, double mouseY, float partialTicks) {
         this.children().forEach(child -> {
             if (child instanceof net.minecraft.client.gui.components.Renderable renderable) {
-                renderable.render(graphics, (int) mouseX, (int) mouseY, partialTicks);
+                renderable.extractRenderState(graphics, (int) mouseX, (int) mouseY, partialTicks);
             }
         });
     }
 
     @Override
-    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(@Nonnull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft != null && this.minecraft.level != null) {
-            super.renderBackground(graphics, mouseX, mouseY, partialTick);
+            super.extractBackground(graphics, mouseX, mouseY, partialTick);
         } else {
             BaniraColorConfig t = getEffectiveTheme();
             graphics.fillGradient(0, 0, this.width, this.height, t.bgPrimary(), t.bgSecondary());
@@ -211,7 +217,7 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 延迟渲染的 tooltip（在 scissor 关闭后、以屏幕坐标绘制，避免错位和裁剪）
      */
-    private final List<Consumer<GuiGraphics>> deferredTooltipRenders = new ArrayList<>();
+    private final List<Consumer<GuiGraphicsExtractor>> deferredTooltipRenders = new ArrayList<>();
 
     /**
      * 根控件变化时才重建渲染快照，避免每帧复制列表。
@@ -223,7 +229,7 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
      */
-    public void addDeferredTooltipRender(Consumer<GuiGraphics> render) {
+    public void addDeferredTooltipRender(Consumer<GuiGraphicsExtractor> render) {
         if (render != null) deferredTooltipRenders.add(render);
     }
 
@@ -265,35 +271,42 @@ public abstract class BaniraScreen extends Screen {
         return false;
     }
 
-    private void flushDeferredTooltipRenders(GuiGraphics graphics) {
-        for (Consumer<GuiGraphics> r : deferredTooltipRenders) r.accept(graphics);
+    private void flushDeferredTooltipRenders(GuiGraphicsExtractor graphics) {
+        for (Consumer<GuiGraphicsExtractor> r : deferredTooltipRenders) r.accept(graphics);
         deferredTooltipRenders.clear();
     }
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
-        if (LOGGER.isDebugEnabled()) {
-            totalRenderCount++;
-            this.renderCount++;
-        }
-        renderFrameId++;
-        cachedTheme = getEffectiveTheme();
-        dropdownOpenCacheFrameId = -1;
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        try (var extraction = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(graphics)) {
+            Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
+            if (LOGGER.isDebugEnabled()) {
+                totalRenderCount++;
+                this.renderCount++;
+            }
+            renderFrameId++;
+            cachedTheme = getEffectiveTheme();
+            dropdownOpenCacheFrameId = -1;
 
-        if (this.minecraft == null || this.minecraft.level == null) {
-            renderBackground(graphics, mouseX, mouseY, partialTicks);
-        }
-        this.onRender(graphics, mouseX, mouseY, partialTicks);
-        this.flushDeferredTooltipRenders(graphics);
+            if (this.minecraft == null || this.minecraft.level == null) {
+                extractBackground(graphics, mouseX, mouseY, partialTicks);
+            }
+            this.onRender(graphics, mouseX, mouseY, partialTicks);
+            this.flushDeferredTooltipRenders(graphics);
 
-        this.popupOption.render(graphics, inputState);
-        this.cursor.draw(graphics, mouseX, mouseY);
-        cachedTheme = null;
+            this.popupOption.render(graphics, inputState);
+            this.cursor.draw(graphics, mouseX, mouseY);
+        } finally {
+            cachedTheme = null;
+        }
     }
 
-    protected abstract void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks);
+    protected abstract void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks);
+
+    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        extractRenderState(graphics, mouseX, mouseY, partialTicks);
+    }
 
     @Override
     public void removed() {
@@ -322,7 +335,10 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         MouseEvent clickEvent = MouseEvent.of(mouseX, mouseY, button);
         this.cursor.mouseClicked(clickEvent);
 
@@ -352,7 +368,12 @@ public abstract class BaniraScreen extends Screen {
                     ? CloseReason.MOUSE_BACK : CloseReason.OUTSIDE_RIGHT_CLICK));
         }
 
-        return args.consumed() || super.mouseClicked(mouseX, mouseY, button);
+        return args.consumed() || super.mouseClicked(event, doubleClick);
+    }
+
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return mouseClicked(new MouseButtonEvent(mouseX, mouseY,
+                new MouseButtonInfo(button, currentKeyboardModifiers())), false);
     }
 
     /**
@@ -386,7 +407,10 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
         this.cursor.mouseReleased(releaseEvent);
 
@@ -408,7 +432,12 @@ public abstract class BaniraScreen extends Screen {
             if (!args.consumed()) onMouseReleased(args);
         }
 
-        return args.consumed() || super.mouseReleased(mouseX, mouseY, button);
+        return args.consumed() || super.mouseReleased(event);
+    }
+
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        return mouseReleased(new MouseButtonEvent(mouseX, mouseY,
+                new MouseButtonInfo(button, currentKeyboardModifiers())));
     }
 
     protected void onMouseReleased(MouseReleasedHandleArgs eventArgs) {
@@ -499,7 +528,10 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
                 && focusedWidget.handleKeyPress(keyCode, scanCode, modifiers)) {
             return true;
@@ -522,7 +554,11 @@ public abstract class BaniraScreen extends Screen {
             }
         }
 
-        return args.consumed() || super.keyPressed(keyCode, scanCode, modifiers);
+        return args.consumed() || super.keyPressed(event);
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return keyPressed(new KeyEvent(keyCode, scanCode, modifiers));
     }
 
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
@@ -535,7 +571,7 @@ public abstract class BaniraScreen extends Screen {
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (!hasFocusedTextInput() && minecraft.options != null
-                && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+                && minecraft.options.keyInventory.matches(new KeyEvent(keyCode, scanCode, currentKeyboardModifiers()))) {
             return CloseReason.INVENTORY_KEY;
         }
         return null;
@@ -588,7 +624,10 @@ public abstract class BaniraScreen extends Screen {
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
                 && focusedWidget.handleKeyRelease(keyCode, scanCode, modifiers)) {
             return true;
@@ -604,7 +643,11 @@ public abstract class BaniraScreen extends Screen {
 
         onKeyReleased(args);
 
-        return args.consumed() || super.keyReleased(keyCode, scanCode, modifiers);
+        return args.consumed() || super.keyReleased(event);
+    }
+
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        return keyReleased(new KeyEvent(keyCode, scanCode, modifiers));
     }
 
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
@@ -665,7 +708,7 @@ public abstract class BaniraScreen extends Screen {
         return false;
     }
 
-    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+    protected void renderWidgets(GuiGraphicsExtractor graphics, float partialTicks) {
         rebuildRenderWidgetSnapshotIfNeeded();
         renderingWidgets = true;
         try {
@@ -842,7 +885,6 @@ public abstract class BaniraScreen extends Screen {
 
     // endregion Widget 管理
 
-    @Override
     public boolean charTyped(char codePoint, int modifiers) {
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
                 && focusedWidget.handleCharTyped(codePoint, modifiers)) {
@@ -851,14 +893,32 @@ public abstract class BaniraScreen extends Screen {
         if (anyWidgetExcludingFocused(w -> w.handleCharTyped(codePoint, modifiers))) {
             return true;
         }
-        return super.charTyped(codePoint, modifiers);
+        return super.charTyped(new CharacterEvent(codePoint));
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean charTyped(CharacterEvent event) {
+        String text = event.codepointAsString();
+        int modifiers = currentKeyboardModifiers();
+        if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()
+                && focusedWidget.handleTextInput(text, modifiers)) return true;
+        if (anyWidgetExcludingFocused(widget -> widget.handleTextInput(text, modifiers))) return true;
+        return super.charTyped(event);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (findFirstHandlingWidget(w -> w.handleMouseDrag(MouseDragEvent.of(mouseX, mouseY, button, dragX, dragY))) != null) {
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        return mouseDragged(new MouseButtonEvent(mouseX, mouseY,
+                new MouseButtonInfo(button, currentKeyboardModifiers())), dragX, dragY);
     }
 }

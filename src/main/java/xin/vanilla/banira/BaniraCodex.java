@@ -73,7 +73,7 @@ public class BaniraCodex implements ModInitializer {
             BaniraEventBus.dispatchServerTick(new BaniraServerEvent(server));
             BaniraScheduler.dispatchServerTick(server);
         });
-        ServerTickEvents.END_WORLD_TICK.register(world ->
+        ServerTickEvents.END_LEVEL_TICK.register(world ->
                 BaniraEventBus.dispatchWorldTick(worldEvent(world)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 BaniraEventBus.dispatchPlayerLoggedIn(playerEvent(handler.player)));
@@ -105,6 +105,6 @@ public class BaniraCodex implements ModInitializer {
     }
 
     private static String dimensionId(ResourceKey<Level> dimension) {
-        return dimension != null && dimension.location() != null ? dimension.location().toString() : "";
+        return dimension != null && dimension.identifier() != null ? dimension.identifier().toString() : "";
     }
 }

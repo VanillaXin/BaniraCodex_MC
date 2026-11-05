@@ -18,6 +18,9 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
 
 public class UiCommonPagesTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();

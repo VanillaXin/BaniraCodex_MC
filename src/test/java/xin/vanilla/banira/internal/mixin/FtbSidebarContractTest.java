@@ -25,12 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
@@ -133,26 +130,35 @@ public final class FtbSidebarContractTest {
             IMixinConfigPlugin plugin = fixture.plugin();
             ClassNode button = fixture.node(BUTTON);
             ClassNode widget = fixture.node(WIDGET);
+            boolean extracted = widget.methods.stream().anyMatch(method -> method.name.equals("extractContents"));
             String render = widget.methods.stream().anyMatch(method -> method.name.equals("method_48579"))
-                    ? "method_48579" : "renderWidget";
+                    ? "method_48579" : "extractContents";
             String press = widget.methods.stream().anyMatch(method -> method.name.equals("method_25306"))
                     ? "method_25306" : "onPress";
             wireHandler(fixture, button, BUTTON_MIXIN, "getLangKey", "banira$getLangKey");
             wireHandler(fixture, button, BUTTON_MIXIN, "clickButton", "banira$clickButton");
-            wireHandler(fixture, widget, WIDGET_MIXIN, render, "banira$renderWidget");
+            wireHandler(fixture, widget, WIDGET_MIXIN, render, extracted ? "banira$extractContents" : "banira$renderWidget");
             plugin.postApply(BUTTON, button, BUTTON_MIXIN, null);
             plugin.postApply(WIDGET, widget, WIDGET_MIXIN, null);
             assertFalse("A render-only integration must retain native controls", hooksApplied(fixture));
 
-            wireHandler(fixture, widget, WIDGET_MIXIN, press, "banira$onPress");
+            wireHandler(fixture, widget, WIDGET_MIXIN, press, extracted ? "banira$press" : "banira$onPress");
+            if (extracted) {
+                plugin.postApply(WIDGET, widget, WIDGET_MIXIN, null);
+                assertFalse("Release must be intercepted before enabling takeover", hooksApplied(fixture));
+                wireHandler(fixture, widget, WIDGET_MIXIN, "onRelease", "banira$release");
+                assertNativeSelector(fixture, "banira$extractContents", "extractContents(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V");
+                assertNativeSelector(fixture, "banira$press", "onPress(Lnet/minecraft/client/input/InputWithModifiers;)V");
+                assertNativeSelector(fixture, "banira$release", "onRelease(Lnet/minecraft/client/input/MouseButtonEvent;)V");
+            }
             plugin.postApply(WIDGET, widget, WIDGET_MIXIN, null);
             assertTrue(hooksApplied(fixture));
             assertNativeSelector(fixture, "banira$renderWidget", "method_48579(Lnet/minecraft/class_332;IIF)V");
-            assertNativeSelector(fixture, "banira$renderWidget", "renderWidget(Lnet/minecraft/client/gui/GuiGraphics;IIF)V");
+            assertNativeSelector(fixture, "banira$renderWidget", "renderWidget(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V");
             assertNativeSelector(fixture, "banira$onPress", "method_25306()V");
             assertNativeSelector(fixture, "banira$onPress", "onPress()V");
 
-            widget.methods.removeIf(method -> method.name.equals("banira$onPress"));
+            widget.methods.removeIf(method -> method.name.equals(extracted ? "banira$release" : "banira$onPress"));
             plugin.postApply(WIDGET, widget, WIDGET_MIXIN, null);
             assertFalse("A lost call edge must revoke takeover in either namespace", hooksApplied(fixture));
         }
@@ -288,8 +294,8 @@ public final class FtbSidebarContractTest {
     public void mappedNativePairRetainsTheActualDevelopmentNamespace() throws Exception {
         Fixture fixture = namedFixture();
         ClassNode widget = fixture.node(WIDGET);
-        assertTrue(widget.methods.stream().anyMatch(method -> method.name.equals("renderWidget")
-                && method.desc.equals("(Lnet/minecraft/client/gui/GuiGraphics;IIF)V")));
+        assertTrue(widget.methods.stream().anyMatch(method -> method.name.equals("extractContents")
+                && method.desc.equals("(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V")));
         assertTrue(widget.fields.stream().anyMatch(field -> field.name.equals("lastDrawnArea")
                 && field.desc.equals("Lnet/minecraft/client/renderer/Rect2i;")));
         IMixinConfigPlugin plugin = fixture.plugin();
@@ -305,17 +311,38 @@ public final class FtbSidebarContractTest {
     }
 
     private static Fixture namedFixture() throws IOException {
-        Path root = Paths.get(System.getProperty("user.dir"), ".gradle", "loom-cache", "remapped_mods");
-        if (Files.isDirectory(root)) {
-            try (Stream<Path> files = Files.walk(root, 12)) {
-                Path artifact = files.filter(path -> path.getFileName().toString()
-                        .startsWith("ftb-library-fabric-438495-")
-                        && path.getFileName().toString().endsWith("-5631428.jar"))
-                        .sorted().findFirst().orElse(null);
-                if (artifact != null) return new Fixture(artifact);
-            }
-        }
-        throw new IOException("Missing fixed Loom named FTB artifact 5631428 under " + root);
+        String path = System.getProperty("banira.ftb.contractJar");
+        if (path == null || !Files.isRegularFile(Paths.get(path)))
+            throw new IOException("Missing pinned unobfuscated FTB contract Jar");
+        return new Fixture(Paths.get(path));
+    }
+
+    @Test
+    public void extractedNativePairRequiresReleaseInterception() throws Exception {
+        Fixture fixture = namedFixture();
+        ClassNode widget = fixture.node(WIDGET);
+        assertTrue(widget.methods.removeIf(method -> method.name.equals("onRelease")));
+        fixture.replace(widget);
+        assertRejected(fixture);
+    }
+
+    @Test
+    public void extractedNativePairRequiresTheRealIconRenderer() throws Exception {
+        Fixture fixture = namedFixture();
+        ClassNode icon = fixture.node("dev.ftb.mods.ftblibrary.icon.Icon");
+        assertTrue(icon.methods.removeIf(method -> method.name.equals("getRenderer")));
+        fixture.replace(icon);
+        assertRejected(fixture);
+    }
+
+    @Test
+    public void extractedNativePairRejectsAnInaccessibleExtractionMethod() throws Exception {
+        Fixture fixture = namedFixture();
+        ClassNode widget = fixture.node(WIDGET);
+        var method = widget.methods.stream().filter(value -> value.name.equals("extractContents")).findFirst().orElseThrow();
+        method.access = (method.access & ~Opcodes.ACC_PROTECTED) | Opcodes.ACC_PRIVATE;
+        fixture.replace(widget);
+        assertRejected(fixture);
     }
 
     @Test
@@ -345,7 +372,10 @@ public final class FtbSidebarContractTest {
     }
 
     private static Fixture fixedFixture() throws IOException {
-        return new Fixture("ftb-library-fabric-438495", "5631428");
+        String path = System.getProperty("banira.ftb.legacyContractJar");
+        if (path == null || !Files.isRegularFile(Paths.get(path)))
+            throw new IOException("Missing declared legacy FTB bytecode fixture");
+        return new Fixture(Paths.get(path));
     }
 
     // Exposes installed-mod identity and the raw Jar namespace without starting Fabric Loader.
@@ -373,14 +403,6 @@ public final class FtbSidebarContractTest {
         private static final String FABRIC_API = "net.fabricmc.loader.api.FabricLoader";
         private final Path[] artifacts;
         private final Map<String, byte[]> overrides = new HashMap<>();
-
-        Fixture(String... coordinates) throws IOException {
-            super(FtbSidebarContractTest.class.getClassLoader());
-            artifacts = new Path[coordinates.length / 2];
-            for (int i = 0; i < artifacts.length; i++) {
-                artifacts[i] = fixedJar(coordinates[i * 2], coordinates[i * 2 + 1]);
-            }
-        }
 
         private Fixture(Path artifact) {
             super(FtbSidebarContractTest.class.getClassLoader());
@@ -471,26 +493,6 @@ public final class FtbSidebarContractTest {
             ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             node.accept(writer);
             return writer.toByteArray();
-        }
-
-        private static Path fixedJar(String artifact, String version) throws IOException {
-            Set<Path> homes = new LinkedHashSet<>();
-            String property = System.getProperty("gradle.user.home");
-            String environment = System.getenv("GRADLE_USER_HOME");
-            if (property != null) homes.add(Paths.get(property));
-            if (environment != null) homes.add(Paths.get(environment));
-            homes.add(Paths.get(System.getProperty("user.home"), ".gradle"));
-            String fileName = artifact + "-" + version + ".jar";
-            for (Path home : homes) {
-                Path root = home.resolve("caches/modules-2/files-2.1/curse.maven").resolve(artifact).resolve(version);
-                if (!Files.isDirectory(root)) continue;
-                try (Stream<Path> paths = Files.walk(root, 2)) {
-                    Path jar = paths.filter(path -> path.getFileName().toString().equals(fileName))
-                            .sorted().findFirst().orElse(null);
-                    if (jar != null) return jar;
-                }
-            }
-            throw new IOException("Fixed native artifact is not cached: " + artifact + ":" + version);
         }
 
         private static URL memory(String name, byte[] code) {

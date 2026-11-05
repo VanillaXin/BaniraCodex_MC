@@ -2,9 +2,8 @@ package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.screen.ApricityScreen;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
@@ -56,7 +55,7 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
     }
 
     @Override
-    public void resize(Minecraft minecraft, int width, int height) {
+    public void resize(int width, int height) {
         sessions.resize();
     }
 
@@ -94,13 +93,13 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
     }
 
     @Override
-    public boolean keyPressed(int key, int scan, int modifiers) {
-        return sessionKey(key, scan, modifiers, true) || super.keyPressed(key, scan, modifiers);
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        return sessionKey(event.key(), event.scancode(), event.modifiers(), true) || super.keyPressed(event);
     }
 
     @Override
-    public boolean keyReleased(int key, int scan, int modifiers) {
-        return sessionKey(key, scan, modifiers, false) || super.keyReleased(key, scan, modifiers);
+    public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
+        return sessionKey(event.key(), event.scancode(), event.modifiers(), false) || super.keyReleased(event);
     }
 
     private boolean sessionKey(int key, int scan, int modifiers, boolean pressed) {
@@ -116,31 +115,24 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         if (failed || view.closed()) return;
-        try {
+        NativeGuiGraphics.bind(graphics);
+        try (var extraction = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(graphics)) {
             if (!view.currentDocument()) {
                 sessions.reload();
                 return;
             }
-            float[] color = RenderSystem.getShaderColor().clone();
-            graphics.flush();
+            graphics.nextStratum();
             try {
-                // HTML and retained sprites own a neutral tint for this page pass.
-                RenderSystem.setShaderColor(1, 1, 1, 1);
                 view.access.prepare();
-                super.render(graphics, mouseX, mouseY, partialTick);
-                graphics.flush();
-                RenderSystem.setShaderColor(1, 1, 1, 1);
+                super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+                graphics.nextStratum();
                 view.afterLayout();
                 view.access.render(graphics);
                 pointer.render(graphics, mouseX, mouseY);
             } finally {
-                try {
-                    graphics.flush();
-                } finally {
-                    RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
-                }
+                graphics.nextStratum();
             }
         } catch (RuntimeException | LinkageError failure) {
             failed = true;

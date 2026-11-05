@@ -27,6 +27,6 @@ public class UiQuickActionHostTest {
         } catch (ClassNotFoundException e) {
             throw new AssertionError("Shared HUD wiring missing", e);
         }
-        assertNotNull(type.getMethod("render", String.class, net.minecraft.client.gui.GuiGraphics.class, Class.forName("xin.vanilla.banira.internal.client.ui.HudDrawList")));
+        assertNotNull(type.getMethod("render", String.class, net.minecraft.client.gui.GuiGraphicsExtractor.class, Class.forName("xin.vanilla.banira.internal.client.ui.HudDrawList")));
     }
 }

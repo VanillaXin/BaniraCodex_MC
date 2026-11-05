@@ -1,15 +1,15 @@
 package xin.vanilla.banira.internal.compat.minimap;
 
 import dev.ftb.mods.ftbchunks.api.FTBChunksAPI;
-import dev.ftb.mods.ftbchunks.api.client.minimap.MinimapContext;
+import dev.ftb.mods.ftbchunks.api.client.minimap.MinimapComponentContext;
 import dev.ftb.mods.ftbchunks.api.client.minimap.MinimapInfoComponent;
-import dev.ftb.mods.ftbchunks.client.FTBChunksClientConfig;
+import dev.ftb.mods.ftbchunks.config.FTBChunksClientConfig;
 import dev.ftb.mods.ftbchunks.client.FTBChunksClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
@@ -37,15 +37,15 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
             FtbNotificationInfo component = new FtbNotificationInfo(line);
             if (FTBChunksAPI.clientApi().getMinimapComponents().stream().noneMatch(c -> component.id().equals(c.id()))) {
                 FTBChunksAPI.clientApi().registerMinimapComponent(component);
-                FTBChunksClient.INSTANCE.setupComponents();
+                FTBChunksClient.INSTANCE.getMinimapRenderer().setupComponents();
             }
         }));
     }
 
     @Override
-    public ResourceLocation id() {
+    public Identifier id() {
         return line.id().toString().equals("banira_codex:unread")
-                ? ResourceLocation.fromNamespaceAndPath("banira_codex", "unread_notifications") : line.id();
+                ? Identifier.fromNamespaceAndPath("banira_codex", "unread_notifications") : line.id();
     }
 
     @Override
@@ -54,7 +54,7 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
     }
 
     @Override
-    public boolean shouldRender(MinimapContext context) {
+    public boolean shouldRender(MinimapComponentContext context) {
         text = Collections.emptyList();
         for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
             if (!row.id().equals(line.id())) continue;
@@ -72,12 +72,12 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
     }
 
     @Override
-    public int height(MinimapContext context) {
+    public int height(MinimapComponentContext context) {
         return computeLineHeight(context.minecraft(), text.size()) + 1;
     }
 
     @Override
-    public void render(MinimapContext context, GuiGraphics graphics, Font font) {
+    public void render(MinimapComponentContext context, GuiGraphicsExtractor graphics, Font font) {
         for (int i = 0; i < text.size(); i++) drawCenteredText(font, graphics, text.get(i), i * (font.lineHeight + 2));
     }
 }

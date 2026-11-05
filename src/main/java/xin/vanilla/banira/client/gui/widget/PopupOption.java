@@ -1,13 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -431,8 +433,8 @@ public class PopupOption extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (beforeRender != null) beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList) || Minecraft.getInstance().screen == null) {
             if (afterRender != null) afterRender.accept(this);
@@ -490,7 +492,7 @@ public class PopupOption extends BaseWidget {
     /**
      * 供 BaniraScreen 直接调用渲染
      */
-    public void render(GuiGraphics graphics, BaniraInputState inputState) {
+    public void render(GuiGraphicsExtractor graphics, BaniraInputState inputState) {
         render(graphics, 0);
     }
 
@@ -524,7 +526,7 @@ public class PopupOption extends BaseWidget {
         bounds(new ScreenCoordinate(adjustedX, adjustedY, width, height));
     }
 
-    private void renderOptionTip(PoseStack stack, BaniraInputState inputState) {
+    private void renderOptionTip(Matrix3x2fStack stack, BaniraInputState inputState) {
         int optIdx = getSelectedIndex();
         if (optIdx < 0) return;
         Text tip = tipsMap.get(optIdx);

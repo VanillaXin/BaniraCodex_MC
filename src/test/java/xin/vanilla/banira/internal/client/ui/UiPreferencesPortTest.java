@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 
 public class UiPreferencesPortTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();
@@ -74,7 +77,7 @@ public class UiPreferencesPortTest {
         var type = Class.forName("xin.vanilla.banira.client.gui.quickaction.CustomQuickActionStepsScreen");
         var lookup = type.getDeclaredMethod("optionalEffect", String.class);
         lookup.setAccessible(true);
-        assertSame(MobEffects.MOVEMENT_SPEED.value(), lookup.invoke(null, "minecraft:speed"));
+        assertSame(MobEffects.SPEED.value(), lookup.invoke(null, "minecraft:speed"));
         assertSame(MobEffects.LUCK.value(), lookup.invoke(null, "invalid id"));
         assertSame(MobEffects.LUCK.value(), lookup.invoke(null, "test:missing"));
         int constructors = 0, unwraps = 0;

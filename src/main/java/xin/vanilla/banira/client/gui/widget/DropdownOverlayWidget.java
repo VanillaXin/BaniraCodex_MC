@@ -1,9 +1,11 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -49,8 +51,8 @@ class DropdownOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!parent.dropdownOpen()) return;
 
         ScreenCoordinate db = parent.getDropdownBounds();
@@ -139,7 +141,7 @@ class DropdownOverlayWidget extends BaseWidget {
                 }
                 String display = font.plainSubstrByWidth(opt, textMaxWidth);
                 int textColor = (selected || hovered) ? textColorSelected : textColorUnselected;
-                graphics.drawString(font, display, textX,
+                graphics.text(font, display, textX,
                         (int) itemY + (ITEM_HEIGHT - font.lineHeight) / 2, textColor, false);
             }
 
@@ -160,10 +162,10 @@ class DropdownOverlayWidget extends BaseWidget {
                 int tipY = (int) scr.inputState().mouseY();
                 EnumSeason season = scr.season();
                 scr.addDeferredTooltipRender(t -> {
-                    t.pose().pushPose();
-                    t.pose().last().pose().identity();
+                    t.pose().pushMatrix();
+                    t.pose().identity();
                     TooltipWidget.drawPopupMessage(t.pose(), FontDrawArgs.ofPopo(textToDraw.stack(t.pose())).x(tipX).y(tipY).popupUseTexture(useTexture), theme, season);
-                    t.pose().popPose();
+                    t.pose().popMatrix();
                 });
             }
         }
@@ -180,7 +182,7 @@ class DropdownOverlayWidget extends BaseWidget {
         return -1;
     }
 
-    private void drawScrollbar(PoseStack s, ScreenCoordinate db, int scrollOffset, int contentHeight, int visibleHeight,
+    private void drawScrollbar(Matrix3x2fStack s, ScreenCoordinate db, int scrollOffset, int contentHeight, int visibleHeight,
                                int trackColor, int thumbColor) {
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
         if (maxScroll <= 0) return;

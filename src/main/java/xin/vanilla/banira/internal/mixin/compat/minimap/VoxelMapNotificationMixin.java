@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -29,10 +29,10 @@ public abstract class VoxelMapNotificationMixin {
     private String error;
 
     @Inject(method = "drawDirections", at = @At("TAIL"), require = 0, remap = false)
-    private void banira$appendUnread(GuiGraphics graphics, int mapX, int mapY, CallbackInfo ci) {
+    private void banira$appendUnread(GuiGraphicsExtractor graphics, int mapX, int mapY, CallbackInfo ci) {
         if (options.hide || fullscreenMap) return;
-        int y = mapY > scHeight - 88 ? mapY - 45 - (options.coords ? 5 : 0)
-                : mapY + 36 + (options.coords ? 10 : 0) + (error.isEmpty() ? 0 : 5);
+        int y = mapY > scHeight - 88 ? mapY - 45 - (options.coordsMode != 0 ? 5 : 0)
+                : mapY + 36 + (options.coordsMode != 0 ? 10 : 0) + (error.isEmpty() ? 0 : 5);
         NotificationMapLineRenderer.drawRowsCentered(graphics, NotificationMinimapBridge.rows(EnumNotificationHudHost.VOXELMAP),
                 mapX, y, 72, .75f, mapY > scHeight - 88, scWidth, scHeight);
     }

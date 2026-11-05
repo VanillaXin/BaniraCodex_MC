@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
@@ -1008,7 +1010,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+    protected void renderWidgets(GuiGraphicsExtractor graphics, float partialTicks) {
         if (scrollMode) {
             AbstractGuiUtils.enableScissor(contentLeft, listTop, inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH,
                     Math.max(1, listAreaHeight));
@@ -1060,7 +1062,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
 
     // region 背景与表单面板
 
-    private void renderFormPanel(PoseStack stack) {
+    private void renderFormPanel(Matrix3x2fStack stack) {
         int panelLeft = contentLeft - FORM_PANEL_PAD;
         int panelTopInset = args.getHeaderTitle() != null ? HEADER_PANEL_TOP_INSET : FORM_PANEL_PAD;
         int panelTop = formHeaderAreaTop - panelTopInset;
@@ -1077,7 +1079,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     // endregion 背景与表单面板
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         if (uiVersion != uiSession.version()) {
             for (int index = 0; index < inputFields.size(); index++) {
                 InputField field = inputFields.get(index);
@@ -1086,13 +1088,13 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             }
             uiVersion = uiSession.version();
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             onClose();
             return;
         }
 
-        renderBackground(graphics, mouseX, mouseY, partialTicks);
+        extractBackground(graphics, mouseX, mouseY, partialTicks);
         renderFormPanel(stack);
 
         if (args.getHeaderTitle() != null) {

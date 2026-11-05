@@ -70,7 +70,7 @@ public class ConfigEditorResizeStateTest {
             new ClassReader(input).accept(type, 0);
         }
         MethodNode resize = type.methods.stream().filter(method -> method.name.equals("resize")
-                && method.desc.equals("(Lnet/minecraft/client/Minecraft;II)V")).findFirst().orElse(null);
+                && method.desc.equals("(II)V")).findFirst().orElse(null);
         assertNotNull("Native resize must capture current focus, selection and scroll before init", resize);
         List<String> calls = new ArrayList<>();
         int superResize = -1;

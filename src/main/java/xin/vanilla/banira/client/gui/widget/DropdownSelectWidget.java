@@ -1,13 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -316,7 +318,7 @@ public class DropdownSelectWidget extends InputWidget {
             ItemStack icon = ItemStack.EMPTY;
             Texture tex = null;
             if (e instanceof IEnumDropdownIcon id) {
-                ResourceLocation rl = id.dropdownTextureLocation();
+                Identifier rl = id.dropdownTextureLocation();
                 if (rl != null) {
                     tex = Texture.of(rl);
                 }
@@ -678,8 +680,8 @@ public class DropdownSelectWidget extends InputWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) return;
         if (renderCoordinate == null) return;
 
@@ -771,7 +773,7 @@ public class DropdownSelectWidget extends InputWidget {
                 && my >= absY && my < absY + h;
     }
 
-    private static void drawClearIcon(PoseStack stack, int centerX, int centerY, int color) {
+    private static void drawClearIcon(Matrix3x2fStack stack, int centerX, int centerY, int color) {
         float r = CLEAR_BUTTON_RADIUS * 0.4f; // x 略小于圆的 1/2
         AbstractGuiUtils.drawLine(stack, centerX - r, centerY - r, centerX + r, centerY + r, 1f, color);
         AbstractGuiUtils.drawLine(stack, centerX + r, centerY - r, centerX - r, centerY + r, 1f, color);
@@ -790,8 +792,8 @@ public class DropdownSelectWidget extends InputWidget {
         return mx >= absX && mx < absX + w && my >= absY && my < absY + renderCoordinate.height();
     }
 
-    private void renderTags(GuiGraphics graphics, int contentLeft, int drawY, int contentWidth, int drawHeight) {
-        PoseStack stack = graphics.pose();
+    private void renderTags(GuiGraphicsExtractor graphics, int contentLeft, int drawY, int contentWidth, int drawHeight) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (selectedValues.isEmpty()) return;
         if (screen == null) return;
 
@@ -834,7 +836,7 @@ public class DropdownSelectWidget extends InputWidget {
 
                 AbstractGuiUtils.fill(stack, currentX, tagY, tagW, TAG_MIN_HEIGHT, tagBg);
                 AbstractGuiUtils.fill(stack, currentX, tagY, 2, TAG_MIN_HEIGHT, tagBorder);
-                graphics.drawString(font, font.plainSubstrByWidth(show, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2, textColor, false);
+                graphics.text(font, font.plainSubstrByWidth(show, textW), currentX + TAG_PAD, tagY + (TAG_MIN_HEIGHT - font.lineHeight) / 2, textColor, false);
 
                 int clearColor = closeHovered ? 0xFFE53935 : 0xFF999999;
                 AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, clearColor);

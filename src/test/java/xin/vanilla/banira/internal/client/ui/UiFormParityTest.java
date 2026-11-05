@@ -18,6 +18,9 @@ import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.type;
 
 public class UiFormParityTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         net.minecraft.SharedConstants.tryDetectVersion();

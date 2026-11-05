@@ -2,7 +2,7 @@ package xin.vanilla.banira.internal.fabric.platform;
 
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +37,7 @@ public final class FabricBaniraResourceService {
         collectModContainerLanguageFiles(modId, result);
         ResourceManager manager = activeResourceManager();
         if (manager != null) {
-            Predicate<ResourceLocation> jsonLang = location ->
+            Predicate<Identifier> jsonLang = location ->
                     modId.equals(location.getNamespace()) && location.getPath().endsWith(".json");
             manager.listResources("lang", jsonLang)
                     .forEach((location, resource) -> loadLanguage(location, resource, result));
@@ -82,7 +82,7 @@ public final class FabricBaniraResourceService {
                 : null;
     }
 
-    private static void loadLanguage(ResourceLocation location, Resource resource,
+    private static void loadLanguage(Identifier location, Resource resource,
                                      Map<String, JsonObject> result) {
         try (InputStreamReader reader = new InputStreamReader(resource.open(), StandardCharsets.UTF_8)) {
             mergeLanguage(languageCode(location), JsonUtils.parseObject(reader), result);
@@ -97,7 +97,7 @@ public final class FabricBaniraResourceService {
         else JsonUtils.mergeInPlace(existing, json);
     }
 
-    private static String languageCode(ResourceLocation location) {
+    private static String languageCode(Identifier location) {
         String path = location.getPath();
         int slash = path.lastIndexOf('/');
         String name = slash >= 0 ? path.substring(slash + 1) : path;

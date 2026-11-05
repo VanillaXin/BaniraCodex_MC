@@ -1,20 +1,20 @@
 package xin.vanilla.banira.internal.client.minimap;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 
 public final class MinimapLineSnapshot {
-    private final ResourceLocation id;
+    private final Identifier id;
     private final Component text;
     private final int order;
 
-    public MinimapLineSnapshot(ResourceLocation id, Component text, int order) {
+    public MinimapLineSnapshot(Identifier id, Component text, int order) {
         this.id = id;
         this.text = text.copy();
         this.order = order;
     }
 
-    public ResourceLocation id() {
+    public Identifier id() {
         return id;
     }
 

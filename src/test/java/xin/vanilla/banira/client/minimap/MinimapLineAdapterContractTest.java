@@ -59,7 +59,7 @@ public class MinimapLineAdapterContractTest {
     public void journeyNativeBatchWidthIsDescriptorGuarded() throws Exception {
         node("xin/vanilla/banira/internal/mixin/compat/minimap/JourneyMapTextBoundsMixin");
         ClassNode target = new ClassNode();
-        String graphics = "Lnet/minecraft/client/gui/GuiGraphics;", component = "Lnet/minecraft/network/chat/Component;",
+        String graphics = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;", component = "Lnet/minecraft/network/chat/Component;",
                 buffers = "Lnet/minecraft/client/renderer/MultiBufferSource;";
         target.methods.add(new MethodNode(0, "drawBatchLabel", "(" + graphics + component
                 + "Ljourneymap/client/render/draw/DrawStep$Pass;" + buffers
@@ -86,7 +86,8 @@ public class MinimapLineAdapterContractTest {
     @Test
     public void ftbLateRegistrationRefreshesNativeOrderWithoutForcingVisibility() throws Exception {
         ClassNode adapter = node("xin/vanilla/banira/internal/compat/minimap/FtbNotificationInfo");
-        assertTrue(calls(adapter, "dev/ftb/mods/ftbchunks/client/FTBChunksClient", "setupComponents"));
+        assertTrue(calls(adapter, "dev/ftb/mods/ftbchunks/client/FTBChunksClient", "getMinimapRenderer"));
+        assertTrue(calls(adapter, "dev/ftb/mods/ftbchunks/client/minimap/MinimapRenderer", "setupComponents"));
         assertFalse(calls(adapter, "dev/ftb/mods/ftbchunks/api/client/FTBChunksClientAPI", "setMinimapComponentEnabled"));
     }
 

@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
@@ -141,7 +141,7 @@ public final class ConfirmDialogScreen extends BaniraScreen implements UiNativeP
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         graphics.fill(0, 0, width, height, 0x55000000);
         int cardWidth = Math.max(180, Math.min(CARD_MAX_WIDTH, width - 32));
         int cardX = (width - cardWidth) / 2;

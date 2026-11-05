@@ -1,13 +1,12 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
 
 public final class NotificationBubbleLayout {
     public static final int BODY_TOP = 18, BOTTOM = 4, LINE_HEIGHT = 10;
-    private static final ResourceLocation DEFAULT_FONT = ResourceLocation.fromNamespaceAndPath("minecraft", "default");
 
     private NotificationBubbleLayout() {
     }
@@ -22,6 +21,6 @@ public final class NotificationBubbleLayout {
 
     public static boolean supports(List<FormattedCharSequence> lines) {
         return lines.stream().allMatch(line -> line.accept((index, style, codePoint) -> !style.isObfuscated()
-                && !style.isStrikethrough() && DEFAULT_FONT.equals(style.getFont())));
+                && !style.isStrikethrough() && Style.EMPTY.getFont().equals(style.getFont())));
     }
 }

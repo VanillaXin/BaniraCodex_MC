@@ -1,20 +1,21 @@
 package xin.vanilla.banira.internal.fabric.compat.ftblibrary;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.sidebar.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.gui.quickaction.*;
 import xin.vanilla.banira.internal.compat.FtbLibraryContract;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -28,8 +29,8 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String BUTTON_PATH_PREFIX = "external_inventory_buttons/";
     private static final FtbLibraryCompatibility INSTANCE = new FtbLibraryCompatibility();
-    private static final Map<ResourceLocation, ExternalInventoryAction> HOSTED_ACTIONS = new LinkedHashMap<>();
-    private static final Map<ResourceLocation, RegisteredSidebarButton> HOSTED_BUTTONS = new LinkedHashMap<>();
+    private static final Map<Identifier, ExternalInventoryAction> HOSTED_ACTIONS = new LinkedHashMap<>();
+    private static final Map<Identifier, RegisteredSidebarButton> HOSTED_BUTTONS = new LinkedHashMap<>();
     private static final List<SidebarGuiButton> HOSTED_GUI_BUTTONS = new ArrayList<>();
     private static Field buttonsField;
     private static volatile boolean ready;
@@ -75,18 +76,18 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
             return;
         }
 
-        Map<ResourceLocation, ExternalInventoryAction> stagedActions = new LinkedHashMap<>();
-        Map<ResourceLocation, RegisteredSidebarButton> stagedButtons = new LinkedHashMap<>();
+        Map<Identifier, ExternalInventoryAction> stagedActions = new LinkedHashMap<>();
+        Map<Identifier, RegisteredSidebarButton> stagedButtons = new LinkedHashMap<>();
         List<SidebarGuiButton> stagedGui = new ArrayList<>();
         int order = 0;
         for (ExternalInventoryAction action : actions) {
             if (action == null || action.onActivate() == null && action.contextMenuItems().isEmpty()) continue;
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("banira_codex",
+            Identifier id = Identifier.fromNamespaceAndPath("banira_codex",
                     BUTTON_PATH_PREFIX + safePath(action.sourceId() + "/" + action.id()));
             SidebarButtonData data = new SidebarButtonData(
                     new QuickActionFtbIcon(action.icon()), true, Collections.emptyList(), Optional.empty(),
                     false, Optional.of(Collections.singletonList(action.label().toVanilla())), Optional.empty(),
-                    false, Optional.empty(), 300 + order);
+                    false, Optional.empty(), 300 + order, "");
             RegisteredSidebarButton button = new RegisteredSidebarButton(id, data);
             button.setTooltipOverride(() -> Collections.singletonList(action.label().toVanilla()));
             if (stagedButtons.put(id, button) != null) {
@@ -96,8 +97,8 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
             stagedActions.put(id, action);
         }
         try {
-            Map<ResourceLocation, RegisteredSidebarButton> nativeButtons = buttonMap();
-            for (ResourceLocation id : stagedButtons.keySet()) {
+            Map<Identifier, RegisteredSidebarButton> nativeButtons = buttonMap();
+            for (Identifier id : stagedButtons.keySet()) {
                 if (nativeButtons.containsKey(id) && nativeButtons.get(id) != HOSTED_BUTTONS.get(id)) {
                     throw new IllegalStateException("Native FTB button already owns " + id);
                 }
@@ -124,9 +125,9 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
         HOSTED_ACTIONS.clear();
         if (HOSTED_BUTTONS.isEmpty() && HOSTED_GUI_BUTTONS.isEmpty()) return;
         try {
-            Map<ResourceLocation, RegisteredSidebarButton> nativeButtons = buttonMap();
+            Map<Identifier, RegisteredSidebarButton> nativeButtons = buttonMap();
             SidebarButtonManager.INSTANCE.getButtonList().removeAll(HOSTED_GUI_BUTTONS);
-            for (Map.Entry<ResourceLocation, RegisteredSidebarButton> entry : HOSTED_BUTTONS.entrySet()) {
+            for (Map.Entry<Identifier, RegisteredSidebarButton> entry : HOSTED_BUTTONS.entrySet()) {
                 if (nativeButtons.get(entry.getKey()) == entry.getValue()) nativeButtons.remove(entry.getKey());
             }
             HOSTED_BUTTONS.clear();
@@ -175,9 +176,9 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<ResourceLocation, RegisteredSidebarButton> buttonMap() throws ReflectiveOperationException {
+    private static Map<Identifier, RegisteredSidebarButton> buttonMap() throws ReflectiveOperationException {
         if (buttonsField == null) throw new IllegalStateException("FTB sidebar storage binding is unavailable");
-        return (Map<ResourceLocation, RegisteredSidebarButton>) buttonsField.get(SidebarButtonManager.INSTANCE);
+        return (Map<Identifier, RegisteredSidebarButton>) buttonsField.get(SidebarButtonManager.INSTANCE);
     }
 
     private static String safePath(String value) {
@@ -200,15 +201,16 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
                 String label = tooltip.isEmpty() ? button.getId().toString() : tooltip.get(0).getString();
                 actions.add(new ExternalInventoryAction(button.getId().toString(),
                         BaniraComponent.get().literal(label),
-                        QuickIcon.custom((stack, minecraft, x, y, size) ->
-                                button.getData().icon().draw(guiGraphics(stack), x, y, size, size)),
-                        context -> button.clickButton(Screen.hasShiftDown())));
+                        QuickIcon.custom((stack, minecraft, x, y, size) -> NativeGuiGraphics.draw(stack,
+                                graphics -> dev.ftb.mods.ftblibrary.client.icon.IconHelper.renderIcon(
+                                        button.getData().icon(), graphics, x, y, size, size))),
+                        context -> button.clickButton(BaniraInput.isShiftDown())));
             }
             return actions;
         }
     }
 
-    private static final class QuickActionFtbIcon extends Icon {
+    private static final class QuickActionFtbIcon extends Icon<QuickActionFtbIcon> {
         private final QuickIcon icon;
 
         private QuickActionFtbIcon(QuickIcon icon) {
@@ -216,17 +218,13 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
         }
 
         @Override
-        public void draw(GuiGraphics graphics, int x, int y, int width, int height) {
-            int size = Math.min(width, height);
-            icon.render(graphics, Minecraft.getInstance(),
-                    x + (width - size) / 2, y + (height - size) / 2, size);
+        public dev.ftb.mods.ftblibrary.client.icon.IconRenderer<QuickActionFtbIcon> getRenderer() {
+            return (value, graphics, x, y, width, height) -> {
+                int size = Math.min(width, height);
+                value.icon.render(graphics, Minecraft.getInstance(),
+                        x + (width - size) / 2, y + (height - size) / 2, size);
+            };
         }
     }
 
-    private static GuiGraphics guiGraphics(PoseStack stack) {
-        Minecraft minecraft = Minecraft.getInstance();
-        GuiGraphics graphics = new GuiGraphics(minecraft, minecraft.renderBuffers().bufferSource());
-        graphics.pose().last().pose().set(stack.last().pose());
-        return graphics;
-    }
 }

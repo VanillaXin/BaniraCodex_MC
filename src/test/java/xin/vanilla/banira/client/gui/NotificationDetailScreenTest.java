@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 
 public class NotificationDetailScreenTest {
     @Test public void visibleContentKeepsItsStyle() throws Exception {
-        assertEquals("https://example.com/0", style(screen(), 117, 61).getClickEvent().getValue());
+        assertEquals("https://example.com/0", ((ClickEvent.OpenUrl) style(screen(), 117, 61).getClickEvent()).uri().toString());
     }
 
     @Test public void bottomEdgeDoesNotExposeClippedContent() throws Exception {
@@ -40,7 +40,7 @@ public class NotificationDetailScreenTest {
                 .mouseX(117).mouseY(61).delta(-3);
         screen.onMouseScrolled(args);
         assertTrue(args.consumed());
-        assertEquals("https://example.com/3", style(screen, 117, 61).getClickEvent().getValue());
+        assertEquals("https://example.com/3", ((ClickEvent.OpenUrl) style(screen, 117, 61).getClickEvent()).uri().toString());
     }
 
     @Test public void scrollingOutsideContentLeavesItUnchanged() throws Exception {
@@ -49,7 +49,7 @@ public class NotificationDetailScreenTest {
                 .mouseX(115).mouseY(61).delta(-3);
         screen.onMouseScrolled(args);
         assertFalse(args.consumed());
-        assertEquals("https://example.com/0", style(screen, 117, 61).getClickEvent().getValue());
+        assertEquals("https://example.com/0", ((ClickEvent.OpenUrl) style(screen, 117, 61).getClickEvent()).uri().toString());
     }
 
     private static NotificationLogScreen screen() throws Exception {
@@ -70,7 +70,7 @@ public class NotificationDetailScreenTest {
         set(NotificationLogScreen.class, screen, "detailContentMaxLineW", 88);
         List<FormattedCharSequence> lines = new ArrayList<>();
         for (int i = 0; i < 20; i++) lines.add(FormattedCharSequence.forward("link", Style.EMPTY
-                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://example.com/" + i))));
+                .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create("https://example.com/" + i)))));
         set(NotificationLogScreen.class, screen, "detailContentLines", lines);
         try {
             Field field = NotificationLogScreen.class.getDeclaredField("detailViewport");

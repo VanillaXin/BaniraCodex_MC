@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.common;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -53,9 +53,9 @@ public final class ClientRuntimeBridge {
     }
 
     @Nullable
-    public static ResourceLocation onlinePlayerSkin(@Nullable UUID uuid) {
+    public static Identifier onlinePlayerSkin(@Nullable UUID uuid) {
         Object value = invoke("onlinePlayerSkin", new Class<?>[]{UUID.class}, uuid);
-        return value instanceof ResourceLocation ? (ResourceLocation) value : null;
+        return value instanceof Identifier ? (Identifier) value : null;
     }
 
     @Nullable

@@ -11,27 +11,25 @@ dependencies {
 }
 
 tasks.named('shadowJar').configure {
-    archiveClassifier.set('shaded-dev')
-    destinationDirectory.set(layout.buildDirectory.dir('shaded'))
+    archiveClassifier.set('')
     configurations = [project.configurations.embeddedCompiler]
     relocate 'org.codehaus.janino', 'xin.vanilla.banira.internal.shaded.janino'
     relocate 'org.codehaus.commons', 'xin.vanilla.banira.internal.shaded.commons'
     mergeServiceFiles()
-}
-tasks.named('remapJar').configure {
-    dependsOn 'shadowJar'
-    inputFile.set(tasks.shadowJar.archiveFile)
+    from('LICENSE') {
+        rename { "${it}_${project.mod_id}" }
+    }
 }
 
 tasks.register('scriptArtifactTest', Test) {
-    dependsOn 'remapJar', 'testClasses'
+    dependsOn 'shadowJar', 'testClasses'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     filter { includeTestsMatching '*ScriptArtifactTest' }
-    inputs.file(tasks.remapJar.archiveFile)
+    inputs.file(tasks.named('shadowJar').flatMap { it.archiveFile })
     inputs.files(configurations.scriptCompilerCollision)
     doFirst {
-        systemProperty 'banira.scriptArtifact', tasks.remapJar.archiveFile.get().asFile.absolutePath
+        systemProperty 'banira.scriptArtifact', tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath
         systemProperty 'banira.scriptCollision', configurations.scriptCompilerCollision.asPath
     }
 }

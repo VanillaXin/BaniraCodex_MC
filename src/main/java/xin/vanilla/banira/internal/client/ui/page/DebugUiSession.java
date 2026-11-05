@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui.page;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.*;
@@ -242,7 +242,7 @@ public final class DebugUiSession implements UiPageSession {
                 + "\u6d77\u5e26,\u7d2b\u83dc,\u88d9\u5e26\u83dc,\u77f3\u82b1\u83dc,\u5730\u76ae\u83dc,\u8568\u83dc,\u9a6c\u9f7f\u82cb,\u8360\u83dc,\u84b2\u516c\u82f1,\u9c7c\u8165\u8349").split(",");
     }
 
-    public static void drawDiagnostics(GuiGraphics graphics, ScreenCoordinate bounds, UiGameElement element, BaniraColorConfig theme) {
+    public static void drawDiagnostics(GuiGraphicsExtractor graphics, ScreenCoordinate bounds, UiGameElement element, BaniraColorConfig theme) {
         float x = (float) (bounds.x() + bounds.width() / 2), y = (float) (bounds.y() + bounds.height() / 2);
         BaseShapeWidget.drawShape(ShapeDrawArgs.circle(graphics.pose(), x, y, 15, 0x4487CEEB));
         ShapeDrawArgs ellipse = ShapeDrawArgs.ellipse(graphics.pose(), x, y, 7.5f, 15, 0x4487CEEB);

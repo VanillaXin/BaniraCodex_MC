@@ -4,7 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.api.INetworkPacket;
@@ -77,7 +77,7 @@ public final class FabricNetworkChannels {
         return defaultHandler != null && hasLocalChannel(defaultHandler.channel());
     }
 
-    public static boolean hasLocalChannel(ResourceLocation channel) {
+    public static boolean hasLocalChannel(Identifier channel) {
         try {
             return ClientPlayNetworking.canSend(channel);
         } catch (RuntimeException ignored) {
@@ -85,7 +85,7 @@ public final class FabricNetworkChannels {
         }
     }
 
-    public static boolean hasPlayerChannel(ServerPlayer player, ResourceLocation channel) {
+    public static boolean hasPlayerChannel(ServerPlayer player, Identifier channel) {
         return ServerPlayNetworking.canSend(player, channel);
     }
 

@@ -30,11 +30,13 @@ public class FabricCostResourcesTest {
         player.health = 10;
         Field inventory = net.minecraft.world.entity.player.Player.class.getDeclaredField("inventory");
         inventory.setAccessible(true);
-        inventory.set(player, new Inventory(player));
+        inventory.set(player, new Inventory(player, new net.minecraft.world.entity.EntityEquipment()));
         player.totalExperience = 10;
         player.experienceLevel = 10;
         player.experienceProgress = .625f;
-        player.board = new net.minecraft.world.scores.Scoreboard();
+        player.board = new InMemoryScoreboard();
+        player.world = allocate(ScoreboardLevel.class);
+        player.world.owner = player;
     }
 
     private CostAccess access(InventoryScope scope) {
@@ -80,6 +82,7 @@ public class FabricCostResourcesTest {
         player.getInventory().setItem(3, new ItemStack(Items.STONE, 10));
         CostAccess access = access(InventoryScope.MAIN);
         CostPaymentPlan plan = preview(access, "banira:item", 5, "minecraft:stone[minecraft:custom_data={fee:1}]");
+        assertTrue(plan.failure().code(), plan.isSuccess());
         assertEquals(CostFailure.NONE, access.debit(plan));
         assertTrue(player.getInventory().getItem(0).isEmpty());
         assertTrue(player.getInventory().getItem(1).isEmpty());
@@ -101,6 +104,28 @@ public class FabricCostResourcesTest {
         assertTrue(plan.isSuccess());
         assertEquals(CostFailure.NONE, access.debit(plan));
         assertEquals(1, player.getInventory().getItem(0).getCount());
+    }
+
+    @Test
+    public void exactSnapshotsPreserveNbtNumericTypesThroughPaymentAndRestoration() {
+        CompoundTag tag = new CompoundTag();
+        tag.putByte("byte", (byte) 1);
+        tag.putInt("integer", 1);
+        tag.putDouble("double", 1.0);
+        tag.putIntArray("array", new int[]{1, 2});
+        ItemStack stack = new ItemStack(Items.STONE, 3);
+        stack.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                net.minecraft.world.item.component.CustomData.of(tag));
+        player.getInventory().setItem(0, stack);
+        CostAccess access = access(InventoryScope.MAIN);
+        CostPaymentPlan plan = preview(access, "banira:item", 2, "minecraft:stone" + tag);
+        assertTrue(plan.failure().code(), plan.isSuccess());
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        assertEquals(1, player.getInventory().getItem(0).getCount());
+        assertEquals(tag, player.getInventory().getItem(0).get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag());
+        assertEquals(CostFailure.NONE, access.restore(access.receipt(plan)));
+        assertEquals(3, player.getInventory().getItem(0).getCount());
+        assertEquals(tag, player.getInventory().getItem(0).get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag());
     }
 
     @Test
@@ -231,7 +256,7 @@ public class FabricCostResourcesTest {
                 "minecraft:stone", ResourceCost.MatchMode.ID)), 1);
         assertEquals(CostFailure.NONE, access.debit(plan));
         assertEquals(2, player.getInventory().getItem(0).getCount());
-        assertEquals(1, player.getInventory().getItem(0).get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("custom"));
+        assertEquals(1, player.getInventory().getItem(0).get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("custom").orElseThrow().intValue());
     }
 
     @Test
@@ -388,7 +413,7 @@ public class FabricCostResourcesTest {
 
     @Test
     public void scoreboardCallbacksReplacingTheGoalAreUncertainNotSuccess() {
-        player.board = new net.minecraft.world.scores.Scoreboard() {
+        player.board = new InMemoryScoreboard() {
             @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
                 if (score.value() == 7) {
                     removeObjective(goal);
@@ -410,7 +435,7 @@ public class FabricCostResourcesTest {
     @Test
     public void scoreDebitDoesNotOverwriteCallbackAwardsToFollowingObjective() {
         boolean[] active={false};
-        player.board = new net.minecraft.world.scores.Scoreboard() {
+        player.board = new InMemoryScoreboard() {
             @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
                 if(active[0] && goal.getName().equals("first") && score.value()==7) {
                     net.minecraft.world.scores.ScoreAccess other=getOrCreatePlayerScore(player,getObjective("second"));
@@ -433,7 +458,7 @@ public class FabricCostResourcesTest {
     @Test
     public void scoreRestoreDoesNotOverwriteCallbackAwardsToFollowingObjective() {
         boolean[] active={false};
-        player.board = new net.minecraft.world.scores.Scoreboard() {
+        player.board = new InMemoryScoreboard() {
             @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
                 if(active[0] && goal.getName().equals("first") && score.value()==10) {
                     net.minecraft.world.scores.ScoreAccess other=getOrCreatePlayerScore(player,getObjective("second"));
@@ -557,11 +582,12 @@ public class FabricCostResourcesTest {
         float health;
         boolean cancel, mutateSecondary;
         int factor;
-        net.minecraft.world.scores.Scoreboard board;
+        net.minecraft.server.ServerScoreboard board;
+        ScoreboardLevel world;
         private Player() { super(null, null, null, net.minecraft.server.level.ClientInformation.createDefault()); }
         @Override public net.minecraft.core.RegistryAccess registryAccess() { return net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY); }
         @Override public UUID getUUID() { return id; }
-        @Override public net.minecraft.world.scores.Scoreboard getScoreboard() { return board; }
+        @Override public net.minecraft.server.level.ServerLevel level() { return world; }
         @Override public String getScoreboardName() { return "CostWallet"; }
         @Override public FoodData getFoodData() { return food; }
         @Override public float getHealth() { return health; }
@@ -575,5 +601,22 @@ public class FabricCostResourcesTest {
             if (!cancel) experienceLevel += amount * (factor == 0 ? 1 : factor);
             if (mutateSecondary) { totalExperience++; experienceProgress = .125f; }
         }
+    }
+
+    private static class InMemoryScoreboard extends net.minecraft.server.ServerScoreboard {
+        InMemoryScoreboard() { super(null); }
+
+        // Entry removal still mutates native storage; this fixture has no packet audience.
+        @Override public void onPlayerRemoved(net.minecraft.world.scores.ScoreHolder holder) { }
+    }
+
+    private static final class ScoreboardLevel extends net.minecraft.server.level.ServerLevel {
+        Player owner;
+
+        private ScoreboardLevel() {
+            super(null, null, null, null, null, null, false, 0L, Collections.emptyList(), false);
+        }
+
+        @Override public net.minecraft.server.ServerScoreboard getScoreboard() { return owner.board; }
     }
 }

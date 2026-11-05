@@ -1,12 +1,14 @@
 package xin.vanilla.banira.client.gui.component;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
+
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
@@ -362,7 +364,7 @@ public class Notification extends NotificationData {
         return !finished && animationState.acceptsInput(nowMs);
     }
 
-    public void renderInRegion(PoseStack stack,
+    public void renderInRegion(Matrix3x2fStack stack,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect target,
                                xin.vanilla.banira.client.notification.NotificationRegionLayout.Rect region, long nowMs) {
         ScreenCoordinate coordinate = prepareInRegion(target, region, nowMs, Minecraft.getInstance().font.lineHeight);
@@ -414,14 +416,14 @@ public class Notification extends NotificationData {
         bodyTextTop = bodyTop + Math.max(0, (bodyH - richDrawLines.size() * lineHeight) * .5);
     }
 
-    public void render(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
+    public void render(Matrix3x2fStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo, long currentTime) {
         renderAt(stack, preInfo, screenInfo, currentTime, calculatePosition(screenInfo, preInfo));
     }
 
     /**
      * 使用调用方已计算的坐标渲染，通知队列无需在同一帧重复布局。
      */
-    public void renderAt(PoseStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo,
+    public void renderAt(Matrix3x2fStack stack, ScreenCoordinate preInfo, ScreenCoordinate screenInfo,
                          long currentTime, ScreenCoordinate coordinate) {
         if (this.finished) return;
         if (currentTime < this.scheduledTime()) return;
@@ -621,11 +623,11 @@ public class Notification extends NotificationData {
                 info.y() < screenInfo.height();
     }
 
-    private void doRender(PoseStack stack, ScreenCoordinate coordinate) {
+    private void doRender(Matrix3x2fStack stack, ScreenCoordinate coordinate) {
         paintPrepared(stack, coordinate, true);
     }
 
-    public void paintPrepared(PoseStack stack, ScreenCoordinate coordinate, boolean nativeShell) {
+    public void paintPrepared(Matrix3x2fStack stack, ScreenCoordinate coordinate, boolean nativeShell) {
         auiTextHits = List.of();
         auiHitReady = false;
         double scale = Math.max(0.01, this.renderScale);
@@ -667,22 +669,12 @@ public class Notification extends NotificationData {
                 float textTopLocal = y + pad + Math.max(0f, (innerH - textBlockH) * 0.5f);
                 float textX = x + pad;
                 float textY = textTopLocal;
-                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
                 for (FormattedCharSequence line : this.richDrawLines) {
-                    font.drawInBatch(
-                            line,
-                            textX,
-                            textY,
-                            textArgb,
-                            false,
-                            drawArgs.stack().last().pose(),
-                            bufferSource,
-                            Font.DisplayMode.NORMAL,
-                            0,
-                            15728880);
+                    float lineY = textY;
+                    NativeGuiGraphics.text(drawArgs.stack(),
+                            font, line, textX, lineY, textArgb, false);
                     textY += lineH;
                 }
-                bufferSource.endBatch();
 
                 float cbSize = CLOSE_BTN;
                 float closeX = x + w - pad - cbSize;
@@ -772,7 +764,7 @@ public class Notification extends NotificationData {
             return null;
         }
         FormattedCharSequence proc = richDrawLines.get(lineIndex);
-        return font.getSplitter().componentStyleAtWidth(proc, (int) rx);
+        return xin.vanilla.banira.client.util.NativeTextHit.styleAt(font.getSplitter(), proc, (int) rx);
     }
 
     private void updateLayoutContext(ScreenCoordinate coordinate, ScreenCoordinate preLayout, long currentTime) {

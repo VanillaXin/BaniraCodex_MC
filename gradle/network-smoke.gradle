@@ -46,7 +46,7 @@ def readUtf8 = { File file -> file.isFile() ? file.getText('UTF-8') : '' }
 def tailUtf8 = { File file -> file.isFile() ? file.readLines('UTF-8').takeRight(120).join(System.lineSeparator()) : '' }
 def sparkRuntime = {
     def candidates = []
-    ['modRuntimeOnly', 'runtimeClasspath'].each { name ->
+    ['localRuntime', 'runtimeClasspath'].each { name ->
         def configuration = configurations.findByName(name)
         if (configuration != null) candidates.addAll(configuration.files)
     }
@@ -93,6 +93,10 @@ def start = { String task, String phase, File status, File report, File clientRe
                     "-Pbanira.networkSmoke.buildDir=${new File(childRoot, 'build').absolutePath}",
                     "-Pbanira.networkSmoke.serverStatus=${new File(status.parentFile, 'server-' + phase + '.status').absolutePath}",
                     "-Pbanira.devInventoryIntegrations=${devInventoryIntegrations}"])
+    ['banira.devOptionalRuntime', 'banira.devOptionalRuntimePins', 'banira.devModMenu', 'banira.devFpsOverlay'].each { name ->
+        def value = project.findProperty(name)
+        if (value != null) command.add("-P${name}=${value}".toString())
+    }
     log.parentFile.mkdirs()
     ProcessBuilder builder = new ProcessBuilder(command.collect { it.toString() })
     builder.directory(projectDir)
@@ -123,7 +127,7 @@ tasks.register('networkSmoke') {
             inputs[project.relativePath(it).replace('\\', '/')] = sha256(it)
         }
         def jars = [:]
-        (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll {
+        configurations.runtimeClasspath.files.findAll {
             it.isFile() && it.name.endsWith('.jar')
         }.each { jars[it.absolutePath] = sha256(it) }
         new File(evidence, 'source-state.json').setText(

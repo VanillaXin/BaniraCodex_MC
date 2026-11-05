@@ -88,7 +88,7 @@ public class AuiCapabilityContractTest {
     @Test
     public void java21BinaryIsAcceptedAndNewerBytecodeFallsBack() throws Exception {
         try (URLClassLoader jar = official()) {
-            for (int version : new int[]{org.objectweb.asm.Opcodes.V21, org.objectweb.asm.Opcodes.V22}) {
+            for (int version : new int[]{org.objectweb.asm.Opcodes.V25, org.objectweb.asm.Opcodes.V26}) {
                 ClassLoader changed = new ClassLoader(null) {
                     @Override
                     public InputStream getResourceAsStream(String name) {
@@ -106,7 +106,7 @@ public class AuiCapabilityContractTest {
                         }
                     }
                 };
-                assertEquals(version == org.objectweb.asm.Opcodes.V21, compatible(changed));
+                assertEquals(version == org.objectweb.asm.Opcodes.V25, compatible(changed));
             }
         }
     }

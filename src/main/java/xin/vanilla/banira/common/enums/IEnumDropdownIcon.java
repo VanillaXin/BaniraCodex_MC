@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.enums;
 
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
@@ -22,7 +22,7 @@ public interface IEnumDropdownIcon {
      * 左侧展示用的纹理资源；非空时优先于 {@link #dropdownIcon()}。
      */
     @Nullable
-    default ResourceLocation dropdownTextureLocation() {
+    default Identifier dropdownTextureLocation() {
         return null;
     }
 }

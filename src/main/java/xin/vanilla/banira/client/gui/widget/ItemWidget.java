@@ -1,18 +1,14 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -33,7 +29,6 @@ import java.util.Optional;
  */
 @Accessors(chain = true, fluent = true)
 public class ItemWidget extends BaseWidget {
-    private static final float ITEM_DECORATION_FOREGROUND_DEPTH = 250.0F;
     @Getter
     private String itemId;
 
@@ -82,7 +77,7 @@ public class ItemWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
         if (!visible) {
             return;
         }
@@ -146,14 +141,14 @@ public class ItemWidget extends BaseWidget {
         EnumSeason season = seasonTooltip && screen != null ? screen.season() : null;
         final EnumSeason seasonFinal = season;
         screen.addDeferredTooltipRender(g -> {
-            g.pose().pushPose();
-            g.pose().last().pose().identity();
+            g.pose().pushMatrix();
+            g.pose().identity();
             if (vanillaTooltip) {
-                g.renderTooltip(screen.getFont(), tooltip, Optional.empty(), mx, my);
+                g.setTooltipForNextFrame(screen.getFont(), tooltip, Optional.empty(), mx, my);
             } else {
                 TooltipWidget.drawItemTooltip(g.pose(), tipStack, mx, my, seasonFinal);
             }
-            g.pose().popPose();
+            g.pose().popMatrix();
         });
     }
 
@@ -177,71 +172,49 @@ public class ItemWidget extends BaseWidget {
 
 
     /**
-     * 用方块图集精灵做平面绘制，走 {@link com.mojang.blaze3d.vertex.PoseStack} 与 {@link AbstractGuiUtils#blit}
+     * 菜单物品与其他 GUI 图元共用当前提取器及矩阵。
      */
-    public static void renderGuiItemFlatBlit(@Nonnull PoseStack pose, @Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
+    public static void renderGuiItemFlatBlit(@Nonnull Matrix3x2fStack pose, @Nonnull Minecraft mc, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        ItemRenderer itemRenderer = mc.getItemRenderer();
-        BakedModel model = itemRenderer.getModel(stack, null, mc.player, 0);
-        TextureAtlasSprite sprite = model.getParticleIcon();
-        net.minecraft.client.color.item.ItemColors itemColors = BaniraClientRuntime.itemColors();
-        int tint = itemColors == null ? -1 : itemColors.getColor(stack, 0);
-        if (tint != -1) {
-            float cr = (float) (tint >> 16 & 255) / 255.0F;
-            float cg = (float) (tint >> 8 & 255) / 255.0F;
-            float cb = (float) (tint & 255) / 255.0F;
-            RenderSystem.setShaderColor(cr, cg, cb, 1f);
-        }
-        AbstractGuiUtils.blit(pose, TextureAtlas.LOCATION_BLOCKS, x, y, 0, size, size, sprite);
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        AbstractGuiUtils.restoreGuiRenderState();
+        NativeGuiGraphics.draw(pose,
+                graphics -> renderGuiItemScaled(graphics, stack, x, y, size));
     }
 
     /**
      * 在 GUI 中按像素边长绘制物品堆栈
      */
-    public static void renderGuiItemScaled(@Nonnull GuiGraphics graphics, @Nonnull ItemStack stack, int x, int y, int size) {
+    public static void renderGuiItemScaled(@Nonnull GuiGraphicsExtractor graphics, @Nonnull ItemStack stack, int x, int y, int size) {
         if (size <= 0 || stack.isEmpty()) {
             return;
         }
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         float s = size / 16f;
-        PoseStack pose = graphics.pose();
-        pose.pushPose();
-        pose.translate(x, y, 200f);
-        pose.scale(s, s, s);
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        Lighting.setupFor3DItems();
+        Matrix3x2fStack pose = NativeGuiGraphics.bind(graphics);
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.scale(s, s);
         try {
-            graphics.renderItem(stack, 0, 0);
+            graphics.item(stack, 0, 0);
         } finally {
-            pose.popPose();
-            Lighting.setupForFlatItems();
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            AbstractGuiUtils.restoreGuiRenderState();
+            pose.popMatrix();
         }
     }
 
     /**
      * 绘制物品图标
      */
-    public static void renderItem(GuiGraphics graphics, Font font, ItemStack itemStack, int x, int y, boolean showText) {
+    public static void renderItem(GuiGraphicsExtractor graphics, Font font, ItemStack itemStack, int x, int y, boolean showText) {
         renderGuiItemScaled(graphics, itemStack, x, y, 16);
         if (showText && !itemStack.isEmpty()) {
-            PoseStack pose = graphics.pose();
-            pose.pushPose();
+            Matrix3x2fStack pose = NativeGuiGraphics.bind(graphics);
+            pose.pushMatrix();
             try {
-                // 原版装饰内部还会前移 200；这里确保最终深度高于缩放物品模型。
-                pose.translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH);
-                graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
-                graphics.flush();
+                graphics.nextStratum();
+                graphics.itemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+                graphics.nextStratum();
             } finally {
-                pose.popPose();
+                pose.popMatrix();
             }
         }
     }

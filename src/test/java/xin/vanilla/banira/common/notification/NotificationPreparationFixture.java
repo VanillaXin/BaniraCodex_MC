@@ -14,6 +14,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.JsonUtils;
+import xin.vanilla.banira.common.util.NativeComponentJson;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,8 +48,8 @@ final class NotificationPreparationFixture {
                             .translationFallback("\u5956\u52b1 %s \ud83c\udf38\"\\\n")
                             .languageCode(LANGUAGE).bold(i % 2 == 0)
                             .color(Color.argb(0xff55ff55))
-                            .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/reward " + i))
-                            .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            .clickEvent(new ClickEvent.SuggestCommand("/reward " + i))
+                            .hoverEvent(new HoverEvent.ShowText(
                                     net.minecraft.network.chat.Component.literal(repeat("\u60ac\u6d6e\ud83c\udf38", 8) + marker)));
                     entry.getArgs().get(0).languageCode(LANGUAGE);
                     entry.getChildren().add(text("explicit-child").languageCode("fr_fr"));
@@ -62,8 +63,8 @@ final class NotificationPreparationFixture {
                 case "native":
                     net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.literal(marker)
                             .withStyle(Style.EMPTY.withBold(true).withUnderlined(true)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/native " + i))
-                                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                    .withClickEvent(new ClickEvent.SuggestCommand("/native " + i))
+                                    .withHoverEvent(new HoverEvent.ShowText(
                                             net.minecraft.network.chat.Component.literal("native-hover-" + i))))
                             .append(net.minecraft.network.chat.Component.literal("native-sibling-" + i));
                     entry = BaniraComponent.get().object(original).languageCode(LANGUAGE);
@@ -143,12 +144,12 @@ final class NotificationPreparationFixture {
         referenceDetach(copy, language, registries);
         String componentJson = JsonUtils.toString(copy.toJson(registries));
         referenceValidate(componentJson, "Banira component JSON");
-        String vanillaJson = net.minecraft.network.chat.Component.Serializer.toJson(copy.toChat(language), registries);
+        String vanillaJson = NativeComponentJson.toJson(copy.toChat(language), registries);
         referenceValidate(vanillaJson, "vanilla component JSON");
         RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(256, 16384), registries);
         try {
             ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buffer,
-                    net.minecraft.network.chat.Component.Serializer.fromJson(vanillaJson, registries));
+                    NativeComponentJson.fromJson(vanillaJson, registries));
         } catch (IndexOutOfBoundsException tooLarge) {
             throw new ReferenceLimit("Native component encoding exceeds 16384 bytes");
         } finally {
@@ -164,8 +165,8 @@ final class NotificationPreparationFixture {
 
     private static void referenceDetach(Component copy, String inheritedLanguage, RegistryAccess registries) {
         if (copy.original() instanceof net.minecraft.network.chat.Component) {
-            copy.original(net.minecraft.network.chat.Component.Serializer.fromJson(
-                    net.minecraft.network.chat.Component.Serializer.toJson((net.minecraft.network.chat.Component) copy.original(), registries), registries));
+            copy.original(NativeComponentJson.fromJson(
+                    NativeComponentJson.toJson((net.minecraft.network.chat.Component) copy.original(), registries), registries));
         }
         if (copy.hoverEvent() != null) {
             var ops = registries.createSerializationContext(JsonOps.INSTANCE);

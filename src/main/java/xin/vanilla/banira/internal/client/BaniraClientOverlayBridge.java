@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.api.client.hud.HudOverlayElement;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
@@ -33,7 +33,7 @@ public final class BaniraClientOverlayBridge {
         QuickActionOverlay.resetSystemIconTextureCache();
     }
 
-    public static void renderScreenOverlay(@Nonnull GuiGraphics graphics, @Nonnull Screen screen,
+    public static void renderScreenOverlay(@Nonnull GuiGraphicsExtractor graphics, @Nonnull Screen screen,
                                            double mouseX, double mouseY, float partialTick) {
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().render(graphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
@@ -45,7 +45,7 @@ public final class BaniraClientOverlayBridge {
         }
     }
 
-    public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
+    public static void renderHudOverlay(@Nonnull GuiGraphicsExtractor graphics) {
         NotificationManager.get().render(graphics);
         xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }
@@ -53,11 +53,11 @@ public final class BaniraClientOverlayBridge {
     /**
      * Fabric HUD 回调保留统一签名，具体事件分发由加载器入口完成。
      */
-    public static void renderHud(@Nonnull GuiGraphics graphics, float partialTick) {
+    public static void renderHud(@Nonnull GuiGraphicsExtractor graphics, float partialTick) {
         boolean screenOpen = BaniraClientRuntime.currentScreen() != null;
         if (!screenOpen) renderHudOverlay(graphics);
         BaniraClientEventHub.Client.fireRenderOverlayPostNative(
-                HudOverlayElement.ALL, graphics.pose(), partialTick, screenOpen);
+                HudOverlayElement.ALL, graphics, partialTick, screenOpen);
     }
 
     public static void tickScreenInteraction(@Nonnull Screen screen, double mouseX, double mouseY) {

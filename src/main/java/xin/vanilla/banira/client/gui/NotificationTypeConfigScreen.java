@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
@@ -746,14 +748,14 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
     private static final int CARD_ALPHA = 0xFF;
 
     @Override
-    protected void renderWidgets(GuiGraphics graphics, float partialTicks) {
+    protected void renderWidgets(GuiGraphicsExtractor graphics, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
         int cardBg = ColorUtils.applyAlphaToArgb(theme.bgSurface(), CARD_ALPHA);
         int btnAreaH = BUTTON_HEIGHT + CARD_INNER;
         int btnAreaTop = cardY + cardH - btnAreaH;
         int contentH = btnAreaTop - cardY - CARD_GAP;
         int n = bottomButtons.size();
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
 
         AbstractGuiUtils.drawRoundedRect(stack, cardX, cardY, cardW, contentH,
                 CARD_RADIUS, CARD_RADIUS, 0, 0, cardBg);
@@ -811,7 +813,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         renderWidgets(graphics, partialTicks);
     }
 
@@ -926,7 +928,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
         }
 
         @Override
-        public void render(GuiGraphics graphics, float partialTicks) {
+        public void render(GuiGraphicsExtractor graphics, float partialTicks) {
             if (!visible) return;
             renderChildren(graphics, partialTicks);
         }

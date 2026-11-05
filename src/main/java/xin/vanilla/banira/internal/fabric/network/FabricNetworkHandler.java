@@ -10,7 +10,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.api.BaniraIdentifier;
@@ -31,7 +31,7 @@ import java.util.function.Function;
  */
 public final class FabricNetworkHandler implements NetworkPacketRegistrar {
     private static final int MAX_PROTOCOL_LENGTH = 256;
-    private final ResourceLocation channel;
+    private final Identifier channel;
     private final String protocolVersion;
     private final CustomPacketPayload.Type<FabricPayload> payloadType;
     private final Map<Integer, PacketRegistration<?>> byId = new LinkedHashMap<>();
@@ -40,7 +40,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
     private boolean serverReceiverRegistered;
     private boolean clientReceiverRegistered;
 
-    private FabricNetworkHandler(ResourceLocation channel, String protocolVersion) {
+    private FabricNetworkHandler(Identifier channel, String protocolVersion) {
         this.channel = channel;
         this.protocolVersion = protocolVersion == null ? "" : protocolVersion;
         this.payloadType = new CustomPacketPayload.Type<>(channel);
@@ -52,7 +52,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
 
     public static FabricNetworkHandler create(String channelName, BaniraIdentifier identifier, String protocolVersion) {
         FabricNetworkHandler handler = new FabricNetworkHandler(
-                ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), channelName), protocolVersion);
+                Identifier.fromNamespaceAndPath(identifier.getNamespace(), channelName), protocolVersion);
         FabricNetworkChannels.installDefault(handler);
         return handler;
     }
@@ -74,7 +74,7 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
         }
     }
 
-    ResourceLocation channel() {
+    Identifier channel() {
         return channel;
     }
 
@@ -132,8 +132,8 @@ public final class FabricNetworkHandler implements NetworkPacketRegistrar {
                 (buffer, payload) -> buffer.writeBytes(payload.copyBuffer()),
                 buffer -> new FabricPayload(payloadType, copyReadable(buffer))
         );
-        PayloadTypeRegistry.playC2S().register(payloadType, codec);
-        PayloadTypeRegistry.playS2C().register(payloadType, codec);
+        PayloadTypeRegistry.serverboundPlay().register(payloadType, codec);
+        PayloadTypeRegistry.clientboundPlay().register(payloadType, codec);
     }
 
     private static RegistryFriendlyByteBuf copyReadable(RegistryFriendlyByteBuf source) {

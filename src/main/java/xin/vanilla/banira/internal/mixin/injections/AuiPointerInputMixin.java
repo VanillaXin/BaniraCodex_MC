@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.input.MouseButtonInfo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -9,9 +10,9 @@ import xin.vanilla.banira.internal.fabric.client.FabricAuiClientHooks;
 
 @Mixin(value = MouseHandler.class, priority = 2000)
 public class AuiPointerInputMixin {
-    @Inject(method = "onPress(JIII)V", at = @At("HEAD"))
-    private void banira$observeButton(long window, int button, int action, int modifiers, CallbackInfo callback) {
-        FabricAuiClientHooks.observeButton(window, button, action);
+    @Inject(method = "onButton(JLnet/minecraft/client/input/MouseButtonInfo;I)V", at = @At("HEAD"))
+    private void banira$observeButton(long window, MouseButtonInfo info, int action, CallbackInfo callback) {
+        FabricAuiClientHooks.observeButton(window, info.button(), action);
     }
 
     @Inject(method = "onScroll(JDD)V", at = @At("HEAD"))

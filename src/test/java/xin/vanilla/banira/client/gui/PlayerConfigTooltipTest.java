@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import org.joml.Matrix3x2fStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,8 +20,11 @@ import java.util.function.Consumer;
 import static org.junit.Assert.*;
 
 public class PlayerConfigTooltipTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     private ProbeScreen screen;
-    private GuiGraphics graphics;
+    private GuiGraphicsExtractor graphics;
 
     @Before
     public void setup() throws Exception {
@@ -29,11 +32,11 @@ public class PlayerConfigTooltipTest {
         net.minecraft.server.Bootstrap.bootStrap();
         BaniraPlatforms.install(new TestBaniraPlatform().development(true));
         screen = new ProbeScreen();
-        graphics = allocate(GuiGraphics.class);
-        for (Field field : GuiGraphics.class.getDeclaredFields()) {
-            if (field.getType() == PoseStack.class) {
+        graphics = allocate(GuiGraphicsExtractor.class);
+        for (Field field : GuiGraphicsExtractor.class.getDeclaredFields()) {
+            if (field.getType() == Matrix3x2fStack.class) {
                 field.setAccessible(true);
-                field.set(graphics, new PoseStack());
+                field.set(graphics, new Matrix3x2fStack(16));
             }
         }
     }
@@ -140,7 +143,7 @@ public class PlayerConfigTooltipTest {
 
         LabelWidget row(String title, String description, boolean hasTooltip) {
             BaseWidget row = new BaseWidget(this) {
-                @Override public void render(GuiGraphics graphics, float partialTicks) {}
+                @Override public void render(GuiGraphicsExtractor graphics, float partialTicks) {}
             };
             row.bounds(new ScreenCoordinate(0, 0, 160, 20));
             LabelWidget label = new LabelWidget(this);
@@ -163,6 +166,6 @@ public class PlayerConfigTooltipTest {
         @Override protected void buildPlayerConfig(CollapsiblePanelWidget root) {}
         @Override protected void savePlayerConfig() {}
         @Override public boolean isAnyDropdownSelectOpen() { return dropdown; }
-        @Override public void addDeferredTooltipRender(Consumer<GuiGraphics> render) { requests++; }
+        @Override public void addDeferredTooltipRender(Consumer<GuiGraphicsExtractor> render) { requests++; }
     }
 }

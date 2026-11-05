@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.fabric.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.api.client.render.BaniraDrawContext;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -18,7 +18,7 @@ public final class FabricBaniraHudBridge {
     private FabricBaniraHudBridge() {
     }
 
-    public static boolean dispatchPre(@Nonnull HudOverlayElement element, @Nonnull PoseStack stack) {
+    public static boolean dispatchPre(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor stack) {
         BaniraHudRenderContext context = context(stack);
         BaniraHudRenderEvent event = new BaniraHudRenderEvent(
                 HudRenderPhase.PRE, element, context, bounds(element, context), true);
@@ -26,15 +26,15 @@ public final class FabricBaniraHudBridge {
         return event.canceled();
     }
 
-    public static void dispatchPost(@Nonnull HudOverlayElement element, @Nonnull PoseStack stack) {
+    public static void dispatchPost(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor stack) {
         BaniraHudRenderContext context = context(stack);
         BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
                 HudRenderPhase.POST, element, context, bounds(element, context), false));
     }
 
-    private static BaniraHudRenderContext context(PoseStack stack) {
+    private static BaniraHudRenderContext context(GuiGraphicsExtractor stack) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
-        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
         BaniraDrawContext draw = new BaniraDrawContext(
                 BaniraClientDrawBridge.handle(stack), screen.key(), screen.val(), partialTick);
         return new BaniraHudRenderContext(draw, screen.key(), screen.val(), partialTick);

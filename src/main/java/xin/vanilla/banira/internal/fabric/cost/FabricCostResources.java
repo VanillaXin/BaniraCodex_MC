@@ -1,13 +1,16 @@
 package xin.vanilla.banira.internal.fabric.cost;
 
+import net.minecraft.world.entity.player.Inventory;
+
 import com.google.gson.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.commands.arguments.item.ItemParser;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import xin.vanilla.banira.api.cost.*;
 import xin.vanilla.banira.common.cost.ResourcePaymentAccess;
@@ -19,8 +22,9 @@ public final class FabricCostResources {
     private FabricCostResources() { }
 
     public static CostAccess access(ServerPlayer player, InventoryScope scope) {
-        return access(player, scope, p -> p.server != null && p.server.isSameThread() && !p.hasDisconnected()
-                && p.server.getPlayerList().getPlayer(p.getUUID()) == p && p.isAlive() && !p.isRemoved());
+        return access(player, scope, p -> p.level() != null && p.level().getServer() != null
+                && p.level().getServer().isSameThread() && !p.hasDisconnected()
+                && p.level().getServer().getPlayerList().getPlayer(p.getUUID()) == p && p.isAlive() && !p.isRemoved());
     }
 
     static CostAccess access(ServerPlayer player, InventoryScope scope, Predicate<ServerPlayer> available) {
@@ -232,7 +236,7 @@ public final class FabricCostResources {
         }
 
         private boolean experience() { return id.equals("banira:xp_point") || id.equals("banira:xp_level"); }
-        private int slotCount() { return scope == InventoryScope.MAIN ? player.getInventory().items.size() : player.getInventory().getContainerSize(); }
+        private int slotCount() { return scope == InventoryScope.MAIN ? Inventory.INVENTORY_SIZE : player.getInventory().getContainerSize(); }
 
         private JsonObject read(String text) {
             JsonObject json = new JsonParser().parse(text).getAsJsonObject();
@@ -260,7 +264,13 @@ public final class FabricCostResources {
             json.addProperty("count", stack.isEmpty() ? 0 : stack.getCount());
             ItemStack identity = stack.copy();
             if (!identity.isEmpty()) identity.setCount(1);
-            json.addProperty("item", identity.isEmpty() ? "" : identity.save(player.registryAccess()).toString());
+            if (identity.isEmpty()) json.addProperty("item", "");
+            else {
+                CompoundTag payload = new CompoundTag();
+                payload.put("stack", ItemStack.CODEC.encodeStart(
+                        player.registryAccess().createSerializationContext(NbtOps.INSTANCE), identity).getOrThrow());
+                json.addProperty("item", payload.toString());
+            }
             return json;
         }
 
@@ -268,12 +278,17 @@ public final class FabricCostResources {
             int count = integer(json, "count");
             if (count == 0) return ItemStack.EMPTY;
             if (count < 0) throw new IllegalArgumentException("Negative stack count");
+            ItemStack stack;
             try {
-                ItemStack stack = ItemStack.parseOptional(player.registryAccess(), TagParser.parseTag(json.get("item").getAsString()));
-                if (stack.isEmpty()) throw new IllegalArgumentException("Unavailable snapshot item");
-                stack.setCount(count);
-                return stack;
-            } catch (CommandSyntaxException invalid) { throw new IllegalArgumentException("Invalid snapshot item", invalid); }
+                CompoundTag payload = TagParser.parseCompoundFully(json.get("item").getAsString());
+                stack = ItemStack.CODEC.parse(player.registryAccess().createSerializationContext(NbtOps.INSTANCE),
+                        Objects.requireNonNull(payload.get("stack"), "snapshot stack")).getOrThrow();
+            } catch (CommandSyntaxException invalid) {
+                throw new IllegalArgumentException("Invalid snapshot item", invalid);
+            }
+            if (stack.isEmpty()) throw new IllegalArgumentException("Unavailable snapshot item");
+            stack.setCount(count);
+            return stack;
         }
 
         private static boolean matches(ItemStack stack, ItemStack required, ResourceCost.MatchMode mode) {
@@ -284,18 +299,18 @@ public final class FabricCostResources {
         private ItemStack item(String specification) {
             try {
                 StringReader reader = new StringReader(specification.trim());
-                net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.read(reader);
+                net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.read(reader);
                 ItemStack item;
                 if (reader.canRead() && reader.peek() == '[') {
                     reader.setCursor(0);
-                    ItemParser.ItemResult parsed = new ItemParser(player.registryAccess()).parse(reader);
-                    item = new ItemInput(parsed.item(), parsed.components()).createItemStack(1, false);
+                    ItemInput parsed = new ItemParser(player.registryAccess()).parse(reader);
+                    item = parsed.createItemStack(1);
                 } else {
                     item = new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(id)
                             .orElse(net.minecraft.world.item.Items.AIR));
                     if (reader.canRead() && reader.peek() == '{') {
                         net.minecraft.world.item.component.CustomData.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                                item, new TagParser(reader).readStruct());
+                                item, TagParser.parseCompoundAsArgument(reader));
                     }
                 }
                 if (reader.canRead()) return null;

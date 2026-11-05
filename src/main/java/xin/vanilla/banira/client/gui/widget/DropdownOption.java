@@ -2,7 +2,7 @@ package xin.vanilla.banira.client.gui.widget;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.Component;
@@ -26,7 +26,7 @@ public class DropdownOption {
     private final String label;
     private final ItemStack icon;
     /**
-     * 非空时优先于 {@link #icon} 绘制（适用于 ResourceLocation 纹理或图集子区域）
+     * 非空时优先于 {@link #icon} 绘制（适用于 Identifier 纹理或图集子区域）
      */
     @Nullable
     private final Texture[] texture;
@@ -60,14 +60,14 @@ public class DropdownOption {
     /**
      * 使用整图纹理作为左侧图标（自动读取纹理尺寸与 UV）
      */
-    public DropdownOption(String value, ResourceLocation location, @Nullable Component tooltip) {
+    public DropdownOption(String value, Identifier location, @Nullable Component tooltip) {
         this(value, ItemStack.EMPTY, location != null ? new Texture[]{Texture.of(location)} : null, tooltip);
     }
 
     /**
      * 使用整图纹理作为左侧图标（自动读取纹理尺寸与 UV）
      */
-    public DropdownOption(String value, ResourceLocation[] locations, @Nullable Component tooltip) {
+    public DropdownOption(String value, Identifier[] locations, @Nullable Component tooltip) {
         this(value, ItemStack.EMPTY, locations != null ? Arrays.stream(locations).map(Texture::of).toArray(Texture[]::new) : null, tooltip);
     }
 

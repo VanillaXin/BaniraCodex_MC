@@ -21,6 +21,9 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiSelectorParityTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();
@@ -127,14 +130,14 @@ public class UiSelectorParityTest {
         assertTrue(nbt.submit());
         ItemStack item = (ItemStack) call(s, "item");
         assertEquals(23, item.getCount());
-        assertEquals(4, item.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("Damage"));
+        assertEquals(4, item.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("Damage").orElseThrow().intValue());
         FormUiSession id = editor(s, "item");
         draft(id, "minecraft:iron_sword");
         assertTrue(id.submit());
         item = (ItemStack) call(s, "item");
         assertEquals(Items.IRON_SWORD, item.getItem());
         assertEquals(23, item.getCount());
-        assertEquals(4, item.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("Damage"));
+        assertEquals(4, item.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag().getInt("Damage").orElseThrow().intValue());
     }
 
     @Test
@@ -160,7 +163,7 @@ public class UiSelectorParityTest {
         draft(id, "minecraft:strength");
         assertTrue(id.submit());
         effect = (MobEffectInstance) call(s, "effect");
-        assertEquals(MobEffects.DAMAGE_BOOST, effect.getEffect());
+        assertEquals(MobEffects.STRENGTH, effect.getEffect());
         assertEquals(1201, effect.getDuration());
         assertEquals(3, effect.getAmplifier());
         assertEquals(601, original.getDuration());

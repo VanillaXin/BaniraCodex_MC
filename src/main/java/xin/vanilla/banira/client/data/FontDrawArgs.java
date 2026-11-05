@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.data;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextColorPolicy;
@@ -129,10 +129,10 @@ public class FontDrawArgs implements Cloneable {
     private boolean popupPaddingAuto = false;
 
     /**
-     * 非空时 {@link xin.vanilla.banira.client.gui.widget.LabelWidget#drawLimitedText(FontDrawArgs)} 走 {@link GuiGraphics#drawString}；否则回退 {@link Font#drawInBatch}。
+     * 非空时使用指定的 GUI 提取器；否则使用当前绘制上下文的提取器。
      */
     @Nullable
-    private GuiGraphics guiGraphics;
+    private GuiGraphicsExtractor guiGraphics;
 
     /**
      * 富文本自身已有颜色时，不使用气泡主题色覆盖。
@@ -199,11 +199,11 @@ public class FontDrawArgs implements Cloneable {
         return new FontDrawArgs(Text.literal(text));
     }
 
-    public static FontDrawArgs of(String text, PoseStack stack) {
+    public static FontDrawArgs of(String text, Matrix3x2fStack stack) {
         return new FontDrawArgs(Text.literal(text).stack(stack));
     }
 
-    public static FontDrawArgs of(String text, PoseStack stack, Font font) {
+    public static FontDrawArgs of(String text, Matrix3x2fStack stack, Font font) {
         return new FontDrawArgs(Text.literal(text).stack(stack).font(font));
     }
 
@@ -215,11 +215,11 @@ public class FontDrawArgs implements Cloneable {
         return new FontDrawArgs(Text.literal(text)).defaultPopoStyle();
     }
 
-    public static FontDrawArgs ofPopo(String text, PoseStack stack) {
+    public static FontDrawArgs ofPopo(String text, Matrix3x2fStack stack) {
         return new FontDrawArgs(Text.literal(text).stack(stack)).defaultPopoStyle();
     }
 
-    public static FontDrawArgs ofPopo(String text, PoseStack stack, Font font) {
+    public static FontDrawArgs ofPopo(String text, Matrix3x2fStack stack, Font font) {
         return new FontDrawArgs(Text.literal(text).stack(stack).font(font)).defaultPopoStyle();
     }
 

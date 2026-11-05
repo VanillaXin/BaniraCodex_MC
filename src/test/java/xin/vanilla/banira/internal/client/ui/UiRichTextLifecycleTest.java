@@ -30,20 +30,16 @@ public class UiRichTextLifecycleTest {
             new org.objectweb.asm.ClassReader(in).accept(type, 0);
         }
         var method = type.methods.stream().filter(m -> m.name.equals("renderText")).findFirst().orElseThrow();
-        boolean seeThrough = false;
+        boolean extracted = false;
         for (var instruction : method.instructions) {
-            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
-                var field = (org.objectweb.asm.tree.FieldInsnNode) instruction;
-                if (field.owner.equals("net/minecraft/client/gui/Font$DisplayMode") && field.name.equals("SEE_THROUGH"))
-                    seeThrough = true;
-            }
             if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
                 var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                assertFalse("GuiGraphics.drawString selects the normal depth-testing text batch",
-                        call.owner.equals("net/minecraft/client/gui/GuiGraphics") && call.name.equals("drawString"));
+                assertNotEquals("Text must be submitted during extraction", "drawInBatch", call.name);
+                if (call.owner.equals("net/minecraft/client/gui/GuiGraphicsExtractor")
+                        && (call.name.equals("text") || call.name.equals("textRenderer"))) extracted = true;
             }
         }
-        assertTrue("Text overlays need the depth-independent font render type", seeThrough);
+        assertTrue("Text overlays need the GUI extraction font pipeline", extracted);
     }
 
     private static final class ScrollFixture {

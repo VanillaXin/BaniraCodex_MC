@@ -23,6 +23,9 @@ import java.util.function.Supplier;
 import static org.junit.Assert.*;
 
 public class UiPlayerConfigCheckboxTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();

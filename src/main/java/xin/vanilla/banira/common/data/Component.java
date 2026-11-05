@@ -806,20 +806,21 @@ public final class Component implements Cloneable, Serializable {
 
     static String prepareItemHoverTag(String encoded, String language, boolean vanillaOnly) {
         try {
-            net.minecraft.nbt.CompoundTag tag = net.minecraft.nbt.TagParser.parseTag(encoded);
-            net.minecraft.nbt.CompoundTag display = tag.getCompound("display");
+            net.minecraft.nbt.CompoundTag tag = net.minecraft.nbt.TagParser.parseCompoundFully(encoded);
+            net.minecraft.nbt.CompoundTag display = tag.getCompoundOrEmpty("display");
             boolean changed = false;
-            if (display.contains("Name", 8)) {
-                String before = display.getString("Name");
+            if (display.getString("Name").isPresent()) {
+                String before = display.getString("Name").orElseThrow();
                 String after = prepareItemText(before, language, vanillaOnly);
                 if (!before.equals(after)) {
                     display.putString("Name", after);
                     changed = true;
                 }
             }
-            net.minecraft.nbt.ListTag lore = display.getList("Lore", 8);
+            net.minecraft.nbt.ListTag lore = display.getListOrEmpty("Lore");
             for (int index = 0; index < lore.size(); index++) {
-                String before = lore.getString(index);
+                if (lore.getString(index).isEmpty()) continue;
+                String before = lore.getString(index).orElseThrow();
                 String after = prepareItemText(before, language, vanillaOnly);
                 if (!before.equals(after)) {
                     lore.set(index, net.minecraft.nbt.StringTag.valueOf(after));
@@ -1016,11 +1017,16 @@ public final class Component implements Cloneable, Serializable {
         String clickAction = JsonUtils.getString(jsonObject, "clickEvent.action", "");
         String clickValue = JsonUtils.getString(jsonObject, "clickEvent.value", "");
         if (StringUtils.isNotNullOrEmpty(clickAction) && StringUtils.isNotNullOrEmpty(clickValue)) {
-            result.clickEvent(new ClickEvent(parseClickEventAction(clickAction), clickValue));
+            result.clickEvent(legacyClickEvent(parseClickEventAction(clickAction), clickValue));
+        } else {
+            JsonObject click = JsonUtils.getJsonObject(jsonObject, "clickEvent", null);
+            if (click != null) ClickEvent.CODEC.parse(componentRegistries().createSerializationContext(JsonOps.INSTANCE), click)
+                    .result().ifPresent(result::clickEvent);
         }
         JsonObject hover = JsonUtils.getJsonObject(jsonObject, "hoverEvent", null);
         if (hover != null) {
-            HoverEvent.CODEC.parse(JsonOps.INSTANCE, hover).result().ifPresent(result::hoverEvent);
+            HoverEvent.CODEC.parse(componentRegistries().createSerializationContext(JsonOps.INSTANCE), hover)
+                    .result().ifPresent(result::hoverEvent);
         }
         for (JsonElement childJson : JsonUtils.getJsonArray(jsonObject, "children", new JsonArray())) {
             result.getChildren().add(deserialize((JsonObject) childJson));
@@ -1029,6 +1035,30 @@ public final class Component implements Cloneable, Serializable {
             result.getArgs().add(deserialize((JsonObject) argJson));
         }
         return result;
+    }
+
+    private static ClickEvent legacyClickEvent(ClickEvent.Action action, String value) {
+        return switch (action) {
+            case OPEN_URL -> new ClickEvent.OpenUrl(java.net.URI.create(value));
+            case OPEN_FILE -> new ClickEvent.OpenFile(value);
+            case RUN_COMMAND -> new ClickEvent.RunCommand(value);
+            case SUGGEST_COMMAND -> new ClickEvent.SuggestCommand(value);
+            case CHANGE_PAGE -> new ClickEvent.ChangePage(Integer.parseInt(value));
+            case COPY_TO_CLIPBOARD -> new ClickEvent.CopyToClipboard(value);
+            default -> throw new IllegalArgumentException("Missing typed ClickEvent payload: " + action);
+        };
+    }
+
+    private static String legacyClickValue(ClickEvent event) {
+        return switch (event) {
+            case ClickEvent.OpenUrl url -> url.uri().toString();
+            case ClickEvent.OpenFile file -> file.path();
+            case ClickEvent.RunCommand command -> command.command();
+            case ClickEvent.SuggestCommand command -> command.command();
+            case ClickEvent.ChangePage page -> Integer.toString(page.page());
+            case ClickEvent.CopyToClipboard clipboard -> clipboard.value();
+            default -> null;
+        };
     }
 
     static JsonObject serialize(Component component) {
@@ -1086,8 +1116,15 @@ public final class Component implements Cloneable, Serializable {
             JsonUtils.set(result, "obfuscated", component.obfuscated());
         }
         if (component.clickEvent() != null) {
-            JsonUtils.set(result, "clickEvent.action", component.clickEvent().getAction().getSerializedName());
-            JsonUtils.set(result, "clickEvent.value", component.clickEvent().getValue());
+            String value = legacyClickValue(component.clickEvent());
+            if (value != null) {
+                JsonUtils.set(result, "clickEvent.action", component.clickEvent().action().getSerializedName());
+                JsonUtils.set(result, "clickEvent.value", value);
+            } else {
+                result.add("clickEvent", ClickEvent.CODEC.encodeStart(
+                        (registries != null ? registries : componentRegistries()).createSerializationContext(JsonOps.INSTANCE),
+                        component.clickEvent()).getOrThrow());
+            }
         }
         if (component.hoverEvent() != null) {
             HoverEvent.CODEC.encodeStart((registries != null ? registries : componentRegistries()).createSerializationContext(JsonOps.INSTANCE),

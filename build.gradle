@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.17.21'
+    id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
     id 'com.gradleup.shadow' version '9.2.2'
 }
@@ -7,7 +7,11 @@ plugins {
 apply from: 'gradle/config-view-processor.gradle'
 apply from: 'gradle/embedded-compiler.gradle'
 
-def javaVer = 21
+def javaVer = 25
+
+if (JavaVersion.current() < JavaVersion.toVersion(javaVer)) {
+    throw new GradleException('Minecraft 26.1 requires a Java 25 or newer Gradle JVM')
+}
 
 group = 'xin.vanilla.banira'
 
@@ -42,6 +46,16 @@ repositories {
         name = "Terraformers Maven"
         url = "https://maven.terraformersmc.com/releases/"
     }
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com/'
+        content { includeGroup 'mezz.jei' }
+    }
+    maven {
+        name = 'FTB'
+        url = 'https://maven.ftb.dev/releases/'
+        content { includeGroup 'dev.ftb.mods' }
+    }
     // flatDir {
     //     dir 'libs'
     // }
@@ -55,58 +69,67 @@ repositories {
     }
 }
 
+configurations.create('legacyFtbContract') {
+    canBeConsumed = false
+    transitive = false
+}
+
 dependencies {
-    modCompileOnly "maven.modrinth:xaeros-minimap:W4dcLcUs"
-    modCompileOnly "maven.modrinth:journeymap:i7LuKuDl"
-    modCompileOnly "curse.maven:ftb-chunks-fabric-472657:7608680"
-    modCompileOnly "maven.modrinth:map-atlases:sG1olwBl"
-    modCompileOnly "maven.modrinth:voxelmap-updated:QZuVdvFR"
+    // Bytecode fixtures only; never load this legacy mod in the game or test JVM.
+    legacyFtbContract 'curse.maven:ftb-library-fabric-438495:5631428'
+    compileOnly "maven.modrinth:xaeros-minimap:DVSdniw4"
+    compileOnly "maven.modrinth:journeymap:tHO89MsT"
+    // FTB's available contracts target 26.1.2; they are not 26.1 runtime dependencies.
+    compileOnly('dev.ftb.mods:ftb-chunks-fabric:26.1.2.10') { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-chunks:26.1.2.10') { transitive = false }
+    // Atlas requires Minecraft =26.1.2; retain only its integration compile reference.
+    compileOnly('maven.modrinth:map-atlases:IvQaTGDa') { transitive = false }
+    compileOnly "maven.modrinth:voxelmap-updated:NfOUNBHc"
     if (project.hasProperty('minimapSmoke')) {
         switch (project.property('minimapSmoke').toString()) {
             case '':
-            case 'xaero': modRuntimeOnly "maven.modrinth:xaeros-minimap:W4dcLcUs"; break
+            case 'xaero': localRuntime "maven.modrinth:xaeros-minimap:DVSdniw4"; break
             case 'journey':
-                modRuntimeOnly "maven.modrinth:journeymap:i7LuKuDl"
-                modRuntimeOnly "maven.modrinth:common-network:qJXqSlRN"
+                localRuntime "maven.modrinth:journeymap:tHO89MsT"
                 break
-            case 'voxel': modRuntimeOnly "maven.modrinth:voxelmap-updated:QZuVdvFR"; break
+            case 'voxel': localRuntime "maven.modrinth:voxelmap-updated:NfOUNBHc"; break
             case 'atlas':
-                modRuntimeOnly "maven.modrinth:map-atlases:sG1olwBl"
-                modRuntimeOnly "maven.modrinth:moonlight:przKUDWo"
-                break
+                throw new GradleException('minimapSmoke=atlas is unavailable for Minecraft 26.1: Map Atlases IvQaTGDa requires Minecraft =26.1.2 and Moonlight >=26.1.2-4.1.0; it is a compile-only reference')
             default: throw new GradleException('minimapSmoke: xaero, journey, voxel or atlas')
         }
     }
-    modRuntimeOnly "maven.modrinth:fabric-permissions-api:62DUD085"
-    // Sodium Extra 0.6.x targets the bundled Sodium 0.6 line for Minecraft 1.21.1.
-    modRuntimeOnly "maven.modrinth:sodium-extra:anDafurZ"
-    modRuntimeOnly "maven.modrinth:spark:cALUj9l1"
-    // Development runtime performance mod; not bundled into published artifacts.
-    modRuntimeOnly "maven.modrinth:AANobbMI:u1OEbNKx"
+    // Optional runtime mods require a separately verified 26.1 receipt; no legacy defaults.
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-networking-api-v1:${project.fabric_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-lifecycle-events-v1:${project.fabric_version}"
+    implementation("net.fabricmc:fabric-loader:${project.loader_version}") {
+        version { strictly(project.loader_version.toString()) }
+    }
+    implementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}") {
+        version { strictly(project.fabric_version.toString()) }
+    }
+    implementation fabricApi.module('fabric-networking-api-v1', project.fabric_version)
+    implementation fabricApi.module('fabric-lifecycle-events-v1', project.fabric_version)
 
     testImplementation 'junit:junit:4.13.2'
-    compileOnly 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
+    testCompileOnly 'org.projectlombok:lombok:1.18.48'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     implementation "com.google.code.findbugs:jsr305:3.0.2"
     implementation "org.apache.maven:maven-artifact:4.0.0-rc-3"
 
-    modImplementation "com.terraformersmc:modmenu:${modmenu_version}"
+    compileOnly "com.terraformersmc:modmenu:${modmenu_version}"
+    if (providers.gradleProperty('banira.devModMenu').getOrElse('false').toBoolean()) {
+        localRuntime "com.terraformersmc:modmenu:${modmenu_version}"
+    }
 
     // 可选背包按钮兼容只用于编译，Banira 本体不会强制安装这些模组。
-    modCompileOnly "curse.maven:ftb-library-fabric-438495:5631428"
-    modCompileOnly "curse.maven:jei-238222:7420583"
+    compileOnly('dev.ftb.mods:ftb-library-fabric:26.1.2.11') { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-library:26.1.2.11') { transitive = false }
+    compileOnly "mezz.jei:jei-26.1-fabric:29.2.0.21"
     if ((project.findProperty('banira.devInventoryIntegrations') ?: 'true').toString().toBoolean()) {
-        modLocalRuntime "curse.maven:jei-238222:7420583"
+        localRuntime "mezz.jei:jei-26.1-fabric:29.2.0.21"
     }
 
     runtimeOnly "org.joml:joml:1.10.4"
@@ -114,8 +137,8 @@ dependencies {
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
 dependencies {
-    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:W4dcLcUs"
-    baniraMinimapLibraries "maven.modrinth:journeymap:i7LuKuDl"
+    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:DVSdniw4"
+    baniraMinimapLibraries "maven.modrinth:journeymap:tHO89MsT"
 }
 def minimapCompilerLibraries = providers.provider {
     // Generated compile inputs must survive clean.
@@ -139,7 +162,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
-    modCompileOnly files(minimapCompilerLibraries)
+    compileOnly files(minimapCompilerLibraries)
     testRuntimeOnly files(providers.provider {
         sourceSets.main.compileClasspath.files.findAll { (it.name.toLowerCase().contains('xaero') || it.name.toLowerCase().contains('journeymap')) }
     })
@@ -163,6 +186,12 @@ def prepareBaniraDevFpsOverlay = {
 }
 
 tasks.register('prepareDevFpsOverlay') {
+    onlyIf { providers.gradleProperty('banira.devFpsOverlay').getOrElse('false').toBoolean() }
+    doFirst {
+        if (!project.baniraDevOptionalRuntimeProjects.contains('sodium-extra')) {
+            throw new GradleException('Development FPS overlay requires a verified 26.1 sodium-extra runtime pin')
+        }
+    }
     doLast prepareBaniraDevFpsOverlay
 }
 
@@ -214,13 +243,11 @@ java {
     if (JavaVersion.current() < javaVersion) {
         toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
     }
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
 }
 
 tasks.named('jar', Jar).configure {
+    archiveClassifier.set('dev')
     from("LICENSE") {
         rename { "${it}_${project.mod_id}" }
     }
@@ -238,8 +265,7 @@ tasks.named('jar', Jar).configure {
     }
 }
 
-tasks.named('remapJar') {
-    // 自定义打包路径与输出格式
+tasks.named('shadowJar') {
     archiveBaseName.set(mod_id)
     archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
     destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
@@ -267,17 +293,17 @@ publishing {
 
 afterEvaluate {
     publishing.publications.named('mavenJava', MavenPublication) {
-        // 子 mod 必须消费经过 Loom remap 的正式模组 JAR，开发 jar 只包含命名空间中间产物。
-        artifact tasks.named('remapJar')
+        // The unobfuscated distribution includes the relocated embedded compiler.
+        artifact tasks.named('shadowJar')
         artifact tasks.named('sourcesJar')
     }
     tasks.named('publishMavenJavaPublicationToMavenLocalRepository').configure {
-        dependsOn 'remapJar', 'sourcesJar'
+        dependsOn 'shadowJar', 'sourcesJar'
     }
 }
 
 tasks.withType(PublishToMavenLocal).configureEach {
-    dependsOn 'remapJar', 'sourcesJar'
+    dependsOn 'shadowJar', 'sourcesJar'
 }
 
 tasks.named('publishMavenJavaPublicationToPublicationContractRepository') {
@@ -289,15 +315,20 @@ tasks.named('publishMavenJavaPublicationToPublicationContractRepository') {
 
 tasks.named('test') {
     dependsOn 'publishMavenJavaPublicationToPublicationContractRepository'
+    inputs.files(configurations.legacyFtbContract)
     doFirst {
+        systemProperty 'banira.ftb.legacyContractJar', configurations.legacyFtbContract.singleFile.absolutePath
+        systemProperty 'banira.ftb.contractJar', configurations.compileClasspath.files.find {
+            it.name == 'ftb-library-26.1.2.11.jar'
+        }.absolutePath
         systemProperty 'banira.publication.repository',
                 publicationContractRepository.get().asFile.absolutePath
         systemProperty 'banira.publication.group', project.group.toString()
         systemProperty 'banira.publication.artifact', base.archivesName.get()
         systemProperty 'banira.publication.version',
                 "${loader_type}-${minecraft_version}-${mod_version}"
-        systemProperty 'banira.publication.remapJar',
-                tasks.named('remapJar').get().archiveFile.get().asFile.absolutePath
+        systemProperty 'banira.publication.jar',
+                tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath
     }
 }
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）

@@ -3,14 +3,13 @@ package xin.vanilla.banira.client.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
@@ -96,7 +95,7 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
     }
 
     private static SeasonThemePair tryLoadSeason(ResourceManager resourceManager, EnumSeason season) {
-        ResourceLocation loc = themeJsonLocation(season);
+        Identifier loc = themeJsonLocation(season);
         try {
             Resource res = resourceManager.getResource(loc).orElse(null);
             if (res == null) {
@@ -117,9 +116,9 @@ public final class BaniraColorThemeLoader extends SimplePreparableReloadListener
         }
     }
 
-    static ResourceLocation themeJsonLocation(EnumSeason season) {
+    static Identifier themeJsonLocation(EnumSeason season) {
         String name = season.name().toLowerCase() + ".json";
-        return Identifier.id().create(Banira.MOD_ID, "themes/" + name);
+        return xin.vanilla.banira.Identifier.id().create(Banira.MOD_ID, "themes/" + name);
     }
 
     static SeasonThemePair parseThemeRoot(EnumSeason season, JsonObject rootObj) {

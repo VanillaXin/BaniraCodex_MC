@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -39,7 +39,7 @@ public class UiCorePortTest {
         class View extends NativeUiView implements UiContainerLayerHost.Renderer {
             int paints;
             View() { super(new Object()); }
-            public void render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions) { paints++; }
+            public void render(GuiGraphicsExtractor graphics, Map<String, ScreenCoordinate> regions) { paints++; }
         }
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View();

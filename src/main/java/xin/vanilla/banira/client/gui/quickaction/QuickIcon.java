@@ -1,14 +1,16 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -109,7 +111,7 @@ public class QuickIcon {
     }
 
     @Nonnull
-    public static QuickIcon resource(@Nonnull ResourceLocation textureLocation) {
+    public static QuickIcon resource(@Nonnull Identifier textureLocation) {
         QuickIcon q = new QuickIcon();
         q.kind(Kind.RESOURCE);
         q.texture(Texture.of(textureLocation));
@@ -154,7 +156,7 @@ public class QuickIcon {
     private Texture resolvedResourceTexture() {
         if (externalTextureFactory != null && externalTexturePath != null
                 && (texture == null || !TextureUtils.isTextureAvailable(texture.location()))) {
-            ResourceLocation location = TextureUtils.loadCustomTexture(externalTextureFactory, externalTexturePath);
+            Identifier location = TextureUtils.loadCustomTexture(externalTextureFactory, externalTexturePath);
             texture = Texture.of(location);
         }
         if (texture == null || (texture.uvWidth() > 0 && texture.uvHeight() > 0)) {
@@ -168,14 +170,14 @@ public class QuickIcon {
     }
 
     /**
-     * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 PoseStack 一致，避免 3D GUI 物品不显示。
+     * 在右键菜单等场景绘制：物品使用图集精灵平面绘制，与圆角菜单的 Matrix3x2fStack 一致，避免 3D GUI 物品不显示。
      */
-    public void renderForMenu(@Nonnull GuiGraphics graphics, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void renderForMenu(@Nonnull GuiGraphicsExtractor graphics, @Nonnull Minecraft mc, int x, int y, int size) {
+        NativeGuiGraphics.bind(graphics);
         if (size <= 0) {
             return;
         }
         if (kind == Kind.ITEM) {
-            prepareDrawState();
             ItemWidget.renderGuiItemFlatBlit(graphics.pose(), mc, resolvedItemStack(), x, y, size);
             return;
         }
@@ -185,10 +187,11 @@ public class QuickIcon {
     /**
      * 在 GUI 坐标系下绘制图标，尺寸为 {@code size}×{@code size}。
      */
-    public void render(@Nonnull GuiGraphics graphics, @Nonnull Minecraft mc, int x, int y, int size) {
+    public void render(@Nonnull GuiGraphicsExtractor graphics, @Nonnull Minecraft mc, int x, int y, int size) {
         if (size <= 0) {
             return;
         }
+        if (graphics != null) NativeGuiGraphics.bind(graphics);
         if (kind == Kind.CUSTOM) {
             if (customRenderer != null) {
                 customRenderer.render(graphics == null ? null : graphics.pose(), mc, x, y, size);
@@ -198,8 +201,7 @@ public class QuickIcon {
         if (graphics == null || mc == null) {
             return;
         }
-        PoseStack stack = graphics.pose();
-        prepareDrawState();
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         switch (kind) {
             case ITEM: {
                 ItemWidget.renderGuiItemScaled(graphics, resolvedItemStack(), x, y, size);
@@ -209,7 +211,7 @@ public class QuickIcon {
                 MobEffect e = mobEffect != null ? mobEffect : MobEffects.LUCK.value();
                 MobEffectInstance inst = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(e), 1, 0);
                 EffectIconWidget.drawEffectIcon(stack, mc.font, inst, x, y, size, size, false);
-                AbstractGuiUtils.restoreGuiRenderState();
+
                 break;
             }
             case RESOURCE: {
@@ -219,12 +221,12 @@ public class QuickIcon {
                     return;
                 }
 
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
+
+
                 ImageWidget.blit(stack, resourceTexture, x, y, size, size);
-                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-                AbstractGuiUtils.restoreGuiRenderState();
+
+
                 break;
             }
             case CUSTOM: {
@@ -239,9 +241,9 @@ public class QuickIcon {
     }
 
     /**
-     * 将 PoseStack 图标回调接入 1.20.1 的 GuiGraphics 管线。
+     * 将矩阵图标回调接入当前提取管线。
      */
-    public void render(@Nonnull PoseStack stack, int x, int y, int size) {
+    public void render(@Nonnull Matrix3x2fStack stack, int x, int y, int size) {
         Minecraft minecraft = Minecraft.getInstance();
         if (kind == Kind.CUSTOM) {
             if (customRenderer != null) {
@@ -249,23 +251,13 @@ public class QuickIcon {
             }
             return;
         }
-        GuiGraphics graphics = new GuiGraphics(minecraft, minecraft.renderBuffers().bufferSource());
-        graphics.pose().last().pose().set(stack.last().pose());
-        render(graphics, minecraft, x, y, size);
-    }
-
-    /**
-     * 外部图标绘制器共享同一 GUI 管线，每次调用前都恢复可预期的纹理状态。
-     */
-    private static void prepareDrawState() {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        NativeGuiGraphics.draw(stack,
+                graphics -> render(graphics, minecraft, x, y, size));
     }
 
     @FunctionalInterface
     public interface Renderer {
-        void render(PoseStack stack, Minecraft minecraft, int x, int y, int size);
+        void render(Matrix3x2fStack stack, Minecraft minecraft, int x, int y, int size);
     }
 
     private ItemStack resolvedItemStack() {

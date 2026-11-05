@@ -1,6 +1,6 @@
 package xin.vanilla.banira.api.client.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +22,7 @@ public record UiHudFrame(List<Part> parts) {
         String id();
     }
 
-    public record Sprite(String id, ResourceLocation texture, double x, double y, double width, double height,
+    public record Sprite(String id, Identifier texture, double x, double y, double width, double height,
                          double angleDegrees) implements Part {
         public Sprite {
             validate(id, x, y, width, height, angleDegrees);

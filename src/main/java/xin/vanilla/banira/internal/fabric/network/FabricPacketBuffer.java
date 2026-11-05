@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.fabric.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.internal.network.NativePacketBufferAccess;
@@ -121,13 +121,13 @@ public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacke
 
     @Override
     public BaniraIdentifier readIdentifier() {
-        return BaniraIdentifier.parse(delegate.readResourceLocation().toString());
+        return BaniraIdentifier.parse(delegate.readIdentifier().toString());
     }
 
     @Override
     public void writeIdentifier(BaniraIdentifier value) {
         BaniraIdentifier identifier = Objects.requireNonNull(value, "value");
-        delegate.writeResourceLocation(ResourceLocation.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
+        delegate.writeIdentifier(Identifier.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath()));
     }
 
     @Override

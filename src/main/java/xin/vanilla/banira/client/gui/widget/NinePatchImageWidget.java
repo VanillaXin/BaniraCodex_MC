@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.data.TransformArgs;
@@ -60,8 +62,8 @@ public class NinePatchImageWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -106,7 +108,7 @@ public class NinePatchImageWidget extends BaseWidget {
      * @param destHeight 目标高度（缩放后的最终高度）
      * @param scale      缩放比例（用于根据右参考线高度缩放，<=0 时自动计算）
      */
-    public static void drawNinePatch(PoseStack stack, Texture texture, int x, int y, int destWidth, int destHeight, double scale) {
+    public static void drawNinePatch(Matrix3x2fStack stack, Texture texture, int x, int y, int destWidth, int destHeight, double scale) {
         if (texture == null) {
             return;
         }
@@ -159,9 +161,9 @@ public class NinePatchImageWidget extends BaseWidget {
 
         boolean needsScale = Math.abs(scale - 1.0f) > 0.001f;
         if (needsScale) {
-            stack.pushPose();
-            stack.translate(x, y, 0);
-            stack.scale((float) scale, (float) scale, 1.0f);
+            stack.pushMatrix();
+            stack.translate((float) (x), (float) (y));
+            stack.scale((float) scale, (float) scale);
             x = 0;
             y = 0;
         }
@@ -203,7 +205,7 @@ public class NinePatchImageWidget extends BaseWidget {
         }
 
         if (needsScale) {
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 

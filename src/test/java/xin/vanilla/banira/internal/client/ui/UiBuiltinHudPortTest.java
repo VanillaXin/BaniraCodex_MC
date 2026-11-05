@@ -42,13 +42,27 @@ public class UiBuiltinHudPortTest {
         int restores = 0;
         for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call) {
             calls.add(call.name);
-            if (call.name.equals("drawString"))
-                assertEquals("(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I", call.desc);
-            if (call.name.equals("popPose")) restores++;
+            if (call.name.equals("text"))
+                assertEquals("(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)V", call.desc);
+            if (call.name.equals("popMatrix")) restores++;
         }
-        assertTrue(calls.indexOf("pushPose") < calls.indexOf("translate"));
-        assertTrue(calls.indexOf("translate") < calls.indexOf("drawString"));
+        assertTrue(calls.indexOf("pushMatrix") < calls.indexOf("translate"));
+        assertTrue(calls.indexOf("translate") < calls.indexOf("text"));
         assertEquals("Normal and exceptional paths both restore the pose", 2, restores);
+    }
+
+    @Test
+    public void nativeDepthOrderingIsStableAndLeavesSharedPresentationUnchanged() {
+        var frame = new HudDrawList();
+        frame.depth(400);
+        frame.text("front", 1, 2, -1);
+        frame.depth(100);
+        frame.text("back", 1, 2, -1);
+        frame.text("back-later", 1, 2, -1);
+        assertEquals(List.of("back", "back-later", "front"),
+                frame.nativeRenderOrder().stream().map(part -> part.text).toList());
+        assertEquals(List.of("front", "back", "back-later"),
+                frame.parts().stream().map(part -> part.text).toList());
     }
 
     @Test
@@ -70,14 +84,15 @@ public class UiBuiltinHudPortTest {
     public void styledHitGeometryIsCollectedAfterLayoutBeforeNativeIcons() throws Exception {
         var render = node("internal/client/ui/AuiHudDocument").methods.stream()
                 .filter(method -> method.name.equals("render")).findFirst().orElseThrow();
-        int paint = -1, hits = -1, icons = -1;
+        int layout = -1, paint = -1, hits = -1, icons = -1;
         for (int i = 0; i < render.instructions.size(); i++) {
             if (!(render.instructions.get(i) instanceof MethodInsnNode call)) continue;
-            if (call.name.equals("drawOverlayDocument")) paint = i;
+            if (call.owner.endsWith("/AuiDocumentAccess") && call.name.equals("prepare")) layout = i;
+            if (call.owner.endsWith("/AuiDocumentRenderSubmission") && call.name.equals("submit")) paint = i;
             if (call.owner.endsWith("/HudDomPresentation") && call.name.equals("afterLayout")) hits = i;
             if (call.owner.endsWith("/AuiDocumentAccess") && call.name.equals("render")) icons = i;
         }
-        assertTrue(paint >= 0 && hits > paint && icons > hits);
+        assertTrue(layout >= 0 && paint > layout && hits > paint && icons > hits);
     }
 
     @Test
@@ -85,7 +100,7 @@ public class UiBuiltinHudPortTest {
         int factories = 0;
         var unread = node("client/notification/NotificationUnreadHud");
         for (var method : unread.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/ResourceLocation")) {
+            if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/Identifier")) {
                 assertNotEquals("<init>", call.name);
                 if (call.name.equals("fromNamespaceAndPath")) factories++;
             }

@@ -1,10 +1,8 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -43,23 +41,24 @@ final class TooltipTransitionSmoke extends Screen {
             client.setScreen(screen);
         }
         if (screen.failure != null) throw screen.failure;
-        return screen.mode == 2;
+        return screen.mode == 2 && SmokeScreenshotCapture.ready();
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         if (failure != null || mode == 2) return;
-        try {
+        try (var scope = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(graphics)) {
+            if (!SmokeScreenshotCapture.ready()) return;
             renderStep(graphics);
         } catch (Exception error) {
             failure = new IllegalStateException("Tooltip transition smoke failed at " + mode + "/" + stage + ": " + error, error);
         }
     }
 
-    private void renderStep(GuiGraphics graphics) throws Exception {
-        PoseStack stack = graphics.pose();
+    private void renderStep(GuiGraphicsExtractor graphics) throws Exception {
+        Matrix3x2fStack stack = graphics.pose();
         graphics.fill(0, 0, width, height, 0xFF30363C);
-        graphics.flush();
+        graphics.nextStratum();
         if (stage == 0) TooltipWidget.cancelPopupTransition();
         double pointerY = stage == 0 ? height / 2.0D : popupHeight + (stage >= 2 && stage <= 4 ? 8 : 10);
         Object model = field(TooltipWidget.class, "POPUP_TRANSITION").get(null);
@@ -80,7 +79,7 @@ final class TooltipTransitionSmoke extends Screen {
         TooltipWidget.flushPopupFrame(stack);
         graphics.fill(pointerX - 3, (int) pointerY, pointerX + 4, (int) pointerY + 1, 0xFFFFFFFF);
         graphics.fill(pointerX, (int) pointerY - 3, pointerX + 1, (int) pointerY + 4, 0xFFFFFFFF);
-        graphics.flush();
+        graphics.nextStratum();
 
         TooltipBounds target = (TooltipBounds) field(model.getClass(), "targetBounds").get(model);
         Method currentFrame = model.getClass().getDeclaredMethod("currentFrame", long.class);
@@ -115,9 +114,7 @@ final class TooltipTransitionSmoke extends Screen {
         Path output = Paths.get(System.getProperty("banira.networkSmoke.status")).getParent()
                 .resolve("tooltip-flip-" + suffix + ".png");
         Files.createDirectories(output.getParent());
-        try (NativeImage image = Screenshot.takeScreenshot(client.getMainRenderTarget())) {
-            image.writeToFile(output);
-        }
+        SmokeScreenshotCapture.capture(output);
     }
 
     private static Field field(Class<?> owner, String name) throws ReflectiveOperationException {

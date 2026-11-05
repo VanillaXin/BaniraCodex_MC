@@ -61,8 +61,8 @@ public final class HelpCommand {
                 commandTips.color(EnumMCColor.GRAY.getColor());
                 String com = "/" + keyValue.key();
                 helpInfo.append(BaniraComponent.get().literal(com)
-                                .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
-                                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                .clickEvent(new ClickEvent.SuggestCommand( com))
+                                .hoverEvent(new HoverEvent.ShowText(
                                         BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
                         .append(BaniraComponent.get().literal(" -> ").color(EnumMCColor.YELLOW.getColor()))
@@ -76,10 +76,10 @@ public final class HelpCommand {
                 Component prevButton = BaniraComponent.get().literal("<<< ");
                 if (page > 1) {
                     prevButton.color(EnumMCColor.AQUA.getColor())
-                            .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                            .clickEvent(new ClickEvent.RunCommand(
                                     String.format("/%s %s %d", BaniraCommand.getCommandPrefix(),
                                             CommonConfig.get().command().commandHelp(), page - 1)))
-                            .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            .hoverEvent(new HoverEvent.ShowText(
                                     BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "previous_page").toVanilla(lang)));
                 } else {
                     prevButton.color(EnumMCColor.DARK_AQUA.getColor());
@@ -92,10 +92,10 @@ public final class HelpCommand {
                 Component nextButton = BaniraComponent.get().literal(" >>>");
                 if (page < pages) {
                     nextButton.color(EnumMCColor.AQUA.getColor())
-                            .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                            .clickEvent(new ClickEvent.RunCommand(
                                     String.format("/%s %s %d", BaniraCommand.getCommandPrefix(),
                                             CommonConfig.get().command().commandHelp(), page + 1)))
-                            .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            .hoverEvent(new HoverEvent.ShowText(
                                     BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "next_page").toVanilla(lang)));
                 } else {
                     nextButton.color(EnumMCColor.DARK_AQUA.getColor());
@@ -108,8 +108,8 @@ public final class HelpCommand {
                 helpInfo = BaniraComponent.get().empty();
                 String com = "/" + BaniraCommand.getCommand(type);
                 helpInfo.append(BaniraComponent.get().literal(com)
-                                .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, com))
-                                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                .clickEvent(new ClickEvent.SuggestCommand( com))
+                                .hoverEvent(new HoverEvent.ShowText(
                                         BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
                         .append("\n")

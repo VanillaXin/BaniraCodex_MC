@@ -10,37 +10,35 @@ import static org.junit.Assert.*;
 
 public class AuiPageColorBoundaryTest {
     @Test
-    public void pagePassCopiesNeutralizesAndRestoresShaderColor() throws Exception {
+    public void pageExtractionSeparatesHtmlAndNativeStatesWithoutMutatingGlobalTint() throws Exception {
         ClassNode type = new ClassNode();
         try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/client/ui/AuiPageHost.class")) {
             assertNotNull(input);
             new ClassReader(input).accept(type, 0);
         }
-        var render = type.methods.stream().filter(method -> method.name.equals("render")).findFirst().orElseThrow();
+        var render = type.methods.stream().filter(method -> method.name.equals("extractRenderState")).findFirst().orElseThrow();
         List<MethodInsnNode> calls = new ArrayList<>();
         for (var instruction : render.instructions)
             if (instruction instanceof MethodInsnNode call) calls.add(call);
-        int read = -1, clone = -1, neutral = -1, html = -1, prepare = -1, retained = -1;
-        List<Integer> colors = new ArrayList<>();
+        int html = -1, prepare = -1, retained = -1;
+        List<Integer> strata = new ArrayList<>();
         for (int i = 0; i < calls.size(); i++) {
             var call = calls.get(i);
-            if (call.name.equals("getShaderColor")) read = i;
-            if (call.owner.equals("[F") && call.name.equals("clone")) clone = i;
-            if (call.owner.equals("com/sighs/apricityui/screen/ApricityScreen") && call.name.equals("render")) html = i;
+            assertFalse("Extraction must not read or change mutable global shader tint",
+                    call.owner.equals("com/mojang/blaze3d/systems/RenderSystem"));
+            if (call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")
+                    && call.name.equals("extractRenderState")) html = i;
             if (call.owner.endsWith("/AuiDocumentAccess") && call.name.equals("prepare")) prepare = i;
             if (call.owner.endsWith("/AuiDocumentAccess") && call.name.equals("render")) retained = i;
-            if (call.name.equals("setShaderColor")) {
-                if (neutral < 0) neutral = i;
-                colors.add(i);
-            }
+            if (call.name.equals("nextStratum")) strata.add(i);
         }
         final int htmlAt = html, retainedAt = retained;
-        assertTrue("A mutable shader color array must be copied", read >= 0 && clone > read);
-        assertTrue("Flush and neutralize before HTML rendering", clone < neutral && neutral > 0
-                && calls.get(neutral - 1).name.equals("flush") && prepare > neutral && html > prepare);
-        assertTrue("HTML state must not tint retained sprites", retained > html
-                && colors.stream().anyMatch(index -> index > htmlAt && index < retainedAt));
-        assertTrue("Every exit must restore the caller tint", colors.stream().filter(index -> index > retainedAt).count() >= 2);
-        assertFalse("Exceptional drawing paths must retain cleanup", render.tryCatchBlocks.isEmpty());
+        assertTrue("Prepare layout before HTML extraction", prepare >= 0 && html > prepare);
+        assertTrue("Retained sprites follow the HTML submission", retained > html);
+        assertTrue("Separate HTML from the caller's extracted state", strata.stream().anyMatch(i -> i < htmlAt));
+        assertTrue("Separate native sprites from HTML", strata.stream().anyMatch(i -> i > htmlAt && i < retainedAt));
+        assertEquals("Normal and exceptional exits isolate subsequent drawing", 2,
+                strata.stream().filter(i -> i > retainedAt).count());
+        assertFalse("Exceptional extraction paths retain cleanup and fallback", render.tryCatchBlocks.isEmpty());
     }
 }

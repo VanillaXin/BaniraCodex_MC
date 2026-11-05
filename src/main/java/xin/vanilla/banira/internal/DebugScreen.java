@@ -1,9 +1,8 @@
 package xin.vanilla.banira.internal;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
@@ -419,8 +418,8 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = graphics.pose();
 
         ShapeDrawArgs bgRect = ShapeDrawArgs.rect(stack, 10, 10, this.width / 3f, this.height - 20, 0x88E8F4FF);
         bgRect.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
@@ -570,7 +569,7 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
                 Minecraft.getInstance().setScreen(new ItemSelectScreen(new ItemSelectScreen.Args().parentScreen(this).onDataReceived(onItemSelect)));
                 break;
             case "opt_advancement":
-                Consumer<ResourceLocation> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
+                Consumer<net.minecraft.resources.Identifier> onAdvSelect = rl -> LOGGER.debug("Selected advancement: {}", rl);
                 AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args()
                         .parentScreen(this)
                         .defaultAdvancement(Identifier.id().empty())
@@ -630,7 +629,7 @@ public class DebugScreen extends BaniraScreen implements UiNativePage {
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_UP)) {
             AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args();
             args.parentScreen(this).defaultAdvancement(Identifier.id().empty());
-            args.onDataReceived((Consumer<ResourceLocation>) rl -> LOGGER.debug("Selected advancement: {}", rl));
+            args.onDataReceived((Consumer<net.minecraft.resources.Identifier>) rl -> LOGGER.debug("Selected advancement: {}", rl));
             Minecraft.getInstance().setScreen(new AdvancementSelectScreen(args));
         } else if (inputState.isKeyPressed(GLFWKey.GLFW_KEY_PAGE_DOWN)) {
             EffectSelectScreen.Args effectArgs = new EffectSelectScreen.Args()

@@ -17,6 +17,6 @@ public class VoxelMapGeometryTest {
             new ClassReader(in).accept(node, 0);
         }
         assertFalse("Radar-disabled layout fields are stale", node.fields.stream().anyMatch(f -> f.name.equals("layoutVariables")));
-        assertTrue(node.methods.stream().anyMatch(m -> m.name.equals("banira$appendUnread") && m.desc.startsWith("(Lnet/minecraft/client/gui/GuiGraphics;II")));
+        assertTrue(node.methods.stream().anyMatch(m -> m.name.equals("banira$appendUnread") && m.desc.startsWith("(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II")));
     }
 }

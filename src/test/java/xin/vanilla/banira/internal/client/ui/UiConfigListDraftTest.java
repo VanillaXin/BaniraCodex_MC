@@ -50,7 +50,7 @@ public class UiConfigListDraftTest {
         assertNotNull(instance);
         screen = new xin.vanilla.banira.client.gui.BaniraScreen(net.minecraft.network.chat.Component.literal("list")) {
             @Override
-            protected void onRender(net.minecraft.client.gui.GuiGraphics graphics, int x, int y, float partialTicks) {
+            protected void onRender(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int x, int y, float partialTicks) {
             }
         };
     }

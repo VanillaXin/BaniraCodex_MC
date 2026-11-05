@@ -8,7 +8,7 @@ import com.sighs.apricityui.layout.Position;
 import com.sighs.apricityui.ui.ColorPicker;
 import com.sighs.apricityui.ui.Tooltip;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
@@ -72,7 +72,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         linkParents(scopeRoot == null ? document.getDocumentElement() : scopeRoot, null);
         String transientStyles;
         try (var input = Minecraft.getInstance().getResourceManager().open(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("banira_codex", "aui/transients.css"))) {
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("banira_codex", "aui/transients.css"))) {
             byte[] css = input.readNBytes(16385);
             if (css.length > 16384) throw new IllegalStateException("Transient stylesheet budget");
             transientStyles = new String(css, StandardCharsets.UTF_8);
@@ -240,7 +240,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         };
     }
 
-    public void render(GuiGraphics graphics) {
+    public void render(GuiGraphicsExtractor graphics) {
         if (!current() || ColorPicker.isOpen()) return;
         if (preview && popupLayers == 0 && theme != null) {
             Minecraft mc = Minecraft.getInstance();
@@ -367,7 +367,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         AuiTransientLayout.ImeArea area = focused instanceof AbstractText && ((AbstractText) focused).canEditText()
                 ? AuiTransientLayout.ime(wrap(focused).bounds(), mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(),
                 mc.getWindow().getScreenWidth(), mc.getWindow().getScreenHeight()) : null;
-        ime.update(mc.getWindow().getWindow(), area);
+        ime.update(mc.getWindow().handle(), area);
         if (ColorPicker.isOpen()) {
             tooltips.hide();
             return;
@@ -471,7 +471,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         @Override
         public void attribute(String name, String value) {
             if (name.equals("src") && element instanceof com.sighs.apricityui.element.Texture) {
-                if (net.minecraft.resources.ResourceLocation.tryParse(value) == null)
+                if (net.minecraft.resources.Identifier.tryParse(value) == null)
                     throw new IllegalArgumentException("HUD texture identity");
                 if (!Objects.equals(attributes.put(name, value), value)) element.setAttribute(name, value);
                 return;

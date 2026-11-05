@@ -21,7 +21,7 @@ public class UiHudPositionPageTest {
         xin.vanilla.banira.platform.BaniraPlatforms.install(new xin.vanilla.banira.platform.TestBaniraPlatform());
         xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().registerIcon("banira_codex:b06_header_test",
                 xin.vanilla.banira.client.gui.quickaction.QuickIcon.resource(xin.vanilla.banira.client.data.Texture.of(
-                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("banira_codex", "gui/quick_icon.png"), 64, 64)),
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath("banira_codex", "gui/quick_icon.png"), 64, 64)),
                 xin.vanilla.banira.BaniraComponent.get().literal("HUD position"), null);
     }
 

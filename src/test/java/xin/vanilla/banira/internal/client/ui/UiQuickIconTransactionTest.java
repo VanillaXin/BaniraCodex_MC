@@ -19,6 +19,9 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class UiQuickIconTransactionTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();

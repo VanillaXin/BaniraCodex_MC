@@ -10,6 +10,9 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 import static org.junit.Assert.*;
 
 public class BaniraScreenDevRenderTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     private BaniraScreen screen;
 
     @Before
@@ -17,7 +20,7 @@ public class BaniraScreenDevRenderTest {
         BaniraPlatforms.install(new TestBaniraPlatform().development(true));
         screen = new BaniraScreen(net.minecraft.network.chat.Component.literal("dev render")) {
             @Override
-            protected void onRender(net.minecraft.client.gui.GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+            protected void onRender(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
             }
         };
     }

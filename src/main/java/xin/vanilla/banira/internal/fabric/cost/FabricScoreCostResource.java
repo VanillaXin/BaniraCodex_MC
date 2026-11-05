@@ -22,14 +22,14 @@ final class FabricScoreCostResource implements CostResourceAccess {
     private void bind() {
         if (board != null) return;
         holder = player.getScoreboardName();
-        board = Objects.requireNonNull(player.getScoreboard(), "scoreboard");
+        board = Objects.requireNonNull(player.level().getScoreboard(), "scoreboard");
         objectives = new TreeMap<>();
         for (Objective objective : board.getObjectives()) objectives.put(objective.getName(), objective);
         entries = new TreeMap<>();
         for (Map.Entry<String, Objective> entry : objectives.entrySet()) entries.put(entry.getKey(), board.getPlayerScoreInfo(player, entry.getValue()));
     }
     private boolean live() {
-        if (board != player.getScoreboard() || !payer.equals(player.getUUID()) || !holder.equals(player.getScoreboardName())) return false;
+        if (board != player.level().getScoreboard() || !payer.equals(player.getUUID()) || !holder.equals(player.getScoreboardName())) return false;
         for (Map.Entry<String, Objective> entry : objectives.entrySet()) if (board.getObjective(entry.getKey()) != entry.getValue()
                 || board.getPlayerScoreInfo(player, entry.getValue()) != entries.get(entry.getKey())) return false;
         return true;

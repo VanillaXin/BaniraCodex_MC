@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.minimap;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,11 +28,11 @@ public final class MinimapLineRegistry {
     private static final Comparator<MinimapLine> ORDER = Comparator.comparingInt(MinimapLine::order)
             .thenComparing(line -> line.id().toString());
 
-    private final Map<ResourceLocation, MinimapLine> lines = new LinkedHashMap<>();
+    private final Map<Identifier, MinimapLine> lines = new LinkedHashMap<>();
     private final List<Observer> observers = new ArrayList<>();
     private final Map<Object, Long> lastFailure = new HashMap<>();
     private final Map<EnumNotificationHudHost, Long> lastSeen = new EnumMap<>(EnumNotificationHudHost.class);
-    private final Map<EnumNotificationHudHost, List<ResourceLocation>> layouts = new EnumMap<>(EnumNotificationHudHost.class);
+    private final Map<EnumNotificationHudHost, List<Identifier>> layouts = new EnumMap<>(EnumNotificationHudHost.class);
     private long layoutRevision;
 
     public static MinimapLineRegistry shared() {
@@ -84,9 +84,9 @@ public final class MinimapLineRegistry {
         }
     }
 
-    public List<ResourceLocation> requestedIds(EnumNotificationHudHost host) {
+    public List<Identifier> requestedIds(EnumNotificationHudHost host) {
         if (!isMap(host)) return Collections.emptyList();
-        List<ResourceLocation> result = new ArrayList<>();
+        List<Identifier> result = new ArrayList<>();
         for (MinimapLine line : registrations()) {
             try {
                 EnumNotificationHudHost preference = line.host();
@@ -120,10 +120,10 @@ public final class MinimapLineRegistry {
                 logFailure(line.id(), exception);
             }
         }
-        List<ResourceLocation> ids = new ArrayList<>();
+        List<Identifier> ids = new ArrayList<>();
         for (MinimapLineSnapshot row : result) ids.add(row.id());
         synchronized (this) {
-            List<ResourceLocation> previous = layouts.get(host);
+            List<Identifier> previous = layouts.get(host);
             if (!ids.equals(previous == null ? Collections.emptyList() : previous)) {
                 layouts.put(host, ids);
                 layoutRevision++;

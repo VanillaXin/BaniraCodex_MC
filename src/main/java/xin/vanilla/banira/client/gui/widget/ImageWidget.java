@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.data.TransformArgs;
@@ -52,8 +54,8 @@ public class ImageWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -86,11 +88,11 @@ public class ImageWidget extends BaseWidget {
     }
 
 
-    public static void blit(PoseStack stack, Texture texture, int x, int y, int width, int height) {
+    public static void blit(Matrix3x2fStack stack, Texture texture, int x, int y, int width, int height) {
         AbstractGuiUtils.blit(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
     }
 
-    public static void blitBlend(PoseStack stack, Texture texture, int x, int y, int width, int height) {
+    public static void blitBlend(Matrix3x2fStack stack, Texture texture, int x, int y, int width, int height) {
         AbstractGuiUtils.blitBlend(stack, texture.location(), x, y, width, height, texture.u0(), texture.v0(), texture.uWidth(), texture.vHeight(), texture.uvWidth(), texture.uvHeight());
     }
 

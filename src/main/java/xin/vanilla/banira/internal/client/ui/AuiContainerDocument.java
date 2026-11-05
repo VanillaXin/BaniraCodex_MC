@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
-import com.sighs.apricityui.render.Base;
-import net.minecraft.client.gui.GuiGraphics;
+import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
@@ -88,7 +88,8 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
     }
 
     @Override
-    public void render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions) {
+    public void render(GuiGraphicsExtractor graphics, Map<String, ScreenCoordinate> regions) {
+        NativeGuiGraphics.bind(graphics);
         if (!live() || document.isDisposed() || document.getRefreshGeneration() != generation)
             throw new IllegalStateException("Container document expired");
         document.applyViewport(false);
@@ -115,11 +116,11 @@ public final class AuiContainerDocument extends NativeUiView implements UiContai
                         || !near(actual.width(), expected.width()) || !near(actual.height(), expected.height()))
                     throw new IllegalStateException("Container layout differs from native slot geometry");
             }
-            graphics.flush();
+            graphics.nextStratum();
             try {
-                Base.drawOverlayDocument(graphics.pose(), document);
+                AuiDocumentRenderSubmission.submit(graphics, document);
                 access.render(graphics);
-                graphics.flush();
+                graphics.nextStratum();
             } catch (RuntimeException | LinkageError failure) {
                 throw new AuiHudHost.PaintedFailure(failure);
             }

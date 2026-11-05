@@ -18,6 +18,9 @@ import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiConfigPortTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @Before
     public void platform() {
         BaniraPlatforms.install(new TestBaniraPlatform());

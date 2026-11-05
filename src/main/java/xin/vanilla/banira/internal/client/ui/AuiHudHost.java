@@ -138,10 +138,10 @@ public final class AuiHudHost {
             return true;
         }
 
-        void renderHud(net.minecraft.client.gui.GuiGraphics graphics);
+        void renderHud(net.minecraft.client.gui.GuiGraphicsExtractor graphics);
     }
 
-    public boolean renderManual(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+    public boolean renderManual(String id, net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
         Entry entry = entries.get(id);
         if (entry == null || !entry.spec.manual()) return false;
         return render(id, view -> {

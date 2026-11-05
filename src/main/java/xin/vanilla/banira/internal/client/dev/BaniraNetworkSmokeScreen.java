@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import org.joml.Matrix3x2fStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
@@ -39,7 +39,7 @@ final class BaniraNetworkSmokeScreen extends DebugScreen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         tooltipSubmitted = false;
         long startedAt = System.nanoTime();
         super.render(graphics, mouseX, mouseY, partialTicks);
@@ -60,7 +60,7 @@ final class BaniraNetworkSmokeScreen extends DebugScreen {
     }
 
     @Override
-    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         super.onRender(graphics, mouseX, mouseY, partialTicks);
         if (cycle > 0) {
             // Submit last through BaniraScreen's deferred route; normal screen-post handling owns the transition flush.
@@ -68,11 +68,11 @@ final class BaniraNetworkSmokeScreen extends DebugScreen {
         }
     }
 
-    private void submitSmokeTooltip(GuiGraphics graphics) {
-        PoseStack stack = graphics.pose();
-        stack.pushPose();
+    private void submitSmokeTooltip(GuiGraphicsExtractor graphics) {
+        Matrix3x2fStack stack = graphics.pose();
+        stack.pushMatrix();
         try {
-            stack.last().pose().identity();
+            stack.identity();
             TooltipWidget.drawPopupMessage(stack,
                     FontDrawArgs.ofPopo(tooltipText.stack(stack).font(getFont()))
                             .x(width / 2.0D).y(height / 2.0D)
@@ -81,7 +81,7 @@ final class BaniraNetworkSmokeScreen extends DebugScreen {
                     getEffectiveTheme(), season());
             tooltipSubmitted = true;
         } finally {
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -20,7 +20,7 @@ public final class BaniraVanillaNotificationBridge {
         if (player == null) {
             return false;
         }
-        player.displayClientMessage(message, false);
+        player.sendSystemMessage(message);
         return true;
     }
 
@@ -46,6 +46,6 @@ public final class BaniraVanillaNotificationBridge {
     }
 
     public static void suggestCommand(@Nonnull String command) {
-        BaniraClientRuntime.setScreen(new ChatScreen(command));
+        BaniraClientRuntime.setScreen(new ChatScreen(command, false));
     }
 }

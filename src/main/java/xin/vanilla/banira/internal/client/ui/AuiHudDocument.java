@@ -2,8 +2,8 @@ package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.loader.ClientLoader;
-import com.sighs.apricityui.render.Base;
-import net.minecraft.client.gui.GuiGraphics;
+import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
 import xin.vanilla.banira.internal.compat.aui.AuiSharedHudDocuments;
@@ -64,7 +64,8 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     }
 
     @Override
-    public void renderHud(GuiGraphics graphics) {
+    public void renderHud(GuiGraphicsExtractor graphics) {
+        NativeGuiGraphics.bind(graphics);
         if (progress == null || progressFrame == null || !live() || !currentDocument())
             throw new IllegalStateException("Manual HUD document expired");
         if (shared != null) shared.show();
@@ -74,12 +75,12 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
             progress.update(progressFrame);
             document.commitPendingStyleRecalcForRender();
             document.commitRenderState();
-            graphics.flush();
+            graphics.nextStratum();
             painted = true;
             try {
-                Base.drawOverlayDocument(graphics.pose(), document);
+                AuiDocumentRenderSubmission.submit(graphics, document);
             } finally {
-                graphics.flush();
+                graphics.nextStratum();
             }
         } catch (RuntimeException | LinkageError failure) {
             if (painted) throw new AuiHudHost.PaintedFailure(failure);
@@ -88,7 +89,8 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     }
 
     @Override
-    public void render(GuiGraphics graphics, HudDrawList frame) {
+    public void render(GuiGraphicsExtractor graphics, HudDrawList frame) {
+        NativeGuiGraphics.bind(graphics);
         if (!live() || document.isDisposed() || generation != document.getRefreshGeneration())
             throw new IllegalStateException("HUD document expired");
         if (shared != null) shared.show();
@@ -96,7 +98,7 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         presentation.update(frame);
         access.prepare();
         try {
-            Base.drawOverlayDocument(graphics.pose(), document);
+            AuiDocumentRenderSubmission.submit(graphics, document);
             afterLayout();
             presentation.afterLayout();
             access.render(graphics);

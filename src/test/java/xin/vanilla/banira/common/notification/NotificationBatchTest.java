@@ -10,6 +10,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.world.item.ItemStackTemplate;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
@@ -17,6 +18,7 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.banira.common.enums.EnumI18nType;
+import xin.vanilla.banira.common.util.NativeComponentJson;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
@@ -33,8 +35,7 @@ import static xin.vanilla.banira.common.network.packet.NotificationToClientBudge
 public class NotificationBatchTest {
     @BeforeClass
     public static void installPlatform() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
         BaniraPlatforms.install(new TestBaniraPlatform());
     }
 
@@ -49,8 +50,8 @@ public class NotificationBatchTest {
                     .trans(EnumI18nType.FORMAT, "reward", i)
                     .translationFallback("\u4e2d\u6587\ud83c\udf38\"\\\n %s")
                     .languageCode("zh_cn").bold(true).color(Color.argb(0xff55ff55))
-                    .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/reward " + i))
-                    .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    .clickEvent(new ClickEvent.SuggestCommand("/reward " + i))
+                    .hoverEvent(new HoverEvent.ShowText(
                             net.minecraft.network.chat.Component.literal(repeat("\u60ac\u6d6e\ud83c\udf38", 12) + i)));
             entries.add(entry);
             entry.getArgs().get(0).languageCode("zh_cn");
@@ -136,7 +137,7 @@ public class NotificationBatchTest {
     public void nativeTranslationExpansionHasIndependentBudget() {
         Component expanding = expansion(10);
         assertTrue(expanding.toJson().toString().getBytes(StandardCharsets.UTF_8).length < 16384);
-        assertTrue(net.minecraft.network.chat.Component.Serializer.toJson(expanding.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
+        assertTrue(NativeComponentJson.toJson(expanding.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
                 .getBytes(StandardCharsets.UTF_8).length > 16384);
         assertThrows(IllegalArgumentException.class, () -> NotificationBudget.prepare(expanding, "zh_cn"));
         List<NotificationBudget.Payload> pages = NotificationBatch.prepare(text(""),
@@ -150,11 +151,11 @@ public class NotificationBatchTest {
         // Repeated format arguments keep Banira JSON small at the native boundary.
         Component exact = expansion(7);
         exact.translationFallback(exact.translationFallback() + "x");
-        int nativeSize = net.minecraft.network.chat.Component.Serializer.toJson(exact.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
+        int nativeSize = NativeComponentJson.toJson(exact.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
                 .getBytes(StandardCharsets.UTF_8).length;
         assertTrue(nativeSize < 16384);
         exact.translationFallback(exact.translationFallback() + repeat("x", 16384 - nativeSize));
-        assertEquals(16384, net.minecraft.network.chat.Component.Serializer.toJson(exact.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
+        assertEquals(16384, NativeComponentJson.toJson(exact.clone().toChat("zh_cn"), RegistryAccess.EMPTY)
                 .getBytes(StandardCharsets.UTF_8).length);
         NotificationBudget.Payload payload = NotificationBudget.prepare(exact, "zh_cn");
         assertEquals(16384, payload.vanillaJson().getBytes(StandardCharsets.UTF_8).length);
@@ -183,17 +184,17 @@ public class NotificationBatchTest {
         assertEquals(1, NotificationBatch.prepare(text("prefix"), Collections.emptyList(), text(","), "zh_cn").size());
         Component source = BaniraComponent.get().object(net.minecraft.network.chat.Component.literal("original"));
         source.getChildren().add(text("child"));
-        String originalJson = net.minecraft.network.chat.Component.Serializer.toJson((net.minecraft.network.chat.Component) source.original(), RegistryAccess.EMPTY);
+        String originalJson = NativeComponentJson.toJson((net.minecraft.network.chat.Component) source.original(), RegistryAccess.EMPTY);
         JsonObject sourceJson = source.toJson();
         NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
-        assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson((net.minecraft.network.chat.Component) source.original(), RegistryAccess.EMPTY));
+        assertEquals(originalJson, NativeComponentJson.toJson((net.minecraft.network.chat.Component) source.original(), RegistryAccess.EMPTY));
         assertEquals(sourceJson, source.toJson());
         String frozen = payload.vanillaJson();
         net.minecraft.network.chat.MutableComponent decoded = (net.minecraft.network.chat.MutableComponent) payload.vanillaMessage();
         decoded.setStyle(net.minecraft.network.chat.Style.EMPTY.withBold(true));
-        assertNotEquals(frozen, net.minecraft.network.chat.Component.Serializer.toJson(decoded, RegistryAccess.EMPTY));
+        assertNotEquals(frozen, NativeComponentJson.toJson(decoded, RegistryAccess.EMPTY));
         assertEquals(frozen, payload.vanillaJson());
-        assertEquals(frozen, net.minecraft.network.chat.Component.Serializer.toJson(payload.vanillaMessage(), RegistryAccess.EMPTY));
+        assertEquals(frozen, NativeComponentJson.toJson(payload.vanillaMessage(), RegistryAccess.EMPTY));
     }
 
     @Test
@@ -202,12 +203,12 @@ public class NotificationBatchTest {
                 .withStyle(net.minecraft.network.chat.Style.EMPTY.withColor(0x55ff55)
                         .withBold(true).withItalic(true).withUnderlined(true)
                         .withStrikethrough(true).withObfuscated(true)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/help"))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, net.minecraft.network.chat.Component.literal("details"))))
+                        .withClickEvent(new ClickEvent.SuggestCommand("/help"))
+                        .withHoverEvent(new HoverEvent.ShowText(net.minecraft.network.chat.Component.literal("details"))))
                 .append(net.minecraft.network.chat.Component.literal(" sibling").withStyle(
                         net.minecraft.network.chat.Style.EMPTY.withColor(0xff5555).withItalic(true)));
         Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
-        String originalJson = net.minecraft.network.chat.Component.Serializer.toJson(original, RegistryAccess.EMPTY);
+        String originalJson = NativeComponentJson.toJson(original, RegistryAccess.EMPTY);
         NotificationBudget.Payload payload = NotificationBudget.prepare(source, "zh_cn");
         var packet = new xin.vanilla.banira.common.network.packet.NotificationToClient(payload,
                 xin.vanilla.banira.common.enums.EnumPosition.TOP_RIGHT,
@@ -221,7 +222,7 @@ public class NotificationBatchTest {
             Component decoded = BaniraComponent.get().deserialize(
                     JsonParser.parseString(decodedPacket.componentJson()).getAsJsonObject());
             assertNotNull(decoded.original());
-            assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+            assertEquals(originalJson, NativeComponentJson.toJson(
                     (net.minecraft.network.chat.Component) decoded.original(), RegistryAccess.EMPTY));
             assertEquals("original sibling", decoded.toChat("zh_cn").getString());
             var style = decoded.toChat("zh_cn").getStyle();
@@ -251,9 +252,9 @@ public class NotificationBatchTest {
         parent.getChildren().add(source);
         parent.getArgs().add(source);
         Component nested = BaniraComponent.get().deserialize(parent.toJson());
-        assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+        assertEquals(originalJson, NativeComponentJson.toJson(
                 (net.minecraft.network.chat.Component) nested.getChildren().get(0).original(), RegistryAccess.EMPTY));
-        assertEquals(originalJson, net.minecraft.network.chat.Component.Serializer.toJson(
+        assertEquals(originalJson, NativeComponentJson.toJson(
                 (net.minecraft.network.chat.Component) nested.getArgs().get(0).original(), RegistryAccess.EMPTY));
         Component plain = text("plain");
         JsonObject plainBefore = plain.toJson();
@@ -265,7 +266,7 @@ public class NotificationBatchTest {
 
     @Test
     public void decodedNativeSiblingsAllowBaniraChildrenWithoutMutatingOriginal() {
-        var original = net.minecraft.network.chat.Component.Serializer.fromJson(
+        var original = NativeComponentJson.fromJson(
                 "{\"text\":\"root\",\"extra\":[{\"text\":\" sibling\"}]}", RegistryAccess.EMPTY);
         Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
         source.getChildren().add(text(" child"));
@@ -283,7 +284,7 @@ public class NotificationBatchTest {
         assertNull(xin.vanilla.banira.internal.common.BaniraServerRuntime.server());
         var enchantments = new net.minecraft.core.MappedRegistry<net.minecraft.world.item.enchantment.Enchantment>(
                 net.minecraft.core.registries.Registries.ENCHANTMENT, com.mojang.serialization.Lifecycle.stable());
-        var enchantmentId = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+        var enchantmentId = net.minecraft.resources.Identifier.fromNamespaceAndPath(
                 "banira_codex", "notification_context_test");
         var definition = net.minecraft.world.item.enchantment.Enchantment.definition(
                 net.minecraft.core.HolderSet.direct(net.minecraft.world.item.Items.DIAMOND_SWORD.builtInRegistryHolder()),
@@ -299,7 +300,7 @@ public class NotificationBatchTest {
         assertEquals(2, item.getEnchantments().getLevel(enchantment));
         var original = net.minecraft.network.chat.Component.literal("enchanted reward")
                 .withStyle(net.minecraft.network.chat.Style.EMPTY.withHoverEvent(
-                        new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item))))
+                        new HoverEvent.ShowItem(ItemStackTemplate.fromNonEmptyStack(item))))
                 .append(net.minecraft.network.chat.Component.literal(" sibling")
                         .withStyle(net.minecraft.network.chat.Style.EMPTY.withItalic(true)));
         var ops = registries.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
@@ -312,11 +313,11 @@ public class NotificationBatchTest {
         var decoded = ComponentSerialization.CODEC.parse(ops, storedOriginal).getOrThrow();
         var hover = decoded.getStyle().getHoverEvent();
         assertNotNull(hover);
-        var itemInfo = hover.getValue(HoverEvent.Action.SHOW_ITEM);
+        var itemInfo = ((HoverEvent.ShowItem) hover).item();
         assertNotNull(itemInfo);
-        assertSame(net.minecraft.world.item.Items.DIAMOND_SWORD, itemInfo.getItemStack().getItem());
-        assertEquals(item.getCount(), itemInfo.getItemStack().getCount());
-        assertEquals(2, itemInfo.getItemStack().getEnchantments().getLevel(enchantment));
+        assertSame(net.minecraft.world.item.Items.DIAMOND_SWORD, itemInfo.create().getItem());
+        assertEquals(item.getCount(), itemInfo.create().getCount());
+        assertEquals(2, itemInfo.create().getEnchantments().getLevel(enchantment));
         assertEquals(expected, ComponentSerialization.CODEC.encodeStart(ops, decoded).getOrThrow());
         assertEquals(expected, ComponentSerialization.CODEC.encodeStart(ops, payload.vanillaMessage()).getOrThrow());
         assertEquals(expected, ComponentSerialization.CODEC.encodeStart(ops, original).getOrThrow());
@@ -335,7 +336,7 @@ public class NotificationBatchTest {
     public void originalStyleFlagsKeepUnsetAndExplicitFalseDistinct() throws Exception {
         String[] flags = {"bold", "italic", "underlined", "strikethrough", "obfuscated"};
         String[] getters = {"isBold", "isItalic", "isUnderlined", "isStrikethrough", "isObfuscated"};
-        net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.Serializer.fromJson(
+        net.minecraft.network.chat.Component original = NativeComponentJson.fromJson(
                 "{\"text\":\"native\",\"bold\":true,\"italic\":true,\"underlined\":true,\"strikethrough\":true,\"obfuscated\":true}", RegistryAccess.EMPTY);
         for (int disabled = 0; disabled < flags.length; disabled++) {
             Component source = BaniraComponent.get().object(original).languageCode("zh_cn");
@@ -361,7 +362,7 @@ public class NotificationBatchTest {
     public void nativeModifiedUtfExpansionIsBoundedIndependentlyOfJson() {
         Component source = text(repeat("\ud83c\udf38", 2800));
         assertTrue(source.toJson().toString().getBytes(StandardCharsets.UTF_8).length < 16384);
-        assertTrue(net.minecraft.network.chat.Component.Serializer.toJson(source.toChat(), RegistryAccess.EMPTY)
+        assertTrue(NativeComponentJson.toJson(source.toChat(), RegistryAccess.EMPTY)
                 .getBytes(StandardCharsets.UTF_8).length < 16384);
         RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
         try {
@@ -393,7 +394,7 @@ public class NotificationBatchTest {
             RegistryFriendlyByteBuf nativeBuffer = new RegistryFriendlyByteBuf(buffer, RegistryAccess.EMPTY);
             ComponentSerialization.TRUSTED_STREAM_CODEC.encode(nativeBuffer, page.vanillaMessage());
             assertTrue(nativeBuffer.readableBytes() <= 16384);
-            assertEquals(page.vanillaJson(), net.minecraft.network.chat.Component.Serializer.toJson(
+            assertEquals(page.vanillaJson(), NativeComponentJson.toJson(
                     ComponentSerialization.TRUSTED_STREAM_CODEC.decode(nativeBuffer), RegistryAccess.EMPTY));
             assertEquals(0, buffer.readableBytes());
         } finally {

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.internal.config.ClientConfig;
@@ -38,7 +38,7 @@ final class UiPagePointer implements AutoCloseable {
         if (sync()) state.scroll(delta);
     }
 
-    void render(GuiGraphics graphics, int x, int y) {
+    void render(GuiGraphicsExtractor graphics, int x, int y) {
         if (!sync()) return;
         BaniraColorConfig colors = theme.get();
         if (colors == null) colors = BaniraColorConfig.forSeason(null);

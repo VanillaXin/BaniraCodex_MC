@@ -2,14 +2,13 @@ package xin.vanilla.banira.common.util;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import xin.vanilla.banira.internal.network.NetworkInit;
@@ -32,9 +31,9 @@ public final class DimensionUtils {
     private static final List<String> CLIENT_DIMENSION_IDS = new CopyOnWriteArrayList<>();
 
     private static final List<String> DEFAULT_DIMENSION_IDS = List.of(
-            Level.OVERWORLD.location().toString(),
-            Level.NETHER.location().toString(),
-            Level.END.location().toString()
+            Level.OVERWORLD.identifier().toString(),
+            Level.NETHER.identifier().toString(),
+            Level.END.identifier().toString()
     );
 
     /**
@@ -44,10 +43,10 @@ public final class DimensionUtils {
 
 
     public static ResourceKey<Level> parse(String dimension) {
-        return ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(dimension));
+        return ResourceKey.create(Registries.DIMENSION, xin.vanilla.banira.Identifier.id().parse(dimension));
     }
 
-    public static ResourceKey<Level> parse(ResourceLocation dimension) {
+    public static ResourceKey<Level> parse(Identifier dimension) {
         return ResourceKey.create(Registries.DIMENSION, dimension);
     }
 
@@ -56,7 +55,7 @@ public final class DimensionUtils {
         return server != null ? server.getLevel(dimension) : null;
     }
 
-    public static ServerLevel getLevel(ResourceLocation dimension) {
+    public static ServerLevel getLevel(Identifier dimension) {
         return getLevel(parse(dimension));
     }
 
@@ -68,18 +67,18 @@ public final class DimensionUtils {
         MinecraftServer server = BaniraServerRuntime.server();
         if (server == null) return Collections.emptySet();
         Set<String> ids = new HashSet<>();
-        server.levelKeys().forEach(key -> ids.add(key.location().toString()));
+        server.levelKeys().forEach(key -> ids.add(key.identifier().toString()));
         return ids;
     }
 
     public static int getWorldMinY(Level world) {
         if (world == null) return 0;
-        return world.getMinBuildHeight();
+        return world.getMinY();
     }
 
     public static int getWorldMaxY(Level world) {
         if (world == null) return 0;
-        return world.getMaxBuildHeight();
+        return world.getMaxY() + 1;
     }
 
     public static String getDimensionId(Entity entity) {
@@ -94,7 +93,7 @@ public final class DimensionUtils {
 
     public static String getDimensionId(ResourceKey<Level> dimension) {
         if (dimension == null) return null;
-        return dimension.location().toString();
+        return dimension.identifier().toString();
     }
 
 

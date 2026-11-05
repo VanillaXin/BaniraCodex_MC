@@ -84,7 +84,7 @@ public final class NBTUtils {
                 return null;
             }
 
-            if (indexStr != null && current instanceof CollectionTag<?> list) {
+            if (indexStr != null && current instanceof CollectionTag list) {
                 int index = Integer.parseInt(indexStr);
                 if (index < 0 || index >= list.size()) {
                     return null;
@@ -98,47 +98,47 @@ public final class NBTUtils {
 
     public static String getString(Tag root, String path, String defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof StringTag) ? tag.getAsString() : defaultVal;
+        return (tag instanceof StringTag stringTag) ? stringTag.value() : defaultVal;
     }
 
     public static boolean getBoolean(Tag root, String path, boolean defaultVal) {
         Tag tag = getTagByPath(root, path);
         if (tag instanceof ByteTag byteTag) {
-            return byteTag.getAsByte() != 0;
+            return byteTag.byteValue() != 0;
         } else if (tag instanceof IntTag intTag) {
-            return intTag.getAsInt() != 0;
+            return intTag.intValue() != 0;
         }
         return defaultVal;
     }
 
     public static int getByte(Tag root, String path, int defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsByte() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.byteValue() : defaultVal;
     }
 
     public static int getShort(Tag root, String path, int defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsShort() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.shortValue() : defaultVal;
     }
 
     public static int getInt(Tag root, String path, int defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsInt() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.intValue() : defaultVal;
     }
 
     public static float getFloat(Tag root, String path, float defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsFloat() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.floatValue() : defaultVal;
     }
 
     public static long getLong(Tag root, String path, long defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsLong() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.longValue() : defaultVal;
     }
 
     public static double getDouble(Tag root, String path, double defaultVal) {
         Tag tag = getTagByPath(root, path);
-        return (tag instanceof NumericTag numericTag) ? numericTag.getAsDouble() : defaultVal;
+        return (tag instanceof NumericTag numericTag) ? numericTag.doubleValue() : defaultVal;
     }
 
     public static boolean has(Tag root, String path) {

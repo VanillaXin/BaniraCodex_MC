@@ -1,8 +1,6 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.client.gui.NotificationHudPositionScreen;
@@ -32,15 +30,15 @@ final class NotificationRegionSmoke {
     private static boolean finished;
     private static NotificationHudPositionScreen editor;
     private static final List<Notification> arrivals = new ArrayList<>();
+    private static final java.util.Set<String> screenshots = new java.util.HashSet<>();
 
     static boolean tick(Minecraft mc) throws Exception {
+        if (!SmokeScreenshotCapture.ready()) return false;
         if (finished) return true;
         if ("phase-one".equals(BaniraNetworkSmokeStatus.phase()) && tick <= 25 && !mc.isWindowActive()) {
             BaniraNetworkSmokeStatus.append("INFO notification-focus-fixture screen="
                     + (mc.screen == null ? "none" : mc.screen.getClass().getSimpleName()));
-            // Simulate the game's focus callback without moving OS focus or controlling the desktop.
-            mc.setWindowActive(true);
-            if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
+            return false;
         }
         if (tick == 0 && "phase-one".equals(BaniraNetworkSmokeStatus.phase())
                 && (mc.screen != null || mc.getOverlay() != null)) return false;
@@ -93,7 +91,7 @@ final class NotificationRegionSmoke {
                 require(arrivals.get(2).lastRenderTime() == 0, "queued bubble rendered before admission");
                 require(mc.screen == null && mc.isWindowActive(), "HUD screenshot requires active gameplay: screen="
                         + (mc.screen == null ? "none" : mc.screen.getClass().getSimpleName()) + " active=" + mc.isWindowActive());
-                screenshot(mc, "notification-regions-hud.png");
+                if (!screenshot("notification-regions-hud.png")) { tick--; return false; }
                 for (Notification n : visible) if (n.position() == EnumPosition.TOP_LEFT) n.dismiss();
                 cfg.notificationRegions().topLeft().visibleLimit(2);
                 int stagger = cfg.notificationBurstStaggerMs();
@@ -129,7 +127,7 @@ final class NotificationRegionSmoke {
                 require(mc.screen == editor, "mouse back discarded unsaved HUD position");
                 break;
             case 65:
-                screenshot(mc, "notification-hud-position.png");
+                if (!screenshot("notification-hud-position.png")) { tick--; return false; }
                 ButtonWidget save = (ButtonWidget) editor.getWidget("save");
                 editor.mouseClicked(save.bounds().x() + 5, save.bounds().y() + 5, 0);
                 editor.mouseReleased(save.bounds().x() + 5, save.bounds().y() + 5, 0);
@@ -170,10 +168,10 @@ final class NotificationRegionSmoke {
         if (!ok) throw new IllegalStateException(message);
     }
 
-    private static void screenshot(Minecraft mc, String name) throws Exception {
+    private static boolean screenshot(String name) {
+        if (!screenshots.add(name)) return true;
         Path output = Paths.get(System.getProperty("banira.networkSmoke.status")).getParent().resolve(name);
-        try (NativeImage image = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            image.writeToFile(output);
-        }
+        SmokeScreenshotCapture.capture(output);
+        return false;
     }
 }

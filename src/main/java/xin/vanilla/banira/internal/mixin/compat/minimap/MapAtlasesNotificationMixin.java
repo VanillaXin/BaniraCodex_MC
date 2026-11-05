@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,7 +21,7 @@ public abstract class MapAtlasesNotificationMixin {
     private float globalScale;
 
     @Inject(method = "renderText", at = @At("TAIL"), require = 0, remap = false)
-    private void banira$appendUnread(GuiGraphics graphics, int x, int y, Anchoring anchor, CallbackInfo ci) {
+    private void banira$appendUnread(GuiGraphicsExtractor graphics, int x, int y, Anchoring anchor, CallbackInfo ci) {
         int rows = (MapAtlasesClientConfig.drawMinimapCoords.get() ? 1 : 0)
                 + (MapAtlasesClientConfig.drawMinimapChunkCoords.get() ? 1 : 0)
                 + (MapAtlasesClientConfig.drawMinimapBiome.get() ? 1 : 0);
@@ -29,16 +29,16 @@ public abstract class MapAtlasesNotificationMixin {
         float lineY = anchor.isUp ? (y + 64) * globalScale + 2 + rows * 10 * textScale
                 : y * globalScale - (rows == 0 ? 2 : 20 * globalScale * textScale + 2 * globalScale - 2) - 10 * textScale;
         // Native renderText returns inside the outer minimap scale.
-        graphics.pose().pushPose();
+        graphics.pose().pushMatrix();
         try {
-            graphics.pose().scale(1 / globalScale, 1 / globalScale, 1);
+            graphics.pose().scale(1 / globalScale, 1 / globalScale);
             Minecraft mc = Minecraft.getInstance();
             NotificationMapLineRenderer.drawRowsCentered(graphics,
                     NotificationMinimapBridge.rows(EnumNotificationHudHost.MAP_ATLASES),
                     (x + 32) * globalScale, lineY, 64 * globalScale, .75f, !anchor.isUp,
                     mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         } finally {
-            graphics.pose().popPose();
+            graphics.pose().popMatrix();
         }
     }
 }

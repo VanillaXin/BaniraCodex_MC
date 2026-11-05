@@ -1,12 +1,14 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -887,8 +889,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) return;
         ensureChildren();
 
@@ -902,8 +904,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
         double titleBtnLeft = layoutHeaderToolbar(w);
 
-        stack.pushPose();
-        stack.translate(ox, oy, 0);
+        stack.pushMatrix();
+        stack.translate((float) (ox), (float) (oy));
 
         // region 绘制标题栏
         int headerBg = mouseInside ? theme.bgTertiary() : theme.bgSecondary();
@@ -927,7 +929,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         args.x(textX).y(textY).maxWidth((int) Math.max(0, titleBtnLeft - textX - 4)).wrap(false).inScreen(false);
         LabelWidget.drawLimitedText(graphics, args);
 
-        stack.popPose();
+        stack.popMatrix();
         // endregion 标题栏
 
         if (!expanded) {
@@ -982,8 +984,8 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         int listAreaH = (int) listAreaHeight;
         AbstractGuiUtils.pushScissor(listAreaAbsX, listAreaAbsY, listAreaW, listAreaH);
 
-        stack.pushPose();
-        stack.translate(ox, oy + listContentTop - listScrollOffset, 0);
+        stack.pushMatrix();
+        stack.translate((float) (ox), (float) (oy + listContentTop - listScrollOffset));
 
         Font font = Minecraft.getInstance().font;
         int tagW = (int) listW;
@@ -1002,7 +1004,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
 
             AbstractGuiUtils.fill(stack, 0, (int) tagY, tagW, TAG_HEIGHT, tagBg);
             AbstractGuiUtils.fill(stack, 0, (int) tagY, 2, TAG_HEIGHT, tagBorder);
-            graphics.drawString(font, display, TAG_PAD, (int) tagY + (TAG_HEIGHT - font.lineHeight) / 2, textColor, false);
+            graphics.text(font, display, TAG_PAD, (int) tagY + (TAG_HEIGHT - font.lineHeight) / 2, textColor, false);
 
             int closeColor = closePressed ? 0xFFE53935 : (closeHovered ? 0xFFE53935 : 0xFF999999);
             AbstractGuiUtils.fill(stack, closeX, closeY, TAG_CLOSE_SIZE, TAG_CLOSE_SIZE, closeColor);
@@ -1013,7 +1015,7 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             AbstractGuiUtils.drawLine(stack, cx + r, cy - r, cx - r, cy + r, 1f, 0xFFFFFFFF);
         }
 
-        stack.popPose();
+        stack.popMatrix();
         AbstractGuiUtils.popScissor();
         // endregion 标签列表
 
@@ -1033,10 +1035,10 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
             Text rowHint = Text.from(BaniraComponent.get().transClientAuto("tag_list_row_hint"));
             final BaniraColorConfig tooltipTheme = theme;
             screen.addDeferredTooltipRender(g -> {
-                g.pose().pushPose();
-                g.pose().last().pose().identity();
+                g.pose().pushMatrix();
+                g.pose().identity();
                 TooltipWidget.drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(rowHint.stack(g.pose())).x(mx).y(my).popupUseTexture(tooltipTheme.tooltipUseTexture()), tooltipTheme, rowSeason);
-                g.pose().popPose();
+                g.pose().popMatrix();
             });
         }
     }
@@ -1068,14 +1070,14 @@ public class TagListEditorWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
+    private void drawArrowDown(Matrix3x2fStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
     }
 
-    private void drawArrowRight(PoseStack stack, int x, int y, int size, int color) {
+    private void drawArrowRight(Matrix3x2fStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;

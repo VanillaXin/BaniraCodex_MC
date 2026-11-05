@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.fabric.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
@@ -50,13 +50,13 @@ public enum FabricBaniraNetworkService implements BaniraNetworkService {
 
     @Override
     public boolean hasLocalChannel(@Nonnull String channelId) {
-        ResourceLocation channel = ResourceLocation.tryParse(channelId);
+        Identifier channel = Identifier.tryParse(channelId);
         return channel != null && FabricNetworkChannels.hasLocalChannel(channel);
     }
 
     @Override
     public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
-        ResourceLocation channel = ResourceLocation.tryParse(channelId);
+        Identifier channel = Identifier.tryParse(channelId);
         return player instanceof ServerPlayer && channel != null
                 && FabricNetworkChannels.hasPlayerChannel((ServerPlayer) player, channel);
     }

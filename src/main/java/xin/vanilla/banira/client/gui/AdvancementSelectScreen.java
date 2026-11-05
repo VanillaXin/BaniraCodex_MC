@@ -1,19 +1,21 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
+
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
@@ -83,7 +85,7 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
     private final List<AdvancementRow> advancementRows = new ArrayList<>();
     @Nullable
     private ScrollbarWidget scrollbarWidget;
-    private ResourceLocation currentAdvancement;
+    private Identifier currentAdvancement;
     private boolean displayMode = true;
 
     private BaseWidget selectedAdvancementWidget;
@@ -187,9 +189,9 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
     @Accessors(chain = true, fluent = true)
     public static final class Args {
         private Screen parentScreen;
-        private ResourceLocation defaultAdvancement = Identifier.id().empty();
-        private Consumer<ResourceLocation> onDataReceived1;
-        private Function<ResourceLocation, String> onDataReceived2;
+        private Identifier defaultAdvancement = xin.vanilla.banira.Identifier.id().empty();
+        private Consumer<Identifier> onDataReceived1;
+        private Function<Identifier, String> onDataReceived2;
         private Supplier<Boolean> shouldClose;
         /**
          * 多步骤流程可关闭自动返回，由回调决定下一界面。
@@ -206,12 +208,12 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
         @Nullable
         private BaniraColorConfig theme;
 
-        public Args onDataReceived(Consumer<ResourceLocation> onDataReceived) {
+        public Args onDataReceived(Consumer<Identifier> onDataReceived) {
             this.onDataReceived1 = onDataReceived;
             return this;
         }
 
-        public Args onDataReceived(Function<ResourceLocation, String> onDataReceived) {
+        public Args onDataReceived(Function<Identifier, String> onDataReceived) {
             this.onDataReceived2 = onDataReceived;
             return this;
         }
@@ -426,9 +428,9 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
     }
 
     @Nullable
-    private AdvancementData findAdvancementData(ResourceLocation id) {
+    private AdvancementData findAdvancementData(Identifier id) {
         if (id == null) return null;
-        if (Identifier.id().empty().equals(id)) return null;
+        if (xin.vanilla.banira.Identifier.id().empty().equals(id)) return null;
         String idStr = id.toString();
         if (StringUtils.isNullOrEmpty(idStr) || ":".equals(idStr)) return null;
         try {
@@ -445,12 +447,12 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
     }
 
     @Override
-    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         if (uiVersion != uiSession.version()) {
             restoreUiSelection();
             markAdvancementButtonsDirty();
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);
@@ -659,7 +661,7 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
     private void handleAdvancement(String advancementId) {
         if (StringUtils.isNotNullOrEmpty(advancementId)) {
             try {
-                ResourceLocation location = Identifier.id().parse(advancementId);
+                Identifier location = xin.vanilla.banira.Identifier.id().parse(advancementId);
                 uiSession.select(advancementId);
                 this.currentAdvancement = uiSession.advancement();
                 LOGGER.debug("Select advancement: {}", location);

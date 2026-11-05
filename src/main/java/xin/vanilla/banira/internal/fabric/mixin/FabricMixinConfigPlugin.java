@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.fabric.mixin;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.api.EnvType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -82,7 +83,7 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
                     && method(target, "onPress", "(" + input + ")Z");
         if (mixin.endsWith("GuiIconToggleButtonMixin")) {
             if (!field(target, "controller", "Lmezz/jei/api/gui/buttons/IIconButtonController;")) return false;
-            String graphics = descriptor("net.minecraft.class_332");
+            String graphics = descriptor("net.minecraft.client.gui.GuiGraphicsExtractor");
             return method(target, "draw", "(" + graphics + "IIF)V")
                     && method(target, "drawTooltips", "(" + graphics + "II)V")
                     && method(target, "isMouseOver", "(DD)Z");
@@ -96,11 +97,11 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
         if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
             return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
                     && method(target, "applyLocalConfig", "()V");
-        String graphics = descriptor("net.minecraft.class_332");
+        String graphics = descriptor("net.minecraft.client.gui.GuiGraphicsExtractor");
         if (mixin.endsWith("JourneyMapTextBoundsMixin"))
-            return matchesJourneyBounds(target, graphics, descriptor("net.minecraft.class_2561"),
-                    descriptor("net.minecraft.class_4597"));
-        String delta = descriptor("net.minecraft.class_9779");
+            return matchesJourneyBounds(target, graphics, descriptor("net.minecraft.network.chat.Component"),
+                    descriptor("net.minecraft.client.renderer.MultiBufferSource"));
+        String delta = descriptor("net.minecraft.client.DeltaTracker");
         if (mixin.endsWith("FtbChunksNotificationMixin"))
             return method(target, "setupComponents", "()V") && method(target, "renderHud", "(" + graphics + delta + ")V");
         if (mixin.endsWith("MapAtlasesNotificationMixin"))
@@ -122,9 +123,8 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
                 + "Ljourneymap/client/render/draw/DrawUtil$VAlign;IFIFDZD)V");
     }
 
-    private static String descriptor(String intermediary) {
-        return "L" + FabricLoader.getInstance().getMappingResolver()
-                .mapClassName("intermediary", intermediary).replace('.', '/') + ";";
+    private static String descriptor(String className) {
+        return "L" + className.replace('.', '/') + ";";
     }
 
     private static boolean method(ClassNode target, String name, String descriptor) {
@@ -150,7 +150,14 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public List<String> getMixins() {
-        return null;
+        if (FabricLoader.getInstance().getEnvironmentType() != EnvType.CLIENT) return null;
+        List<String> mixins = new java.util.ArrayList<>(List.of("injections.KeyCategoryLabelMixin"));
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()
+                && (Boolean.getBoolean("banira.networkSmoke")
+                || !System.getProperty("banira.externalButtonsSmoke", "").isBlank())) {
+            mixins.add("injections.SmokeScreenshotFrameMixin");
+        }
+        return mixins;
     }
 
     @Override

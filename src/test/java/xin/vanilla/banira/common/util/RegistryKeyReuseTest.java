@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
@@ -40,8 +40,8 @@ public class RegistryKeyReuseTest {
         BaniraRegistryService service = new StringRegistryService(id);
         BaniraPlatforms.install(new TestBaniraPlatform().registryService(service));
         try {
-            assertEquals(ResourceLocation.parse("minecraft:apple"), ItemUtils.getItemRegistry(Items.APPLE));
-            assertEquals(ResourceLocation.parse("minecraft:apple"), EntityUtils.getEntityRegistry(EntityType.PIG));
+            assertEquals(Identifier.parse("minecraft:apple"), ItemUtils.getItemRegistry(Items.APPLE));
+            assertEquals(Identifier.parse("minecraft:apple"), EntityUtils.getEntityRegistry(EntityType.PIG));
             id[0] = "INVALID id";
             assertNull(ItemUtils.getItemRegistry(Items.APPLE));
             assertNull(EntityUtils.getEntityRegistry(EntityType.PIG));

@@ -1,11 +1,13 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -401,12 +403,12 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
     }
 
     private static Item optionalItem(String value) {
-        ResourceLocation id = ResourceLocation.tryParse(value == null ? "" : value);
+        Identifier id = Identifier.tryParse(value == null ? "" : value);
         return id == null ? Items.PAPER : BuiltInRegistries.ITEM.getOptional(id).orElse(Items.PAPER);
     }
 
     private static MobEffect optionalEffect(String value) {
-        ResourceLocation id = ResourceLocation.tryParse(value == null ? "" : value);
+        Identifier id = Identifier.tryParse(value == null ? "" : value);
         return id == null ? MobEffects.LUCK.value() : BuiltInRegistries.MOB_EFFECT.getOptional(id).orElse(MobEffects.LUCK.value());
     }
 
@@ -461,8 +463,8 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         BaniraColorConfig theme = getEffectiveTheme();
         ShapeDrawArgs panel = ShapeDrawArgs.rect(stack, panelX, panelY, panelW, panelH,
                 ColorUtils.applyAlphaToArgb(theme.panelBg(), 0xFF));
@@ -470,7 +472,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         BaseShapeWidget.drawShape(panel);
         if (rowCount() == 0) {
             String empty = CustomQuickActionEditor.t("custom_quick_action_step_empty").content();
-            graphics.drawString(font, empty, (int) (panelX + (panelW - font.width(empty)) / 2f),
+            graphics.text(font, empty, (int) (panelX + (panelW - font.width(empty)) / 2f),
                     listY + 12, theme.textSecondary(), false);
         }
         super.renderWidgets(graphics, partialTicks);

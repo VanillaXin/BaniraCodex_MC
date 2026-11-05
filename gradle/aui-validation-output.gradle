@@ -19,7 +19,7 @@ ext.baniraDistributionDirectory = validationRoot ?: file("builds/${mod_version}"
 
 if (validationRoot != null) {
     gradle.projectsEvaluated {
-        // Loom realizes remapSourcesJar by moving its source input to devlibs.
+        // Realize every archive before locking its isolated output directory.
         def archives = tasks.withType(AbstractArchiveTask).toList()
         archives.each { archive ->
             archive.destinationDirectory.set(archive.name == 'sourcesJar'

@@ -2,7 +2,7 @@ package xin.vanilla.banira.common.util;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -12,7 +12,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.GiveItemResult;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -211,13 +210,13 @@ public final class PlayerUtils {
     }
 
     @Nullable
-    public static ResourceLocation getPlayerSkin(UUID uuid) {
+    public static Identifier getPlayerSkin(UUID uuid) {
         try {
-            ResourceLocation skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
+            Identifier skin = ClientRuntimeBridge.onlinePlayerSkin(uuid);
             if (skin != null) return skin;
         } catch (Throwable ignored) {
         }
-        return Identifier.id().create("minecraft", "textures/entity/steve.png");
+        return xin.vanilla.banira.Identifier.id().create("minecraft", "textures/entity/steve.png");
     }
 
     // endregion 玩家信息

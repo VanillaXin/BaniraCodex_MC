@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiHudBinding;
@@ -28,7 +28,7 @@ public class UiManualHudReloadTest {
         }
 
         @Override
-        public void renderHud(GuiGraphics graphics) {
+        public void renderHud(GuiGraphicsExtractor graphics) {
             if (!documentCurrent) throw new IllegalStateException("Expired document");
             draws++;
         }

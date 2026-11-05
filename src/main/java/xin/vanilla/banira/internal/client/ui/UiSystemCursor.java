@@ -20,6 +20,6 @@ public final class UiSystemCursor {
     }
 
     private static void mode(int mode) {
-        GLFW.glfwSetInputMode(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_CURSOR, mode);
+        GLFW.glfwSetInputMode(Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_CURSOR, mode);
     }
 }

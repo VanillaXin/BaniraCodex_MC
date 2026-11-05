@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.gui.component;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
@@ -20,7 +20,7 @@ public class Text implements Cloneable {
     /**
      * 矩阵栈
      */
-    private PoseStack stack;
+    private Matrix3x2fStack stack;
     /**
      * 字体渲染器
      */
@@ -130,8 +130,8 @@ public class Text implements Cloneable {
         return (this.text == null || this.text.isEmpty()) && (this.hoverText == null || this.hoverText.isEmpty());
     }
 
-    public PoseStack stack() {
-        return stack == null ? new PoseStack() : this.stack;
+    public Matrix3x2fStack stack() {
+        return stack == null ? new Matrix3x2fStack(16) : this.stack;
     }
 
     public Font font() {

@@ -1,8 +1,10 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
@@ -284,19 +286,19 @@ public final class CustomQuickActionConfigScreen extends BaniraScreen implements
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         BaniraColorConfig theme = getEffectiveTheme();
         ShapeDrawArgs panel = ShapeDrawArgs.rect(stack, panelX, panelY, panelW, panelH,
                 ColorUtils.applyAlphaToArgb(theme.panelBg(), 0xFF));
         panel.rect().radius(8).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panel);
         String title = CustomQuickActionEditor.t("custom_quick_action_title").content();
-        graphics.drawString(font, title, panelX + (panelW - font.width(title)) / 2, panelY + PAD,
+        graphics.text(font, title, panelX + (panelW - font.width(title)) / 2, panelY + PAD,
                 theme.textPrimary(), false);
         if (definitions.isEmpty()) {
             String empty = CustomQuickActionEditor.t("custom_quick_action_empty").content();
-            graphics.drawString(font, empty, panelX + (panelW - font.width(empty)) / 2,
+            graphics.text(font, empty, panelX + (panelW - font.width(empty)) / 2,
                     listY + 16, theme.textSecondary(), false);
         }
         super.renderWidgets(graphics, partialTicks);

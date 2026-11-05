@@ -29,7 +29,7 @@ public class UiPagePointerWiringTest {
     @Test
     public void ownedPagesDrawAndForwardAllPointerFeedback() throws Exception {
         ClassNode host = source("internal/client/ui/AuiPageHost");
-        assertTrue("Owned AUI pages must render the configured cursor", calls(host, "render", "UiPagePointer", "render"));
+        assertTrue("Owned AUI pages must render the configured cursor", calls(host, "extractRenderState", "UiPagePointer", "render"));
         assertTrue(calls(host, "pointerButton", "UiPagePointer", "button"));
         assertTrue(calls(host, "pointerScroll", "UiPagePointer", "scroll"));
         assertFalse("Screen overrides would accumulate unconsumed scroll twice", host.methods.stream().anyMatch(m -> m.name.equals("mouseScrolled")));

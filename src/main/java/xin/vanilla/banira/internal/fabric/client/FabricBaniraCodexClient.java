@@ -3,11 +3,11 @@ package xin.vanilla.banira.internal.fabric.client;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
 import xin.vanilla.banira.BaniraCodex;
@@ -40,7 +40,13 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        xin.vanilla.banira.client.util.ExtractedGuiRenderer.install(
+                graphics -> graphics.guiRenderState, graphics -> graphics.scissorStack.peek());
         BaniraClientDrawBridge.install(FabricBaniraDrawHandle::new);
+        if (xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract.inspect(
+                FabricBaniraCodexClient.class.getClassLoader()).compatible()) {
+            xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission.register();
+        }
         FabricNetworkChannels.registerClientReceivers();
         BaniraInput.flushPendingRegistrations();
         BaniraClientOverlayBridge.loadNotificationLog();
@@ -51,7 +57,8 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
         BaniraClientEventHub.dispatchModClientSetup(new BaniraClientSetupEvent());
         FabricExternalInventoryCompatibility.init();
 
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(FabricColorThemeReloadListener.INSTANCE);
+        ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+                xin.vanilla.banira.Identifier.id().create("color_themes"), FabricColorThemeReloadListener.INSTANCE);
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (client.player != null) {
                 BaniraClientEventHub.dispatchClientPlayerLoggedIn(client.player);
@@ -72,7 +79,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
                 }
             }
         });
-        HudRenderCallback.EVENT.register((stack, tickDelta) -> {
+        HudElementRegistry.addLast(xin.vanilla.banira.Identifier.id().create("overlays"), (stack, tickDelta) -> {
             if (Minecraft.getInstance().screen == null) {
                 BaniraClientOverlayBridge.renderHud(stack, tickDelta.getGameTimeDeltaPartialTick(false));
             }
@@ -83,21 +90,23 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
             BaniraClientEventBridge.fireGuiChanged(screen);
         });
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            ScreenEvents.beforeRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
+            ScreenEvents.beforeExtract(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
                 BaniraClientEventBridge.fireDrawScreenPre(stack, scr, mouseX, mouseY, tickDelta);
             });
-            ScreenEvents.afterRender(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
+            ScreenEvents.afterExtract(screen).register((scr, stack, mouseX, mouseY, tickDelta) -> {
                 BaniraClientEventBridge.fireDrawScreenPost(stack, scr, mouseX, mouseY, tickDelta);
                 FabricAuiClientHooks.renderScreen(scr, stack);
             });
-            ScreenMouseEvents.allowMouseClick(screen).register((scr, mouseX, mouseY, button) ->
-                    BaniraClientInputBridge.allowMouseClick(scr, mouseX, mouseY, button));
-            ScreenMouseEvents.allowMouseRelease(screen).register((scr, mouseX, mouseY, button) ->
-                    BaniraClientInputBridge.allowMouseRelease(scr, mouseX, mouseY, button));
+            ScreenMouseEvents.allowMouseClick(screen).register((scr, event) ->
+                    BaniraClientInputBridge.allowMouseClick(scr, event.x(), event.y(), event.button()));
+            ScreenMouseEvents.allowMouseRelease(screen).register((scr, event) ->
+                    BaniraClientInputBridge.allowMouseRelease(scr, event.x(), event.y(), event.button()));
             ScreenMouseEvents.allowMouseScroll(screen).register((scr, mouseX, mouseY, horizontalAmount, verticalAmount) ->
                     BaniraClientInputBridge.allowMouseScroll(scr, mouseX, mouseY, verticalAmount));
-            ScreenKeyboardEvents.allowKeyPress(screen).register(BaniraClientInputBridge::allowKeyPress);
-            ScreenKeyboardEvents.allowKeyRelease(screen).register(BaniraClientInputBridge::allowKeyRelease);
+            ScreenKeyboardEvents.allowKeyPress(screen).register((scr, event) ->
+                    BaniraClientInputBridge.allowKeyPress(scr, event.key(), event.scancode(), event.modifiers()));
+            ScreenKeyboardEvents.allowKeyRelease(screen).register((scr, event) ->
+                    BaniraClientInputBridge.allowKeyRelease(scr, event.key(), event.scancode(), event.modifiers()));
         });
     }
 

@@ -103,14 +103,13 @@ public class ComponentVanillaTransportTest {
     public void styleAndTextHoverSurviveServerTranslation() throws Exception {
         net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.translatable(
                 "word.banira_codex.enabled").withStyle(style -> style.withBold(true)
-                .withClickEvent(new net.minecraft.network.chat.ClickEvent(
-                        net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/test"))
-                .withHoverEvent(new net.minecraft.network.chat.HoverEvent(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                .withClickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand("/test"))
+                .withHoverEvent(new net.minecraft.network.chat.HoverEvent.ShowText(
                         net.minecraft.network.chat.Component.translatable("word.banira_codex.disabled"))));
         net.minecraft.network.chat.Component message = BaniraComponent.get().object(original).languageCode("zh_cn").toChat("zh_cn");
         assertTrue(message.getStyle().isBold());
-        assertEquals("/test", message.getStyle().getClickEvent().getValue());
-        assertEquals("已禁用", message.getStyle().getHoverEvent().getValue(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT).getString());
+        assertEquals("/test", ((net.minecraft.network.chat.ClickEvent.SuggestCommand) message.getStyle().getClickEvent()).command());
+        assertEquals("已禁用", ((net.minecraft.network.chat.HoverEvent.ShowText) message.getStyle().getHoverEvent()).value().getString());
         assertTrue(keys(json(message)).isEmpty());
     }
 
@@ -175,13 +174,13 @@ public class ComponentVanillaTransportTest {
     @Test
     public void legacyItemNameAndLoreAreHandledByTheNbtParser() throws Exception {
         String encoded = "{display:{Name:'{\"translate\":\"word.banira_codex.enabled\"}',Lore:['{\"translate\":\"item.minecraft.diamond\"}','{\"translate\":\"word.banira_codex.disabled\"}']},opaque:{translate:\"not-a-component\",value:7}}";
-        net.minecraft.nbt.CompoundTag before = net.minecraft.nbt.TagParser.parseTag(encoded);
-        net.minecraft.nbt.CompoundTag after = net.minecraft.nbt.TagParser.parseTag(Component.prepareItemHoverTag(encoded, "zh_cn", true));
+        net.minecraft.nbt.CompoundTag before = net.minecraft.nbt.TagParser.parseCompoundFully(encoded);
+        net.minecraft.nbt.CompoundTag after = net.minecraft.nbt.TagParser.parseCompoundFully(Component.prepareItemHoverTag(encoded, "zh_cn", true));
         assertEquals(before.getCompound("opaque"), after.getCompound("opaque"));
-        assertEquals("已启用", decode(parse(after.getCompound("display").getString("Name"))).getString());
-        net.minecraft.nbt.ListTag lore = after.getCompound("display").getList("Lore", 8);
-        assertEquals(Arrays.asList("item.minecraft.diamond"), keys(parse(lore.getString(0))));
-        assertEquals("已禁用", decode(parse(lore.getString(1))).getString());
+        assertEquals("已启用", decode(parse(after.getCompound("display").orElseThrow().getString("Name").orElseThrow())).getString());
+        net.minecraft.nbt.ListTag lore = after.getCompound("display").orElseThrow().getList("Lore").orElseThrow();
+        assertEquals(Arrays.asList("item.minecraft.diamond"), keys(parse(lore.getString(0).orElseThrow())));
+        assertEquals("已禁用", decode(parse(lore.getString(1).orElseThrow())).getString());
         String untouched = "{ display : { Name : '{\"translate\":\"item.minecraft.diamond\"}' }, data:7b }";
         assertEquals(untouched, Component.prepareItemHoverTag(untouched, "zh_cn", true));
         assertEquals("invalid{", Component.prepareItemHoverTag("invalid{", "zh_cn", true));
@@ -215,6 +214,28 @@ public class ComponentVanillaTransportTest {
             assertEquals(sample[1], decode(prepare(input, true)).getString());
         }
         assertEquals("100%%", BaniraComponent.get().literal("100%%").toChat("zh_cn").getString());
+    }
+
+    @Test
+    public void modernInlineHoverPayloadsKeepTypedTextAndOpaqueDataSeparate() throws Exception {
+        JsonElement text = parse("{\"text\":\"hover\",\"hover_event\":{\"action\":\"show_text\",\"value\":{\"translate\":\"word.banira_codex.disabled\"}}}");
+        assertEquals("已禁用", decode(prepare(text, true).getAsJsonObject().getAsJsonObject("hover_event").get("value")).getString());
+        JsonElement entity = parse("{\"text\":\"entity\",\"hover_event\":{\"action\":\"show_entity\",\"type\":\"minecraft:pig\",\"id\":\"00000000-0000-0000-0000-000000000001\",\"name\":{\"translate\":\"word.banira_codex.enabled\"}}}");
+        JsonObject info = prepare(entity, true).getAsJsonObject().getAsJsonObject("hover_event");
+        assertEquals("minecraft:pig", info.get("type").getAsString());
+        assertEquals("00000000-0000-0000-0000-000000000001", info.get("id").getAsString());
+        assertEquals("已启用", decode(info.get("name")).getString());
+        JsonElement item = parse("{\"text\":\"item\",\"hover_event\":{\"action\":\"show_item\",\"id\":\"minecraft:stone\",\"count\":2,\"components\":{\"minecraft:custom_name\":{\"translate\":\"word.banira_codex.enabled\"},\"minecraft:item_name\":{\"translate\":\"word.banira_codex.disabled\"},\"minecraft:lore\":[{\"translate\":\"item.minecraft.diamond\"}],\"minecraft:custom_data\":{\"translate\":\"opaque-data\"}}}}");
+        String before = item.toString();
+        JsonObject hover = prepare(item, true).getAsJsonObject().getAsJsonObject("hover_event");
+        assertEquals("minecraft:stone", hover.get("id").getAsString());
+        assertEquals(2, hover.get("count").getAsInt());
+        JsonObject components = hover.getAsJsonObject("components");
+        assertEquals("已启用", decode(components.get("minecraft:custom_name")).getString());
+        assertEquals("已禁用", decode(components.get("minecraft:item_name")).getString());
+        assertEquals(Arrays.asList("item.minecraft.diamond"), keys(components.get("minecraft:lore")));
+        assertEquals("opaque-data", components.getAsJsonObject("minecraft:custom_data").get("translate").getAsString());
+        assertEquals(before, item.toString());
     }
 
     private static Component nativeReward() {
@@ -261,6 +282,10 @@ public class ComponentVanillaTransportTest {
             if (object.has("hoverEvent")) {
                 JsonObject hover = object.getAsJsonObject("hoverEvent");
                 if (hover.has("contents") && "show_text".equals(hover.get("action").getAsString())) result.addAll(keys(hover.get("contents")));
+            }
+            if (object.has("hover_event")) {
+                JsonObject hover = object.getAsJsonObject("hover_event");
+                if (hover.has("value") && "show_text".equals(hover.get("action").getAsString())) result.addAll(keys(hover.get("value")));
             }
         }
         return result;

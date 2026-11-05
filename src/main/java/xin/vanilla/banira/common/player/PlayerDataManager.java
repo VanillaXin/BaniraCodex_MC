@@ -157,7 +157,7 @@ public final class PlayerDataManager {
     public CompoundTag getOrCreate(UUID playerUuid, String modId) {
         CachedPlayerData cached = loadRootIfAbsent(playerUuid);
         synchronized (cached) {
-            CompoundTag node = cached.root.contains(modId, 10) ? cached.root.getCompound(modId) : new CompoundTag();
+            CompoundTag node = cached.root.getCompoundOrEmpty(modId);
             cached.root.put(modId, node);
             cached.dirty = true;
             return node;
@@ -180,7 +180,7 @@ public final class PlayerDataManager {
         CachedPlayerData cached = loadRootIfAbsent(playerUuid);
         synchronized (cached) {
             if (tag == null) {
-                if (cached.root.contains(modId, 10)) {
+                if (cached.root.getCompound(modId).isPresent()) {
                     cached.root.remove(modId);
                     cached.dirty = true;
                 }
@@ -204,8 +204,8 @@ public final class PlayerDataManager {
     public CompoundTag loadFromDisk(UUID playerUuid, String modId) {
         CachedPlayerData cached = loadRootFromDisk(playerUuid);
         synchronized (cached) {
-            if (cached.root.contains(modId, 10)) {
-                return cached.root.getCompound(modId);
+            if (cached.root.getCompound(modId).isPresent()) {
+                return cached.root.getCompoundOrEmpty(modId);
             } else {
                 CompoundTag node = new CompoundTag();
                 cached.root.put(modId, node);
@@ -229,7 +229,7 @@ public final class PlayerDataManager {
         CachedPlayerData cached = playerCache.get(playerUuid);
         if (cached == null) return;
         synchronized (cached) {
-            if (cached.root.contains(modId, 10)) {
+            if (cached.root.getCompound(modId).isPresent()) {
                 cached.root.remove(modId);
                 cached.dirty = true;
             }

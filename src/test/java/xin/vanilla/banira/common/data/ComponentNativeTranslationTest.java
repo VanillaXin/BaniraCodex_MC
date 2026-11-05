@@ -91,13 +91,12 @@ public class ComponentNativeTranslationTest {
     public void nativeArgumentKeepsStyleAndClickAction() {
         MutableComponent source = net.minecraft.network.chat.Component.translatable("item.minecraft.diamond")
                 .withStyle(style -> style.withBold(true).withColor(0x336699)
-                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(
-                                net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/give")));
+                        .withClickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand("/give")));
         Component value = BaniraComponent.get().literal("%s").appendArg(source);
         net.minecraft.network.chat.Component nativePart = value.toVanilla("zh_cn").getSiblings().get(1);
         assertTrue(nativePart.getStyle().isBold());
         assertEquals(0x336699, nativePart.getStyle().getColor().getValue());
-        assertEquals("/give", nativePart.getStyle().getClickEvent().getValue());
+        assertEquals("/give", ((net.minecraft.network.chat.ClickEvent.SuggestCommand) nativePart.getStyle().getClickEvent()).command());
     }
 
     @Test
@@ -161,14 +160,13 @@ public class ComponentNativeTranslationTest {
     @Test
     public void formattedNativeLiteralKeepsItsStyleAndClickAction() {
         net.minecraft.network.chat.Component original = net.minecraft.network.chat.Component.literal("value")
-                .withStyle(style -> style.withBold(true).withClickEvent(new net.minecraft.network.chat.ClickEvent(
-                        net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/value")));
+                .withStyle(style -> style.withBold(true).withClickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand("/value")));
         net.minecraft.network.chat.Component result = BaniraComponent.get().literal("%8S").appendArg(original).toVanilla("zh_cn");
         assertEquals("   VALUE", result.getString());
         net.minecraft.network.chat.Component formatted = result.getSiblings().stream()
                 .filter(part -> "   VALUE".equals(part.getString())).findFirst().orElseThrow(AssertionError::new);
         assertTrue(formatted.getStyle().isBold());
-        assertEquals("/value", formatted.getStyle().getClickEvent().getValue());
+        assertEquals("/value", ((net.minecraft.network.chat.ClickEvent.SuggestCommand) formatted.getStyle().getClickEvent()).command());
         assertEquals("value", original.getString());
     }
 
@@ -179,6 +177,25 @@ public class ComponentNativeTranslationTest {
         net.minecraft.network.chat.Component result = BaniraComponent.get().literal("%8S").appendArg(argument).toVanilla("zh_cn");
         assertEquals(Arrays.asList("item.minecraft.diamond"), keys(result));
         assertTrue(result.getString().startsWith("base"));
+    }
+
+    @Test
+    public void typedClickEventsKeepTheExistingWrapperContract() {
+        List<net.minecraft.network.chat.ClickEvent> events = Arrays.asList(
+                new net.minecraft.network.chat.ClickEvent.OpenUrl(java.net.URI.create("https://example.com/reward")),
+                new net.minecraft.network.chat.ClickEvent.OpenFile("reward.txt"),
+                new net.minecraft.network.chat.ClickEvent.RunCommand("/reward"),
+                new net.minecraft.network.chat.ClickEvent.SuggestCommand("/reward player"),
+                new net.minecraft.network.chat.ClickEvent.ChangePage(3),
+                new net.minecraft.network.chat.ClickEvent.CopyToClipboard("reward-data"));
+        for (net.minecraft.network.chat.ClickEvent event : events) {
+            Component value = BaniraComponent.get().literal("reward").clickEvent(event);
+            JsonObject json = Component.serialize(value);
+            assertEquals(event.action().getSerializedName(), json.getAsJsonObject("clickEvent").get("action").getAsString());
+            assertTrue(json.getAsJsonObject("clickEvent").has("value"));
+            assertEquals(event, Component.deserialize(json).clickEvent());
+            assertEquals(event, value.toChat("zh_cn").getStyle().getClickEvent());
+        }
     }
 
     private static List<String> keys(net.minecraft.network.chat.Component component) {

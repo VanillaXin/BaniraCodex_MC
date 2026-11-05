@@ -25,9 +25,8 @@ public abstract class ServerPlayerMixin implements ServerPlayerLogoutState {
     }
 
     @Inject(
-            method = "updateOptions",
-            at = @At("TAIL"),
-            require = 0
+            method = "updateOptions(Lnet/minecraft/server/level/ClientInformation;)V",
+            at = @At("TAIL")
     )
     private void banira$afterUpdateOptions(ClientInformation information, CallbackInfo ci) {
         try {
@@ -40,9 +39,8 @@ public abstract class ServerPlayerMixin implements ServerPlayerLogoutState {
     }
 
     @Inject(
-            method = "restoreFrom",
-            at = @At("TAIL"),
-            require = 0
+            method = "restoreFrom(Lnet/minecraft/server/level/ServerPlayer;Z)V",
+            at = @At("TAIL")
     )
     private void banira$afterRestoreFrom(ServerPlayer originalPlayer, boolean keepEverything, CallbackInfo ci) {
         try {

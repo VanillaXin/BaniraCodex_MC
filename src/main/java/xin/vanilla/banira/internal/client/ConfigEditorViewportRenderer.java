@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
 import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
@@ -18,7 +18,7 @@ public final class ConfigEditorViewportRenderer {
     /**
      * 在裁剪区域内渲染配置树和滚动条。
      */
-    public static void renderScrolledContent(GuiGraphics stack, float partialTicks,
+    public static void renderScrolledContent(GuiGraphicsExtractor stack, float partialTicks,
                                              CollapsiblePanelWidget contentRootPanel, ScrollbarWidget scrollbar,
                                              int contentLeft, int listTop, int contentTotalW, int listAreaHeight) {
         AbstractGuiUtils.enableScissor(contentLeft, listTop, contentTotalW, Math.max(1, listAreaHeight));
@@ -30,7 +30,7 @@ public final class ConfigEditorViewportRenderer {
     /**
      * 在 scissor 关闭后渲染顶层 overlay 控件，避免 tooltip/popup 被配置列表裁剪。
      */
-    public static void renderOverlayWidgets(Iterable<IWidget> widgets, GuiGraphics stack, float partialTicks,
+    public static void renderOverlayWidgets(Iterable<IWidget> widgets, GuiGraphicsExtractor stack, float partialTicks,
                                             Predicate<IWidget> reservedWidget) {
         for (IWidget widget : widgets) {
             if (reservedWidget.test(widget) || widget.parent() != null || !widget.visible()) {
@@ -40,7 +40,7 @@ public final class ConfigEditorViewportRenderer {
         }
     }
 
-    private static void renderWidget(IWidget widget, GuiGraphics stack, float partialTicks) {
+    private static void renderWidget(IWidget widget, GuiGraphicsExtractor stack, float partialTicks) {
         if (widget != null && widget.visible()) {
             if (widget.enabled() && widget.needsUpdate()) {
                 widget.update();

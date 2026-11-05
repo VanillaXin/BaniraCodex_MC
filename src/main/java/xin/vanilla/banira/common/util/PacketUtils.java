@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import lombok.experimental.Accessors;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.SplitPacket;
@@ -82,7 +82,7 @@ public final class PacketUtils {
         return BaniraNetwork.hasBaniraServer();
     }
 
-    public static boolean hasChannel(ResourceLocation channel) {
+    public static boolean hasChannel(Identifier channel) {
         return channel != null && hasChannel(channel.toString());
     }
 
@@ -90,7 +90,7 @@ public final class PacketUtils {
         return BaniraNetwork.hasLocalChannel(channelId);
     }
 
-    public static boolean hasChannel(Object player, ResourceLocation channel) {
+    public static boolean hasChannel(Object player, Identifier channel) {
         return channel != null && hasChannel(player, channel.toString());
     }
 

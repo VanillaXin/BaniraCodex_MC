@@ -1,8 +1,10 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -49,7 +51,7 @@ public class MouseWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
         draw(graphics, (int) screen.inputState().mouseX(), (int) screen.inputState().mouseY());
     }
 
@@ -87,16 +89,15 @@ public class MouseWidget extends BaseWidget {
         return pointer.frame(screen.getEffectiveTheme(), x, y, renderDepth().depth());
     }
 
-    public void draw(PoseStack stack, int x, int y) {
+    public void draw(Matrix3x2fStack stack, int x, int y) {
         if (!visible || !UiSystemCursor.acquire(this, screen)) return;
-        Minecraft mc = Minecraft.getInstance();
-        GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-        graphics.pose().last().pose().set(stack.last().pose());
-        pointerFrame(x, y).renderNative(graphics);
+        NativeGuiGraphics.draw(stack,
+                graphics -> pointerFrame(x, y).renderNative(graphics));
     }
 
-    public void draw(GuiGraphics graphics, int x, int y) {
+    public void draw(GuiGraphicsExtractor graphics, int x, int y) {
         if (!visible || !UiSystemCursor.acquire(this, screen)) return;
+        NativeGuiGraphics.bind(graphics);
         HudDrawList frame = pointerFrame(x, y);
         if (!SharedHudHosts.render(SharedHudHosts.POINTER, graphics, frame)) frame.renderNative(graphics);
     }

@@ -1,15 +1,15 @@
 package xin.vanilla.banira.internal.fabric.compat.jei;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
 import mezz.jei.api.gui.inputs.IJeiUserInput;
 import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
 import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.fabricmc.loader.api.FabricLoader;
@@ -113,36 +113,37 @@ public final class JeiCompatibility {
         }
     }
 
-    private static void drawBookmarkIcon(PoseStack stack, int x, int y, int size) {
+    private static void drawBookmarkIcon(Matrix3x2fStack stack, int x, int y, int size) {
         IClientToggleState state = bookmarkToggleState;
         IDrawable icon = state != null && state.isBookmarkOverlayEnabled()
                 ? bookmarkOnIcon : bookmarkOffIcon;
         drawNativeIcon(stack, x, y, size, icon);
     }
 
-    private static void drawLookupHistoryIcon(PoseStack stack, int x, int y, int size) {
+    private static void drawLookupHistoryIcon(Matrix3x2fStack stack, int x, int y, int size) {
         IClientConfig config = lookupHistoryConfig;
         IDrawable icon = JeiRuntimeAccess.lookupHistoryEnabled(config)
                 ? lookupHistoryOnIcon : lookupHistoryOffIcon;
         drawNativeIcon(stack, x, y, size, icon);
     }
 
-    private static void drawNativeIcon(PoseStack stack, int x, int y, int size,
+    private static void drawNativeIcon(Matrix3x2fStack stack, int x, int y, int size,
                                        IDrawable icon) {
         if (icon == null || size <= 0 || icon.getWidth() <= 0 || icon.getHeight() <= 0) return;
-        Minecraft minecraft = Minecraft.getInstance();
-        GuiGraphics graphics = new GuiGraphics(minecraft, minecraft.renderBuffers().bufferSource());
-        graphics.pose().last().pose().set(stack.last().pose());
         float scale = Math.min((float) size / icon.getWidth(),
                 (float) size / icon.getHeight());
         float width = icon.getWidth() * scale;
         float height = icon.getHeight() * scale;
-        graphics.pose().pushPose();
-        graphics.pose().translate(x + (size - width) / 2.0F,
-                y + (size - height) / 2.0F, 0.0F);
-        graphics.pose().scale(scale, scale, 1.0F);
-        icon.draw(graphics, 0, 0);
-        graphics.pose().popPose();
+        NativeGuiGraphics.draw(stack, graphics -> {
+            graphics.pose().pushMatrix();
+            try {
+                graphics.pose().translate(x + (size - width) / 2.0F, y + (size - height) / 2.0F);
+                graphics.pose().scale(scale, scale);
+                icon.draw(graphics, 0, 0);
+            } finally {
+                graphics.pose().popMatrix();
+            }
+        });
     }
 
     private static final class BookmarkProvider implements ExternalInventoryActionProvider {

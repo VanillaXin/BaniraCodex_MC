@@ -15,7 +15,8 @@ final class FabricBaniraPermissionService implements BaniraPermissionService {
 
     @Override
     public boolean hasVanillaPermission(Object player, int permissionLevel) {
-        return player instanceof Player && ((Player) player).hasPermissions(permissionLevel);
+        return player instanceof Player nativePlayer
+                && xin.vanilla.banira.internal.server.NativePermissionLevels.has(nativePlayer.permissions(), permissionLevel);
     }
 
     @Override

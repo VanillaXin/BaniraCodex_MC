@@ -14,7 +14,7 @@ public final class BaniraUi {
             return null;
         }
 
-        default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+        default boolean renderHud(String id, net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
             return false;
         }
 
@@ -67,7 +67,7 @@ public final class BaniraUi {
         return installed == null ? null : installed.container(Objects.requireNonNull(page), Objects.requireNonNull(current));
     }
 
-    public static boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+    public static boolean renderHud(String id, net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
         Driver installed = driver;
         return installed != null && installed.renderHud(Objects.requireNonNull(id), Objects.requireNonNull(graphics));
     }

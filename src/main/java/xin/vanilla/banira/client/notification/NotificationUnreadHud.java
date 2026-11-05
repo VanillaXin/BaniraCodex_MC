@@ -1,18 +1,18 @@
 package xin.vanilla.banira.client.notification;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.client.util.ExtractedGuiRenderer;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 
 public final class NotificationUnreadHud {
-    private static final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath("banira_codex", "textures/gui/unread_message.png");
-    private static final ResourceLocation ICON_EDGE = ResourceLocation.fromNamespaceAndPath("banira_codex", "textures/gui/unread_message_edge.png");
+    private static final Identifier ICON = Identifier.fromNamespaceAndPath("banira_codex", "textures/gui/unread_message.png");
+    private static final Identifier ICON_EDGE = Identifier.fromNamespaceAndPath("banira_codex", "textures/gui/unread_message_edge.png");
     public static final int WIDTH = 32, HEIGHT = 22;
     private static final NotificationHudState STATE = new NotificationHudState();
     private static List<String> cachedKeys = Collections.emptyList();
@@ -105,7 +105,7 @@ public final class NotificationUnreadHud {
         return new NotificationLogScreen(new NotificationLogScreen.Args().parentScreen(chat));
     }
 
-    public static void render(GuiGraphics graphics) {
+    public static void render(GuiGraphicsExtractor graphics) {
         Minecraft mc = Minecraft.getInstance();
         int unread = NotificationManager.get().unreadCount();
         if (!canRender(mc) || NotificationMinimapBridge.selectedHost() != EnumNotificationHudHost.STANDALONE) return;
@@ -118,35 +118,30 @@ public final class NotificationUnreadHud {
             frame.renderNative(graphics);
     }
 
-    public static void draw(GuiGraphics graphics, int x, int y, int unread, BaniraColorConfig theme) {
-        AbstractGuiUtils.renderByDepth(graphics.pose(), EnumRenderDepth.NOTIFICATION.depth() + 1,
-                drawStack -> drawContents(graphics, drawStack, x, y, unread, theme));
+    public static void draw(GuiGraphicsExtractor graphics, int x, int y, int unread, BaniraColorConfig theme) {
+        try (var scope = ExtractedGuiRenderer.bind(graphics)) {
+            AbstractGuiUtils.renderByDepth(graphics.pose(), EnumRenderDepth.NOTIFICATION.depth() + 1,
+                    drawStack -> drawContents(graphics, drawStack, x, y, unread, theme));
+        }
     }
 
-    private static void drawContents(GuiGraphics graphics, PoseStack stack, int x, int y, int unread, BaniraColorConfig theme) {
+    private static void drawContents(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int x, int y, int unread, BaniraColorConfig theme) {
         int color = theme.popupItemText();
-        RenderSystem.setShaderColor(1, 1, 1, 1);
         AbstractGuiUtils.blitBlend(stack, ICON, x + 2, y + 4, NotificationHudAppearance.ICON_SIZE,
                 NotificationHudAppearance.ICON_SIZE, 0, 0, 12, 12, 12, 12);
         int edgeColor = ColorUtils.ensureReadableTextArgb(color, 0xFFF9F4E5);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, ICON_EDGE);
-        RenderSystem.setShaderColor(((edgeColor >> 16) & 255) / 255f, ((edgeColor >> 8) & 255) / 255f, (edgeColor & 255) / 255f, 1);
-        try {
-            AbstractGuiUtils.blitByBlend(() -> graphics.blit(ICON_EDGE, x + 2, y + 4,
-                    NotificationHudAppearance.ICON_SIZE, NotificationHudAppearance.ICON_SIZE, 0f, 0f, 12, 12, 12, 12));
-        } finally {
-            RenderSystem.setShaderColor(1, 1, 1, 1);
-        }
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ICON_EDGE, x + 2, y + 4, 0f, 0f,
+                NotificationHudAppearance.ICON_SIZE, NotificationHudAppearance.ICON_SIZE, 12, 12, 12, 12,
+                0xFF000000 | (edgeColor & 0xFFFFFF));
         if (unread > 0) {
             String label = NotificationHudState.countLabel(unread);
-            stack.pushPose();
+            stack.pushMatrix();
             try {
-                stack.translate(x + 17, y + 7, 0);
-                stack.scale(NotificationHudAppearance.COUNT_SCALE, NotificationHudAppearance.COUNT_SCALE, 1);
-                graphics.drawString(AbstractGuiUtils.getFont(), label, 0, 0, color, false);
+                stack.translate(x + 17, y + 7);
+                stack.scale(NotificationHudAppearance.COUNT_SCALE, NotificationHudAppearance.COUNT_SCALE);
+                graphics.text(AbstractGuiUtils.getFont(), label, 0, 0, color, false);
             } finally {
-                stack.popPose();
+                stack.popMatrix();
             }
         }
     }

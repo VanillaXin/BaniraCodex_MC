@@ -1,11 +1,13 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.input.BaniraPressGestureState;
@@ -76,7 +78,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
 
     @FunctionalInterface
     public interface LeadingIconRenderer {
-        void render(PoseStack stack, int x, int y, int size);
+        void render(Matrix3x2fStack stack, int x, int y, int size);
     }
 
     /**
@@ -513,8 +515,8 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -654,16 +656,16 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
                         .maxWidth(Math.min(textMaxWidth, availableWidth))
                         .position(textEllipsisPosition));
             } else if (fontSize != 9.0f) {
-                stack.pushPose();
-                stack.translate(contentX, contentY, 0);
+                stack.pushMatrix();
+                stack.translate((float) (contentX), (float) (contentY));
                 float scale = fontSize / 9.0f;
-                stack.scale(scale, scale, 1.0f);
+                stack.scale(scale, scale);
                 int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
                 int scaledTextX = (int) ((availableWidth / scale - textWidth) / 2.0);
                 int scaledTextY = (int) ((availableHeight / scale - textHeight) / 2.0);
                 LabelWidget.drawLimitedText(graphics, drawArgs.x(scaledTextX).y(scaledTextY));
-                stack.popPose();
+                stack.popMatrix();
             } else {
                 int textWidth = cachedTextWidth(font);
                 int textHeight = 9;
@@ -696,7 +698,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         cachedTextWidth = 0;
     }
 
-    private void renderLongPressPressedFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
+    private void renderLongPressPressedFill(Matrix3x2fStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
         switch (longPressProgressMode) {
             case LEFT_TO_RIGHT:
                 renderLongPressFillSingleScissor(stack, drawX, drawY, drawWidth, drawHeight, absClipX, absClipY,
@@ -737,7 +739,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         }
     }
 
-    private void renderLongPressFillSingleScissor(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, int absClipX, int absClipY,
+    private void renderLongPressFillSingleScissor(Matrix3x2fStack stack, int drawX, int drawY, int drawWidth, int drawHeight, int absClipX, int absClipY,
                                                   int clipW, int clipH, int clipOffsetX, int clipOffsetY) {
         if (clipW <= 0 || clipH <= 0) {
             return;
@@ -749,7 +751,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         AbstractGuiUtils.popScissor();
     }
 
-    private void renderLongPressOutsideInFill(PoseStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
+    private void renderLongPressOutsideInFill(Matrix3x2fStack stack, int drawX, int drawY, int drawWidth, int drawHeight, float progress, int absClipX, int absClipY) {
         int innerW = (int) Math.floor(drawWidth * (1f - progress));
         int innerH = (int) Math.floor(drawHeight * (1f - progress));
         innerW = Math.max(0, Math.min(drawWidth, innerW));
@@ -855,7 +857,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
         return (argb & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
-    private void drawLongPressCompletionEffects(PoseStack stack, int drawX, int drawY,
+    private void drawLongPressCompletionEffects(Matrix3x2fStack stack, int drawX, int drawY,
                                                 int drawWidth, int drawHeight) {
         if (drawWidth < 1 || drawHeight < 1) {
             return;
@@ -880,7 +882,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 完成时短暂提亮按钮，并用扫光连接进度态与完成态。
      */
-    private void drawLongPressCompletionFlash(PoseStack stack, float centerX, float centerY,
+    private void drawLongPressCompletionFlash(Matrix3x2fStack stack, float centerX, float centerY,
                                               LongPressCompletionEffect effect,
                                               float elapsedMs, float age) {
         int width = Math.max(1, Math.round(effect.drawW));
@@ -915,7 +917,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 对勾明确表示长按动作已经完成。
      */
-    private void drawLongPressCompletionCheck(PoseStack stack, float centerX, float centerY,
+    private void drawLongPressCompletionCheck(Matrix3x2fStack stack, float centerX, float centerY,
                                               LongPressCompletionEffect effect, float age) {
         float pop = age < 0.22f ? age / 0.22f : 1f;
         pop = 1f - (1f - pop) * (1f - pop);
@@ -976,11 +978,11 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 根据 presetStyle 绘制预置图标（关闭叉、加减号、箭头等）
      */
-    private void drawPresetIcon(PoseStack stack, int x, int y, int w, int h, int color) {
+    private void drawPresetIcon(Matrix3x2fStack stack, int x, int y, int w, int h, int color) {
         drawPresetIcon(stack, presetStyle, x, y, w, h, color, iconStrokeWidth);
     }
 
-    public static void drawPresetIcon(PoseStack stack, PresetStyle presetStyle, int x, int y, int w, int h, int color, float iconStrokeWidth) {
+    public static void drawPresetIcon(Matrix3x2fStack stack, PresetStyle presetStyle, int x, int y, int w, int h, int color, float iconStrokeWidth) {
         float iw = Math.max(0f, (float) w);
         float ih = Math.max(0f, (float) h);
         float size = Math.min(iw, ih);
@@ -1067,7 +1069,7 @@ public class ButtonWidget extends BaseWidget implements ITextWidget {
     /**
      * 绘制重置图标
      */
-    private static void drawResetIcon(PoseStack stack, float cx, float cy, float r, float lw, int color) {
+    private static void drawResetIcon(Matrix3x2fStack stack, float cx, float cy, float r, float lw, int color) {
         float d = r * 1.375f;
         float triR = r * 0.65f;
         float xL = cx - d;

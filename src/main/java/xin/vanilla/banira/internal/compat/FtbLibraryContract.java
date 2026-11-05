@@ -33,7 +33,7 @@ public final class FtbLibraryContract {
 
     private static final Namespace[] NAMESPACES = {
             new Namespace("Lnet/minecraft/class_2960;", "Lnet/minecraft/class_332;", "Lnet/minecraft/class_768;"),
-            new Namespace("Lnet/minecraft/resources/ResourceLocation;", "Lnet/minecraft/client/gui/GuiGraphics;", "Lnet/minecraft/client/renderer/Rect2i;")
+            new Namespace("Lnet/minecraft/resources/Identifier;", "Lnet/minecraft/client/gui/GuiGraphicsExtractor;", "Lnet/minecraft/client/renderer/Rect2i;")
     };
 
     private FtbLibraryContract() {
@@ -82,6 +82,12 @@ public final class FtbLibraryContract {
                     && invokesHandler(target, new String[]{"clickButton"}, "(Z)V", "activateHostedButton");
         } else if (WIDGET.equals(target.name)) {
             widgetHooks = false;
+            widgetHooks = invokesHandler(target, new String[]{"extractContents"},
+                    "(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V", "shouldSuppressNativeGroup", "clearReservedArea")
+                    && invokesHandler(target, new String[]{"onPress"},
+                    "(Lnet/minecraft/client/input/InputWithModifiers;)V", "shouldSuppressNativeGroup")
+                    && invokesHandler(target, new String[]{"onRelease"},
+                    "(Lnet/minecraft/client/input/MouseButtonEvent;)V", "shouldSuppressNativeGroup");
             for (Namespace namespace : NAMESPACES) {
                 widgetHooks |= invokesHandler(target, RENDER_NAMES, "(" + namespace.stack + "IIF)V",
                         "shouldSuppressNativeGroup", "clearReservedArea")
@@ -123,6 +129,8 @@ public final class FtbLibraryContract {
         requireConcrete(grid);
         requireConcrete(manager);
         requireConcrete(widget);
+        boolean extracted = namespace.location.equals("Lnet/minecraft/resources/Identifier;")
+                && widget.methods.stream().anyMatch(method -> method.name.equals("extractContents"));
         requireMethod(button, "<init>", "(" + namespace.location + "L" + DATA + ";)V");
         requireMethod(button, "getId", "()" + namespace.location);
         requireMethod(button, "getData", "()L" + DATA + ";");
@@ -132,7 +140,8 @@ public final class FtbLibraryContract {
         requireMethod(button, "canSee", "()Z");
         requireMethod(button, "setTooltipOverride", "(Ljava/util/function/Supplier;)V");
         requireMethod(data, "<init>", "(L" + ICON + ";ZLjava/util/List;Ljava/util/Optional;Z"
-                + "Ljava/util/Optional;Ljava/util/Optional;ZLjava/util/Optional;I)V");
+                + "Ljava/util/Optional;Ljava/util/Optional;ZLjava/util/Optional;I"
+                + (extracted ? "Ljava/lang/String;" : "") + ")V");
         requireMethod(data, "icon", "()L" + ICON + ";");
         requireMethod(grid, "<init>", "(II)V");
         requireMethod(gui, "<init>", "(L" + GRID + ";ZL" + BUTTON + ";)V");
@@ -144,13 +153,26 @@ public final class FtbLibraryContract {
         requireMethod(manager, "getButtonList", "()Ljava/util/List;");
         requireField(widget, "lastDrawnArea", namespace.area,
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, Opcodes.ACC_FINAL);
-        requireOneMethod(widget, RENDER_NAMES, "(" + namespace.stack + "IIF)V");
-        requireOneMethod(widget, PRESS_NAMES, "()V");
+        if (extracted) {
+            requireShape(widget, "extractContents", "(" + namespace.stack + "IIF)V",
+                    Opcodes.ACC_PROTECTED, NON_INSTANCE);
+            requireMethod(widget, "onPress", "(Lnet/minecraft/client/input/InputWithModifiers;)V");
+            requireMethod(widget, "onRelease", "(Lnet/minecraft/client/input/MouseButtonEvent;)V");
+        } else {
+            requireOneMethod(widget, RENDER_NAMES, "(" + namespace.stack + "IIF)V");
+            requireOneMethod(widget, PRESS_NAMES, "()V");
+        }
         if ((icon.access & (Opcodes.ACC_FINAL | Opcodes.ACC_INTERFACE)) != 0) {
             throw new IllegalArgumentException(ICON + " must remain extensible");
         }
         requireMethod(icon, "<init>", "()V");
-        if (!hasDraw(loader, icon, namespace.stack, new HashSet<>())) {
+        if (extracted) {
+            String renderer = "dev/ftb/mods/ftblibrary/client/icon/IconRenderer";
+            requireShape(icon, "getRenderer", "()L" + renderer + ";", Opcodes.ACC_PUBLIC, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            ClassNode renderType = read(loader, renderer);
+            if ((renderType.access & Opcodes.ACC_INTERFACE) == 0) throw new IllegalArgumentException("IconRenderer must remain an interface");
+            requireShape(renderType, "render", "(L" + ICON + ";" + namespace.stack + "IIII)V", Opcodes.ACC_PUBLIC, Opcodes.ACC_STATIC);
+        } else if (!hasDraw(loader, icon, namespace.stack, new HashSet<>())) {
             throw new IllegalArgumentException(ICON + ".draw(" + namespace.stack + "IIII)V public instance contract missing");
         }
     }
@@ -169,6 +191,12 @@ public final class FtbLibraryContract {
 
     private static void requireMethod(ClassNode owner, String name, String descriptor) {
         requireOneMethod(owner, new String[]{name}, descriptor);
+    }
+
+    private static void requireShape(ClassNode owner, String name, String descriptor, int required, int forbidden) {
+        long count = owner.methods.stream().filter(method -> method.name.equals(name) && method.desc.equals(descriptor)
+                && (method.access & required) == required && (method.access & forbidden) == 0).count();
+        if (count != 1) throw new IllegalArgumentException(owner.name + "." + name + descriptor + " contract missing");
     }
 
     private static void requireConcrete(ClassNode owner) {

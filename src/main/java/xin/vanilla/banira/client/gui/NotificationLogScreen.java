@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -480,8 +482,8 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
     }
 
     @Override
-    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         refreshHistory();
         BaniraColorConfig theme = getEffectiveTheme();
 
@@ -528,8 +530,8 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         super.renderWidgets(graphics, partialTicks);
     }
 
-    private void renderListRow(GuiGraphics graphics, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
-        PoseStack stack = graphics.pose();
+    private void renderListRow(GuiGraphicsExtractor graphics, NotificationLogEntry entry, int index, int x, int y, int w, int h, BaniraColorConfig theme) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         boolean selected = index == selectedIndex;
         boolean hovered = index == listHoverIndex && !selected;
         int rowBg = selected ? ColorUtils.applyAlphaToArgb(theme.color(ACCENT), 0x40)
@@ -558,12 +560,12 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         }
         List<FormattedCharSequence> rowLines = font.split(rowComponent, Math.max(1, textW));
         if (!rowLines.isEmpty()) {
-            graphics.drawString(font, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
+            graphics.text(font, rowLines.get(0), textX, y + (h - font.lineHeight) / 2,
                     selected ? theme.textPrimary() : theme.textSecondary(), false);
         }
     }
 
-    private void renderDetailPane(GuiGraphics graphics, BaniraColorConfig theme) {
+    private void renderDetailPane(GuiGraphicsExtractor graphics, BaniraColorConfig theme) {
         AbstractGuiUtils.pushScissor(rightX + 16, rightY + 16, Math.max(0, rightW - 32), Math.max(0, rightH - 32));
         try {
             renderDetailContents(graphics, theme);
@@ -572,8 +574,8 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         }
     }
 
-    private void renderDetailContents(GuiGraphics graphics, BaniraColorConfig theme) {
-        PoseStack stack = graphics.pose();
+    private void renderDetailContents(GuiGraphicsExtractor graphics, BaniraColorConfig theme) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         detailContentLines = Collections.emptyList();
         if (detailScrollbar != null) detailScrollbar.visible(false);
         int pad = 16;
@@ -639,7 +641,7 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
             AbstractGuiUtils.pushScissor(x, curY, textWidth, contentHeight);
             try {
                 for (int line = detailViewport.firstLine(); line < detailViewport.lastLineExclusive(); line++) {
-                    graphics.drawString(font, detailContentLines.get(line), x, detailViewport.lineY(line), textColor, false);
+                    graphics.text(font, detailContentLines.get(line), x, detailViewport.lineY(line), textColor, false);
                 }
             } finally {
                 AbstractGuiUtils.popScissor();
@@ -672,13 +674,13 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         final EnumSeason tipSeason = season();
         final boolean useTexture = tipTheme.tooltipUseTexture();
         addDeferredTooltipRender(graphics -> {
-            PoseStack tipStack = graphics.pose();
-            tipStack.pushPose();
-            tipStack.last().pose().identity();
+            Matrix3x2fStack tipStack = NativeGuiGraphics.bind(graphics);
+            tipStack.pushMatrix();
+            tipStack.identity();
             TooltipWidget.drawPopupMessage(tipStack,
                     FontDrawArgs.ofPopo(tipText.stack(tipStack).font(font)).x(tipX).y(tipY).popupUseTexture(useTexture),
                     tipTheme, tipSeason);
-            tipStack.popPose();
+            tipStack.popMatrix();
         });
     }
 
@@ -694,7 +696,7 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         }
     }
 
-    private int renderDetailMetaRows(PoseStack stack, int x, int y, int w, NotificationLogEntry entry, BaniraColorConfig theme) {
+    private int renderDetailMetaRows(Matrix3x2fStack stack, int x, int y, int w, NotificationLogEntry entry, BaniraColorConfig theme) {
         metaHoverRegions.clear();
         BaniraComponent tr = BaniraComponent.get();
         String sourceVal = "network".equals(entry.source())
@@ -727,7 +729,7 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         return font.width(line) > colW;
     }
 
-    private int drawMetaPairRow(PoseStack stack, int x, int y, int colW, BaniraColorConfig theme,
+    private int drawMetaPairRow(Matrix3x2fStack stack, int x, int y, int colW, BaniraColorConfig theme,
                                 String label1, String value1, String label2, String value2) {
         String s1 = label1 + "：" + value1;
         String s2 = label2 + "：" + value2;
@@ -760,7 +762,7 @@ public class NotificationLogScreen extends BaniraScreen implements UiNativePage 
         if (lineIndex < 0 || lineIndex >= detailContentLines.size()) return null;
         FormattedCharSequence proc = detailContentLines.get(lineIndex);
         int rx = (int) (guiMouseX - detailContentLeft);
-        return font.getSplitter().componentStyleAtWidth(proc, rx);
+        return xin.vanilla.banira.client.util.NativeTextHit.styleAt(font.getSplitter(), proc, rx);
     }
 
     private boolean tryHandleDetailContentClick(double mouseX, double mouseY) {

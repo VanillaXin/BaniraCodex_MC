@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.apache.logging.log4j.LogManager;
 import xin.vanilla.banira.api.client.ui.UiContainerLayer;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 
 public final class UiContainerLayerHost implements UiContainerLayer {
     public interface Renderer {
-        void render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions);
+        void render(GuiGraphicsExtractor graphics, Map<String, ScreenCoordinate> regions);
     }
 
     private final UiBackendController backend;
@@ -81,7 +81,7 @@ public final class UiContainerLayerHost implements UiContainerLayer {
     }
 
     @Override
-    public boolean render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions) {
+    public boolean render(GuiGraphicsExtractor graphics, Map<String, ScreenCoordinate> regions) {
         if (!current() || !valid(regions)) {
             close();
             return false;

@@ -1,12 +1,14 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -348,8 +350,8 @@ public class SliderWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -412,7 +414,7 @@ public class SliderWidget extends BaseWidget {
         // endregion 渲染逻辑
     }
 
-    private void renderRoundStyle(PoseStack stack, int x, int y, int width, int height) {
+    private void renderRoundStyle(Matrix3x2fStack stack, int x, int y, int width, int height) {
         int trackT = Math.max(1, Math.min(trackThickness, orientation == EnumOrientation.VERTICAL ? width : height));
         int inset = thumbRadius;
 
@@ -452,7 +454,7 @@ public class SliderWidget extends BaseWidget {
         BaseShapeWidget.drawShape(thumbCircle);
     }
 
-    private void renderSquareStyle(PoseStack stack, int x, int y, int width, int height) {
+    private void renderSquareStyle(Matrix3x2fStack stack, int x, int y, int width, int height) {
         // 方形轨道
         ShapeDrawArgs trackRect = ShapeDrawArgs.rect(stack, x, y, width, height, trackColor);
         BaseShapeWidget.drawShape(trackRect);
@@ -472,7 +474,7 @@ public class SliderWidget extends BaseWidget {
         }
     }
 
-    private void renderValue(GuiGraphics graphics, PoseStack stack, int x, int y, int width, int height) {
+    private void renderValue(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int x, int y, int width, int height) {
         Font font = Minecraft.getInstance().font;
         String valueStr = formatDisplayValue(value);
         int textW = font.width(valueStr);
@@ -490,7 +492,7 @@ public class SliderWidget extends BaseWidget {
             bgRect.rect().radius(2).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
             BaseShapeWidget.drawShape(bgRect);
         }
-        graphics.drawString(font, valueStr, (int) textX, (int) textY, valueTextColor, false);
+        graphics.text(font, valueStr, (int) textX, (int) textY, valueTextColor, false);
     }
 
     /**
@@ -751,7 +753,7 @@ public class SliderWidget extends BaseWidget {
             return false;
         }
 
-        double stepVal = net.minecraft.client.gui.screens.Screen.hasShiftDown() ? step * 10 : step;
+        double stepVal = xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing() ? step * 10 : step;
         boolean handled = false;
 
         if (orientation == EnumOrientation.VERTICAL) {

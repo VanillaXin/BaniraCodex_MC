@@ -1,11 +1,17 @@
 package xin.vanilla.banira.client.gui;
 
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.PreeditEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
+import xin.vanilla.banira.client.gui.widget.InputWidget;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -14,6 +20,7 @@ public class BaniraScreenDevRenderTest {
     public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
 
     private BaniraScreen screen;
+    private final List<Boolean> textInputFocus = new ArrayList<>();
 
     @Before
     public void setUp() {
@@ -21,6 +28,11 @@ public class BaniraScreenDevRenderTest {
         screen = new BaniraScreen(net.minecraft.network.chat.Component.literal("dev render")) {
             @Override
             protected void onRender(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+            }
+
+            @Override
+            void updateNativeTextInputFocus(boolean focused) {
+                textInputFocus.add(focused);
             }
         };
     }
@@ -88,6 +100,47 @@ public class BaniraScreenDevRenderTest {
         double x = screen.inputState().mouseX(), y = screen.inputState().mouseY();
         assertThrows(NullPointerException.class, () -> screen.runDevRenderAt(12, 34, null));
         assertPosition(x, y);
+    }
+
+    @Test
+    public void customFocusRoutesPreeditWithoutCommittingItAndCommitsChineseOnce() {
+        var input = new InputWidget(screen);
+        var preedit = new PreeditEvent("zhong", 5, List.of("zhong"), 0);
+        assertFalse(screen.preeditUpdated(preedit));
+        assertTrue(screen.requestFocus(input));
+        assertTrue(screen.requestFocus(input));
+        assertEquals(List.of(true), textInputFocus);
+        assertTrue(screen.preeditUpdated(preedit));
+        assertEquals("", input.value());
+        assertTrue(screen.charTyped(new CharacterEvent('\u4e2d')));
+        assertTrue(screen.preeditUpdated(null));
+        assertEquals("\u4e2d", input.value());
+        screen.unfocusWidget(input);
+        assertEquals(List.of(true, false), textInputFocus);
+        assertFalse(screen.preeditUpdated(preedit));
+    }
+
+    @Test
+    public void switchingAndClearingWidgetsReleaseTheirComposition() {
+        var events = new ArrayList<PreeditEvent>();
+        var first = new InputWidget(screen) {
+            @Override
+            public void updatePreedit(PreeditEvent event) {
+                super.updatePreedit(event);
+                events.add(event);
+            }
+        };
+        var second = new InputWidget(screen);
+        var preedit = new PreeditEvent("ni", 2, List.of("ni"), 0);
+        assertTrue(screen.requestFocus(first));
+        assertTrue(screen.preeditUpdated(preedit));
+        assertTrue(screen.requestFocus(second));
+        assertEquals(2, events.size());
+        assertSame(preedit, events.getFirst());
+        assertNull(events.getLast());
+        screen.clearWidgets();
+        assertEquals(List.of(true, true, false), textInputFocus);
+        assertFalse(screen.preeditUpdated(preedit));
     }
 
     private void assertPosition(double x, double y) {

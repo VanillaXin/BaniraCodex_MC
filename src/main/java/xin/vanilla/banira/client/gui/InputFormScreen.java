@@ -1094,7 +1094,6 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             return;
         }
 
-        extractBackground(graphics, mouseX, mouseY, partialTicks);
         renderFormPanel(stack);
 
         if (args.getHeaderTitle() != null) {

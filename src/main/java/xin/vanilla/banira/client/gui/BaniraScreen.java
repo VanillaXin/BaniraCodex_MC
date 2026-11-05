@@ -1,8 +1,5 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
-import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,12 +8,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.client.input.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -30,6 +25,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.internal.client.InputStateManager;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import xin.vanilla.banira.internal.config.ClientConfig;
 
 import javax.annotation.Nonnull;
@@ -110,6 +106,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Nullable
     protected IWidget focusedWidget = null;
+    private InputWidget textInputOwner;
 
     /**
      * 自定义主题，非空时优先使用
@@ -279,6 +276,7 @@ public abstract class BaniraScreen extends Screen {
     @Override
     @ParametersAreNonnullByDefault
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        syncTextInputFocus();
         try (var extraction = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(graphics)) {
             Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
             if (LOGGER.isDebugEnabled()) {
@@ -289,9 +287,6 @@ public abstract class BaniraScreen extends Screen {
             cachedTheme = getEffectiveTheme();
             dropdownOpenCacheFrameId = -1;
 
-            if (this.minecraft == null || this.minecraft.level == null) {
-                extractBackground(graphics, mouseX, mouseY, partialTicks);
-            }
             this.onRender(graphics, mouseX, mouseY, partialTicks);
             this.flushDeferredTooltipRenders(graphics);
 
@@ -310,6 +305,7 @@ public abstract class BaniraScreen extends Screen {
 
     @Override
     public void removed() {
+        unfocusAllExcept(null);
         ClientThemeManager.setDefaultTheme(getEffectiveTheme());
         ClientThemeManager.setDefaultSeason(season);
         this.cursor.removed();
@@ -351,7 +347,7 @@ public abstract class BaniraScreen extends Screen {
             args.consumed(true);
         } else {
             this.popupOption.clear();
-            unfocusAllExcept(null);
+            clearWidgetFocusExcept(null);
 
             IWidget clicked = findFirstHandlingWidget(w ->
                     shouldWidgetReceiveClick(w, clickEvent) && w.handleMouseClick(clickEvent));
@@ -361,6 +357,7 @@ public abstract class BaniraScreen extends Screen {
             }
 
             if (!args.consumed()) onMouseClicked(args);
+            syncTextInputFocus();
         }
 
         if (!args.consumed() && isMouseCloseShortcut(mouseX, mouseY, button)) {
@@ -383,7 +380,9 @@ public abstract class BaniraScreen extends Screen {
         return true;
     }
 
-    /** Context clipping for tooltips deferred until after scissor rendering. */
+    /**
+     * Context clipping for tooltips deferred until after scissor rendering.
+     */
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         return true;
     }
@@ -762,6 +761,12 @@ public abstract class BaniraScreen extends Screen {
                 widgetMap.remove(widget.id());
             }
             if (removed) {
+                for (IWidget focused = focusedWidget; focused != null; focused = focused.parent()) {
+                    if (focused == widget) {
+                        unfocusWidget(focusedWidget);
+                        break;
+                    }
+                }
                 markRenderWidgetSnapshotDirty(false);
             }
         }
@@ -782,6 +787,7 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void clearWidgets() {
+        unfocusAllExcept(null);
         for (IWidget widget : widgets) {
             if (widget != null) {
                 widget.clearChildren();
@@ -791,7 +797,6 @@ public abstract class BaniraScreen extends Screen {
         widgets.clear();
         markRenderWidgetSnapshotDirty(true);
         widgetMap.clear();
-        focusedWidget = null;
         synchronized (focusableWidgets) {
             focusableWidgets.clear();
         }
@@ -845,16 +850,22 @@ public abstract class BaniraScreen extends Screen {
             return false;
         }
         registerFocusableWidget(widget);
-        unfocusAllExcept(widget);
+        clearWidgetFocusExcept(widget);
         focusedWidget = widget;
         if (widget instanceof BaseWidget baseWidget) {
             baseWidget.focused(true);
         }
+        syncTextInputFocus();
         LOGGER.debug("Widget focused: id={}", widget.id());
         return true;
     }
 
     public void unfocusAllExcept(@Nullable IWidget exceptWidget) {
+        clearWidgetFocusExcept(exceptWidget);
+        syncTextInputFocus();
+    }
+
+    private void clearWidgetFocusExcept(@Nullable IWidget exceptWidget) {
         if (focusedWidget != null && focusedWidget != exceptWidget) {
             if (focusedWidget instanceof BaseWidget baseWidget) {
                 baseWidget.focused(false);
@@ -881,9 +892,34 @@ public abstract class BaniraScreen extends Screen {
         if (focusedWidget == widget) {
             focusedWidget = null;
         }
+        syncTextInputFocus();
     }
 
     // endregion Widget 管理
+
+    private InputWidget focusedTextInput() {
+        return focusedWidget instanceof InputWidget input && input.canConsumeInput() ? input : null;
+    }
+
+    private void syncTextInputFocus() {
+        InputWidget next = focusedTextInput();
+        if (next == textInputOwner) return;
+        if (textInputOwner != null) textInputOwner.updatePreedit(null);
+        textInputOwner = next;
+        updateNativeTextInputFocus(next != null);
+    }
+
+    void updateNativeTextInputFocus(boolean focused) {
+        if (minecraft != null && minecraft.screen == this) minecraft.onTextInputFocusChange(this, focused);
+    }
+
+    @Override
+    public boolean preeditUpdated(@Nullable PreeditEvent event) {
+        InputWidget input = focusedTextInput();
+        if (input == null) return super.preeditUpdated(event);
+        input.updatePreedit(event);
+        return true;
+    }
 
     public boolean charTyped(char codePoint, int modifiers) {
         if (focusedWidget != null && focusedWidget.visible() && focusedWidget.enabled()

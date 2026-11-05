@@ -321,6 +321,9 @@ tasks.named('test') {
         systemProperty 'banira.ftb.contractJar', configurations.compileClasspath.files.find {
             it.name == 'ftb-library-26.1.2.11.jar'
         }.absolutePath
+        systemProperty 'banira.jei.contractJar', configurations.compileClasspath.files.find {
+            it.name == 'jei-26.1-fabric-29.2.0.21.jar'
+        }.absolutePath
         systemProperty 'banira.publication.repository',
                 publicationContractRepository.get().asFile.absolutePath
         systemProperty 'banira.publication.group', project.group.toString()

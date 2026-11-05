@@ -3,12 +3,15 @@ package xin.vanilla.banira.client.gui.widget;
 import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import org.joml.Matrix3x2fStack;
+import org.joml.Vector2f;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.IMEPreeditOverlay;
+import net.minecraft.client.input.PreeditEvent;
 
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -38,6 +41,7 @@ import java.util.function.Function;
 @Accessors(chain = true, fluent = true)
 public class InputWidget extends BaseWidget implements ITextWidget {
     private static long LAST_CLICK_TIME = 0L;
+    private IMEPreeditOverlay preeditOverlay;
     /**
      * 按下时的区域：0=无，1=清空按钮，2=文本区域。抬起时需在同一区域才触发
      */
@@ -516,6 +520,16 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 textDrawX = cursorX;
             }
 
+            if (preeditOverlay != null && canConsumeInput() && !password) {
+                var position = stack.transformPosition(Math.max(textX, cursorX), textY, new Vector2f());
+                int caretX = Math.round(position.x);
+                int caretY = Math.round(position.y);
+                if (graphics.containsPointInScissor(caretX, caretY)) {
+                    preeditOverlay.updateInputPosition(caretX, caretY);
+                    graphics.setPreeditOverlay(preeditOverlay);
+                }
+            }
+
             if (!visibleText.isEmpty() && cursorVisible && cursorInVisible < visibleText.length()) {
                 String afterCursor = visibleText.substring(cursorInVisible);
                 if (fontScale != 1.0f) {
@@ -729,10 +743,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 arrowKeyRepeatTriggered = true;
                 this.shiftPressed = xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing();
                 if (heldArrowKey == GLFWKey.GLFW_KEY_LEFT) {
-                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) moveCursorToWordStart();
+                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing())
+                        moveCursorToWordStart();
                     else moveCursor(-1);
                 } else if (heldArrowKey == GLFWKey.GLFW_KEY_RIGHT) {
-                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) moveCursorToWordEnd();
+                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing())
+                        moveCursorToWordEnd();
                     else moveCursor(1);
                 }
             }
@@ -944,7 +960,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     @Override
     protected boolean onTextInput(String text, int modifiers) {
-        if (!focused() || !enabled || !editable) {
+        if (!canConsumeInput()) {
             return false;
         }
 
@@ -954,6 +970,12 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
         insertText(text);
         return true;
+    }
+
+    public void updatePreedit(PreeditEvent event) {
+        preeditOverlay = event != null && canConsumeInput() && !password
+                ? new IMEPreeditOverlay(event, font, (fontSize > 0 ? (int) Math.ceil(fontSize) : font.lineHeight) + 1)
+                : null;
     }
 
     // endregion 输入处理
@@ -1284,6 +1306,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.lastClickTime = currentTime;
             this.cursorVisible = true;
         } else {
+            preeditOverlay = null;
             this.highlightPos = this.cursorPosition;
             this.shiftPressed = false;
         }
@@ -1452,7 +1475,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 检查是否可以消费输入
      */
     public boolean canConsumeInput() {
-        return this.visible && this.focused() && this.editable;
+        return this.visible && this.enabled && this.focused() && this.editable;
     }
 
 

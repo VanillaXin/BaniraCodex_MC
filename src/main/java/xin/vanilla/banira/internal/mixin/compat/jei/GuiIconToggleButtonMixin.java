@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.mixin.compat.jei;
 
 import mezz.jei.api.gui.buttons.IIconButtonController;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -23,13 +23,13 @@ public abstract class GuiIconToggleButtonMixin {
     private IIconButtonController controller;
 
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true, require = 0)
-    private void banira$draw(GuiGraphics graphics, int mouseX, int mouseY,
+    private void banira$draw(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                              float partialTicks, CallbackInfo callback) {
         if (JeiCompatibility.shouldSuppress(controller)) callback.cancel();
     }
 
     @Inject(method = "drawTooltips", at = @At("HEAD"), cancellable = true, require = 0)
-    private void banira$drawTooltips(GuiGraphics graphics, int mouseX, int mouseY,
+    private void banira$drawTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                                      CallbackInfo callback) {
         if (JeiCompatibility.shouldSuppress(controller)) callback.cancel();
     }

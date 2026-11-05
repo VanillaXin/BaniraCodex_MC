@@ -2,6 +2,7 @@ package xin.vanilla.banira.common.data;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.KeybindContents;
@@ -9,6 +10,7 @@ import net.minecraft.network.chat.contents.NbtContents;
 import net.minecraft.network.chat.contents.SelectorContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.component.ItemLore;
 
 import java.util.Arrays;
@@ -41,16 +43,17 @@ final class NativeComponentTranslations {
             String template = VanillaComponentTranslations.serverTemplate(keybind.getName(), language);
             result = net.minecraft.network.chat.Component.literal(template == null ? keybind.getName() : template);
         } else if (contents instanceof SelectorContents selector) {
-            result = MutableComponent.create(new SelectorContents(selector.getPattern(),
-                    selector.getSeparator().map(separator -> prepare(separator, language, vanillaOnly))));
+            result = MutableComponent.create(new SelectorContents(selector.selector(),
+                    selector.separator().map(separator -> prepare(separator, language, vanillaOnly))));
         } else if (contents instanceof NbtContents nbt) {
-            result = MutableComponent.create(new NbtContents(nbt.getNbtPath(), nbt.isInterpreting(),
-                    nbt.getSeparator().map(separator -> prepare(separator, language, vanillaOnly)), nbt.getDataSource()));
+            result = MutableComponent.create(new NbtContents(nbt.nbtPath(), nbt.interpreting(), nbt.plain(),
+                    nbt.separator().map(separator -> prepare(separator, language, vanillaOnly)), nbt.dataSource()));
         } else {
             result = MutableComponent.create(contents);
         }
         Style style = source.getStyle();
-        if (vanillaOnly && !"minecraft".equals(style.getFont().getNamespace())) style = style.withFont(null);
+        if (vanillaOnly && style.getFont() instanceof FontDescription.Resource font
+                && !"minecraft".equals(font.id().getNamespace())) style = style.withFont(null);
         if (style.getHoverEvent() != null) style = style.withHoverEvent(prepareHover(style.getHoverEvent(), language, vanillaOnly));
         result.setStyle(result.getStyle().applyTo(style));
         for (net.minecraft.network.chat.Component child : source.getSiblings()) result.append(prepare(child, language, vanillaOnly));
@@ -58,17 +61,17 @@ final class NativeComponentTranslations {
     }
 
     static HoverEvent prepareHover(HoverEvent event, String language, boolean vanillaOnly) {
-        if (event.getAction() == HoverEvent.Action.SHOW_TEXT) {
-            return new HoverEvent(HoverEvent.Action.SHOW_TEXT, prepare(event.getValue(HoverEvent.Action.SHOW_TEXT), language, vanillaOnly));
+        if (event instanceof HoverEvent.ShowText text) {
+            return new HoverEvent.ShowText(prepare(text.value(), language, vanillaOnly));
         }
-        if (event.getAction() == HoverEvent.Action.SHOW_ENTITY) {
-            var info = event.getValue(HoverEvent.Action.SHOW_ENTITY);
-            return new HoverEvent(HoverEvent.Action.SHOW_ENTITY, new HoverEvent.EntityTooltipInfo(info.type, info.id,
+        if (event instanceof HoverEvent.ShowEntity entity) {
+            var info = entity.entity();
+            return new HoverEvent.ShowEntity(new HoverEvent.EntityTooltipInfo(info.type, info.uuid,
                     info.name.map(name -> prepare(name, language, vanillaOnly))));
         }
-        if (event.getAction() == HoverEvent.Action.SHOW_ITEM) {
+        if (event instanceof HoverEvent.ShowItem item) {
             // Copy the stack directly: registry-backed data must not require a global serialization context.
-            ItemStack stack = event.getValue(HoverEvent.Action.SHOW_ITEM).getItemStack().copy();
+            ItemStack stack = item.item().create();
             for (var type : Arrays.asList(DataComponents.CUSTOM_NAME, DataComponents.ITEM_NAME)) {
                 var name = stack.get(type);
                 if (name != null) {
@@ -82,7 +85,7 @@ final class NativeComponentTranslations {
                         lore.styledLines().stream().<net.minecraft.network.chat.Component>map(line -> prepare(line, language, vanillaOnly)).toList());
                 if (!lore.equals(prepared)) stack.set(DataComponents.LORE, prepared);
             }
-            return new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(stack));
+            return new HoverEvent.ShowItem(ItemStackTemplate.fromNonEmptyStack(stack));
         }
         return event;
     }

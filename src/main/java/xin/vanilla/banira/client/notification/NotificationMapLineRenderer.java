@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -18,14 +18,14 @@ public final class NotificationMapLineRenderer {
     private NotificationMapLineRenderer() {
     }
 
-    public static float drawRowsCentered(GuiGraphics graphics, List<MinimapLineSnapshot> rows,
+    public static float drawRowsCentered(GuiGraphicsExtractor graphics, List<MinimapLineSnapshot> rows,
                                   float centerX, float y, float width, boolean above) {
         Minecraft mc = Minecraft.getInstance();
         return drawRowsCentered(graphics, rows, centerX, y, width, .75f, above,
                 mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 
-    public static float drawRowsCentered(GuiGraphics graphics, List<MinimapLineSnapshot> rows,
+    public static float drawRowsCentered(GuiGraphicsExtractor graphics, List<MinimapLineSnapshot> rows,
                                   float centerX, float y, float width, float scale, boolean above,
                                   int screenWidth, int screenHeight) {
         if (rows.isEmpty() || !Float.isFinite(width) || width <= 0 || !Float.isFinite(scale) || scale <= 0
@@ -51,13 +51,13 @@ public final class NotificationMapLineRenderer {
             for (FormattedCharSequence line : wrapped.get(i)) {
                 float lineWidth = mc.font.width(line) * scale;
                 float left = Math.max(0, Math.min(centerX - lineWidth / 2, screenWidth - lineWidth));
-                graphics.pose().pushPose();
+                graphics.pose().pushMatrix();
                 try {
-                    graphics.pose().translate(left, drawY, 0);
-                    graphics.pose().scale(scale, scale, 1);
-                    graphics.drawString(mc.font, line, 0, 0, color, false);
+                    graphics.pose().translate(left, drawY);
+                    graphics.pose().scale(scale, scale);
+                    graphics.text(mc.font, line, 0, 0, color, false);
                 } finally {
-                    graphics.pose().popPose();
+                    graphics.pose().popMatrix();
                 }
                 drawY += mc.font.lineHeight * scale;
             }
@@ -65,12 +65,12 @@ public final class NotificationMapLineRenderer {
         return total * scale + gaps;
     }
 
-    public static void drawCentered(GuiGraphics graphics, Component text, float centerX, float y, float width) {
+    public static void drawCentered(GuiGraphicsExtractor graphics, Component text, float centerX, float y, float width) {
         Minecraft mc = Minecraft.getInstance();
         drawCentered(graphics, text, centerX, y, width, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 
-    public static void drawCentered(GuiGraphics graphics, Component text, float centerX, float y, float width,
+    public static void drawCentered(GuiGraphicsExtractor graphics, Component text, float centerX, float y, float width,
                                     int screenWidth, int screenHeight) {
         if (text.getString().isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
@@ -79,13 +79,13 @@ public final class NotificationMapLineRenderer {
         float drawY = Math.max(0, Math.min(y, screenHeight - 9 * scale));
         float left = Math.max(0, Math.min(centerX - textWidth * scale / 2,
                 screenWidth - textWidth * scale));
-        graphics.pose().pushPose();
+        graphics.pose().pushMatrix();
         try {
-            graphics.pose().translate(left, drawY, 0);
-            graphics.pose().scale(scale, scale, 1);
-            graphics.drawString(mc.font, text, 0, 0, ClientThemeManager.getEffectiveTheme().popupItemText(), false);
+            graphics.pose().translate(left, drawY);
+            graphics.pose().scale(scale, scale);
+            graphics.text(mc.font, text, 0, 0, ClientThemeManager.getEffectiveTheme().popupItemText(), false);
         } finally {
-            graphics.pose().popPose();
+            graphics.pose().popMatrix();
         }
     }
 }

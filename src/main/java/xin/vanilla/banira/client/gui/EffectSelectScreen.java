@@ -1,11 +1,13 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
@@ -426,12 +428,12 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    public void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         if (uiVersion != uiSession.version()) {
             restoreUiSelection();
             markEffectButtonsDirty();
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         ShapeDrawArgs panelBg = ShapeDrawArgs.rect(stack, panelLeft, panelTop, panelW, panelH, getEffectiveTheme().panelBg());
         panelBg.rect().radius(5).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE);
         BaseShapeWidget.drawShape(panelBg);

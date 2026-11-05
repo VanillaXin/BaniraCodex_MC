@@ -2,6 +2,7 @@ package xin.vanilla.banira.internal.neoforge.platform;
 
 import net.minecraft.world.entity.player.Player;
 import xin.vanilla.banira.common.util.CommandUtils;
+import xin.vanilla.banira.internal.server.NativePermissionLevels;
 import xin.vanilla.banira.platform.BaniraPermissionService;
 
 /**
@@ -15,7 +16,7 @@ final class NeoForgeBaniraPermissionService implements BaniraPermissionService {
 
     @Override
     public boolean hasVanillaPermission(Object player, int permissionLevel) {
-        return player instanceof Player && ((Player) player).hasPermissions(permissionLevel);
+        return player instanceof Player nativePlayer && NativePermissionLevels.has(nativePlayer.permissions(), permissionLevel);
     }
 
     @Override

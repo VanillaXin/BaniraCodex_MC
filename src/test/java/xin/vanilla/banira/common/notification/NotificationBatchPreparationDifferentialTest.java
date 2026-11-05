@@ -7,12 +7,14 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.world.item.ItemStackTemplate;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.util.ITranslator;
+import xin.vanilla.banira.common.util.NativeComponentJson;
 import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
@@ -30,8 +32,8 @@ import static xin.vanilla.banira.common.notification.NotificationPreparationFixt
 
 public class NotificationBatchPreparationDifferentialTest {
     @BeforeClass
-    public static void installPlatform() throws Exception {
-        xin.vanilla.banira.common.network.packet.NotificationToClientBudgetTest.bootstrapGame();
+    public static void installPlatform() {
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
         BaniraPlatforms.install(new TestBaniraPlatform());
     }
 
@@ -104,7 +106,7 @@ public class NotificationBatchPreparationDifferentialTest {
             Fixture fixture = create("literal");
             Component entry = original
                     ? BaniraComponent.get().object(net.minecraft.network.chat.Component.literal("mixed-original")).languageCode(LANGUAGE)
-                    : text("mixed-hover").hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    : text("mixed-hover").hoverEvent(new HoverEvent.ShowText(
                             net.minecraft.network.chat.Component.literal("mixed-hover-details")));
             fixture.entries.set(200, entry);
             List<String> before = fixture.inputSnapshot();
@@ -162,7 +164,7 @@ public class NotificationBatchPreparationDifferentialTest {
                 fixture.prefix, fixture.entries, fixture.separator, LANGUAGE);
         List<Encoding> frozen = encodings(first);
         ((MutableComponent) fixture.entries.get(0).original()).append(net.minecraft.network.chat.Component.literal("later"));
-        fixture.entries.get(1).hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+        fixture.entries.get(1).hoverEvent(new HoverEvent.ShowText(
                 net.minecraft.network.chat.Component.literal("later-hover")));
         fixture.prefix.text("changed-prefix: ");
         ((MutableComponent) first.get(0).vanillaMessage()).setStyle(
@@ -236,7 +238,7 @@ public class NotificationBatchPreparationDifferentialTest {
         assertNull(xin.vanilla.banira.internal.common.BaniraServerRuntime.server());
         var enchantments = new net.minecraft.core.MappedRegistry<net.minecraft.world.item.enchantment.Enchantment>(
                 net.minecraft.core.registries.Registries.ENCHANTMENT, com.mojang.serialization.Lifecycle.stable());
-        var enchantmentId = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+        var enchantmentId = net.minecraft.resources.Identifier.fromNamespaceAndPath(
                 "banira_codex", "notification_preparation_context");
         var definition = net.minecraft.world.item.enchantment.Enchantment.definition(
                 net.minecraft.core.HolderSet.direct(net.minecraft.world.item.Items.DIAMOND_SWORD.builtInRegistryHolder()),
@@ -251,8 +253,8 @@ public class NotificationBatchPreparationDifferentialTest {
         item.enchant(enchantment, 2);
         var original = net.minecraft.network.chat.Component.literal("registry-bound reward")
                 .withStyle(net.minecraft.network.chat.Style.EMPTY.withHoverEvent(
-                        new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item))));
-        String originalBefore = net.minecraft.network.chat.Component.Serializer.toJson(original, registries);
+                        new HoverEvent.ShowItem(ItemStackTemplate.fromNonEmptyStack(item))));
+        String originalBefore = NativeComponentJson.toJson(original, registries);
         for (boolean nativeHover : new boolean[]{false, true}) {
             Fixture seed = create("literal");
             Fixture fixture = new Fixture("explicit-context", seed.prefix, seed.entries, seed.separator, registries);
@@ -274,14 +276,14 @@ public class NotificationBatchPreparationDifferentialTest {
             }
             assertEquals(nativeHover, foundEnchantment);
         }
-        assertEquals(originalBefore, net.minecraft.network.chat.Component.Serializer.toJson(original, registries));
+        assertEquals(originalBefore, NativeComponentJson.toJson(original, registries));
     }
 
     @Test
     public void plainNativeStreamOverflowSubmitsNothingWhenBothJsonBudgetsFit() {
         Component oversized = text(repeat("\ud83c\udf38", 2800));
         assertTrue(oversized.toJson(RegistryAccess.EMPTY).toString().getBytes(StandardCharsets.UTF_8).length < 16384);
-        assertTrue(net.minecraft.network.chat.Component.Serializer.toJson(oversized.toChat(LANGUAGE), RegistryAccess.EMPTY)
+        assertTrue(NativeComponentJson.toJson(oversized.toChat(LANGUAGE), RegistryAccess.EMPTY)
                 .getBytes(StandardCharsets.UTF_8).length < 16384);
         Fixture fixture = create("literal");
         fixture.entries.set(255, oversized);
@@ -381,9 +383,9 @@ public class NotificationBatchPreparationDifferentialTest {
             buffer.clear();
             RegistryFriendlyByteBuf nativeBuffer = new RegistryFriendlyByteBuf(buffer, registries);
             ComponentSerialization.TRUSTED_STREAM_CODEC.encode(nativeBuffer,
-                    net.minecraft.network.chat.Component.Serializer.fromJson(encoding.vanillaJson, registries));
+                    NativeComponentJson.fromJson(encoding.vanillaJson, registries));
             assertTrue(nativeBuffer.readableBytes() <= 16384);
-            assertEquals(encoding.vanillaJson, net.minecraft.network.chat.Component.Serializer.toJson(
+            assertEquals(encoding.vanillaJson, NativeComponentJson.toJson(
                     ComponentSerialization.TRUSTED_STREAM_CODEC.decode(nativeBuffer), registries));
             assertEquals(0, buffer.readableBytes());
         } finally {

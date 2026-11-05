@@ -5,9 +5,12 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.commands.arguments.item.ItemParser;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.TagParser;
 import xin.vanilla.banira.api.cost.*;
 import xin.vanilla.banira.common.cost.ResourcePaymentAccess;
@@ -16,11 +19,15 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public final class NeoForgeCostResources {
-    private NeoForgeCostResources() { }
+    private NeoForgeCostResources() {
+    }
 
     public static CostAccess access(ServerPlayer player, InventoryScope scope) {
-        return access(player, scope, p -> p.server != null && p.server.isSameThread() && !p.hasDisconnected()
-                && p.server.getPlayerList().getPlayer(p.getUUID()) == p && p.isAlive() && !p.isRemoved());
+        return access(player, scope, p -> {
+            MinecraftServer server = p.level().getServer();
+            return server != null && server.isSameThread() && !p.hasDisconnected()
+                    && server.getPlayerList().getPlayer(p.getUUID()) == p && p.isAlive() && !p.isRemoved();
+        });
     }
 
     static CostAccess access(ServerPlayer player, InventoryScope scope, Predicate<ServerPlayer> available) {
@@ -48,7 +55,8 @@ public final class NeoForgeCostResources {
             this.id = id;
         }
 
-        @Override public String snapshot() {
+        @Override
+        public String snapshot() {
             JsonObject json = new JsonObject();
             json.addProperty("schema", 1);
             json.addProperty("payer", player.getUUID().toString());
@@ -70,7 +78,8 @@ public final class NeoForgeCostResources {
             return json.toString();
         }
 
-        @Override public CostFailure check(ResourceCost cost, int units, String before) {
+        @Override
+        public CostFailure check(ResourceCost cost, int units, String before) {
             try {
                 if (!id.equals(cost.resourceId())) return CostFailure.INVALID_PAYMENT;
                 int amount = Math.multiplyExact(cost.amount(), units);
@@ -97,11 +106,15 @@ public final class NeoForgeCostResources {
                     enough = health > amount;
                 } else enough = integer(json, "hunger") >= amount;
                 return enough ? CostFailure.NONE : CostFailure.INSUFFICIENT_RESOURCE;
-            } catch (ArithmeticException overflow) { return CostFailure.AMOUNT_OVERFLOW; }
-            catch (IllegalArgumentException | IllegalStateException invalid) { return CostFailure.INVALID_PAYMENT; }
+            } catch (ArithmeticException overflow) {
+                return CostFailure.AMOUNT_OVERFLOW;
+            } catch (IllegalArgumentException | IllegalStateException invalid) {
+                return CostFailure.INVALID_PAYMENT;
+            }
         }
 
-        @Override public CostFailure validate(ResourceCost cost) {
+        @Override
+        public CostFailure validate(ResourceCost cost) {
             if (!id.equals(cost.resourceId())) return CostFailure.INVALID_PAYMENT;
             if (!id.equals("banira:item")) return CostFailure.NONE;
             ItemStack required = item(cost.specification());
@@ -109,7 +122,8 @@ public final class NeoForgeCostResources {
                     ? CostFailure.INVALID_PAYMENT : CostFailure.NONE;
         }
 
-        @Override public String after(ResourceCost cost, int units, String before) {
+        @Override
+        public String after(ResourceCost cost, int units, String before) {
             CostFailure failure = check(cost, units, before);
             if (failure.isFailure()) throw new IllegalArgumentException(failure.code());
             int amount = Math.multiplyExact(cost.amount(), units);
@@ -137,7 +151,8 @@ public final class NeoForgeCostResources {
             return json.toString();
         }
 
-        @Override public CostFailure debit(String before, String after) {
+        @Override
+        public CostFailure debit(String before, String after) {
             JsonObject original = read(before), expected = read(after);
             if (!before.equals(snapshot())) return CostFailure.INVALID_OPERATION;
             if (experience()) return debitExperience(original, expected);
@@ -158,7 +173,8 @@ public final class NeoForgeCostResources {
                 }
             } else if (id.equals("banira:health")) {
                 float health = Float.intBitsToFloat(integer(expected, "health"));
-                if (!Float.isFinite(health) || health <= 0 || health > player.getHealth()) return CostFailure.INVALID_PAYMENT;
+                if (!Float.isFinite(health) || health <= 0 || health > player.getHealth())
+                    return CostFailure.INVALID_PAYMENT;
                 player.setHealth(health);
             } else {
                 int hunger = integer(expected, "hunger");
@@ -194,7 +210,8 @@ public final class NeoForgeCostResources {
             }
         }
 
-        @Override public CostFailure restore(String before, String after) {
+        @Override
+        public CostFailure restore(String before, String after) {
             try {
                 JsonObject original = read(before);
                 read(after);
@@ -220,19 +237,31 @@ public final class NeoForgeCostResources {
                     player.getFoodData().setFoodLevel(hunger);
                 }
                 return before.equals(snapshot()) ? CostFailure.NONE : CostFailure.UNCERTAIN;
-            } catch (RuntimeException invalid) { return CostFailure.UNCERTAIN; }
+            } catch (RuntimeException invalid) {
+                return CostFailure.UNCERTAIN;
+            }
         }
 
-        @Override public boolean reversible() { return true; }
-        @Override public void afterPayment() {
+        @Override
+        public boolean reversible() {
+            return true;
+        }
+
+        @Override
+        public void afterPayment() {
             if (id.equals("banira:item")) {
                 player.getInventory().setChanged();
                 if (player.inventoryMenu != null) player.inventoryMenu.broadcastChanges();
             }
         }
 
-        private boolean experience() { return id.equals("banira:xp_point") || id.equals("banira:xp_level"); }
-        private int slotCount() { return scope == InventoryScope.MAIN ? player.getInventory().items.size() : player.getInventory().getContainerSize(); }
+        private boolean experience() {
+            return id.equals("banira:xp_point") || id.equals("banira:xp_level");
+        }
+
+        private int slotCount() {
+            return scope == InventoryScope.MAIN ? Inventory.INVENTORY_SIZE : player.getInventory().getContainerSize();
+        }
 
         private JsonObject read(String text) {
             JsonObject json = new JsonParser().parse(text).getAsJsonObject();
@@ -240,7 +269,8 @@ public final class NeoForgeCostResources {
                     || !payer.equals(player.getUUID()) || !id.equals(json.get("resource").getAsString()))
                 throw new IllegalArgumentException("Foreign resource snapshot");
             if (id.equals("banira:item") && (!scope.name().equals(json.get("scope").getAsString())
-                    || json.getAsJsonArray("slots").size() != slotCount())) throw new IllegalArgumentException("Foreign inventory scope");
+                    || json.getAsJsonArray("slots").size() != slotCount()))
+                throw new IllegalArgumentException("Foreign inventory scope");
             return json;
         }
 
@@ -251,8 +281,11 @@ public final class NeoForgeCostResources {
         }
 
         private static int integer(JsonObject json, String field) {
-            try { return json.get(field).getAsBigDecimal().intValueExact(); }
-            catch (ArithmeticException | NullPointerException invalid) { throw new IllegalArgumentException("Invalid snapshot integer", invalid); }
+            try {
+                return json.get(field).getAsBigDecimal().intValueExact();
+            } catch (ArithmeticException | NullPointerException invalid) {
+                throw new IllegalArgumentException("Invalid snapshot integer", invalid);
+            }
         }
 
         private JsonObject encode(ItemStack stack) {
@@ -260,7 +293,8 @@ public final class NeoForgeCostResources {
             json.addProperty("count", stack.isEmpty() ? 0 : stack.getCount());
             ItemStack identity = stack.copy();
             if (!identity.isEmpty()) identity.setCount(1);
-            json.addProperty("item", identity.isEmpty() ? "" : identity.save(player.registryAccess()).toString());
+            json.addProperty("item", identity.isEmpty() ? "" : ItemStack.CODEC.encodeStart(
+                    player.registryAccess().createSerializationContext(NbtOps.INSTANCE), identity).getOrThrow().toString());
             return json;
         }
 
@@ -269,11 +303,15 @@ public final class NeoForgeCostResources {
             if (count == 0) return ItemStack.EMPTY;
             if (count < 0) throw new IllegalArgumentException("Negative stack count");
             try {
-                ItemStack stack = ItemStack.parseOptional(player.registryAccess(), TagParser.parseTag(json.get("item").getAsString()));
+                CompoundTag payload = TagParser.parseCompoundFully(json.get("item").getAsString());
+                ItemStack stack = ItemStack.CODEC.parse(player.registryAccess().createSerializationContext(NbtOps.INSTANCE),
+                        payload).getOrThrow();
                 if (stack.isEmpty()) throw new IllegalArgumentException("Unavailable snapshot item");
                 stack.setCount(count);
                 return stack;
-            } catch (CommandSyntaxException invalid) { throw new IllegalArgumentException("Invalid snapshot item", invalid); }
+            } catch (CommandSyntaxException invalid) {
+                throw new IllegalArgumentException("Invalid snapshot item", invalid);
+            }
         }
 
         private static boolean matches(ItemStack stack, ItemStack required, ResourceCost.MatchMode mode) {
@@ -284,23 +322,25 @@ public final class NeoForgeCostResources {
         private ItemStack item(String specification) {
             try {
                 StringReader reader = new StringReader(specification.trim());
-                net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.read(reader);
+                net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.read(reader);
                 ItemStack item;
                 if (reader.canRead() && reader.peek() == '[') {
                     reader.setCursor(0);
-                    ItemParser.ItemResult parsed = new ItemParser(player.registryAccess()).parse(reader);
-                    item = new ItemInput(parsed.item(), parsed.components()).createItemStack(1, false);
+                    ItemInput parsed = new ItemParser(player.registryAccess()).parse(reader);
+                    item = parsed.createItemStack(1);
                 } else {
                     item = new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(id)
                             .orElse(net.minecraft.world.item.Items.AIR));
                     if (reader.canRead() && reader.peek() == '{') {
                         net.minecraft.world.item.component.CustomData.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                                item, new TagParser(reader).readStruct());
+                                item, TagParser.parseCompoundAsArgument(reader));
                     }
                 }
                 if (reader.canRead()) return null;
                 return item.isEmpty() ? null : item;
-            } catch (CommandSyntaxException | IllegalArgumentException invalid) { return null; }
+            } catch (CommandSyntaxException | IllegalArgumentException invalid) {
+                return null;
+            }
         }
     }
 }

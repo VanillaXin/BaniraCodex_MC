@@ -1,7 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public interface IIdentifier {
 
@@ -9,19 +9,19 @@ public interface IIdentifier {
 
     IIdentifier instance();
 
-    default ResourceLocation empty() {
+    default Identifier empty() {
         return create("empty");
     }
 
-    default ResourceLocation create(String path) {
+    default Identifier create(String path) {
         return create(modId(), path);
     }
 
-    default ResourceLocation create(String namespace, String path) {
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    default Identifier create(String namespace, String path) {
+        return Identifier.fromNamespaceAndPath(namespace, path);
     }
 
-    default ResourceLocation parse(String identifier) {
-        return ResourceLocation.tryParse(identifier);
+    default Identifier parse(String identifier) {
+        return Identifier.tryParse(identifier);
     }
 }

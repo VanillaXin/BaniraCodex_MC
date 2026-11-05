@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.neoforge.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.NetworkPacketRegistrar;
@@ -51,13 +51,13 @@ public final class NeoForgeBaniraNetworkService implements BaniraNetworkService 
 
     @Override
     public boolean hasLocalChannel(@Nonnull String channelId) {
-        ResourceLocation id = ResourceLocation.tryParse(channelId);
+        Identifier id = Identifier.tryParse(channelId);
         return id != null && NeoForgeNetworkChannels.hasLocalChannel(id);
     }
 
     @Override
     public boolean hasPlayerChannel(@Nonnull Object player, @Nonnull String channelId) {
-        ResourceLocation id = ResourceLocation.tryParse(channelId);
+        Identifier id = Identifier.tryParse(channelId);
         return player instanceof ServerPlayer serverPlayer && id != null
                 && NeoForgeNetworkChannels.hasPlayerChannel(serverPlayer, id);
     }

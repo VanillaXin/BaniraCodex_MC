@@ -4,13 +4,12 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.WorldCoordinate;
 import xin.vanilla.banira.common.network.packet.RequestToBoth;
@@ -45,24 +44,24 @@ public final class BiomeUtils {
 
 
     public static Biome getBiome(String id) {
-        ResourceLocation loc = Identifier.id().parse(id);
+        Identifier loc = xin.vanilla.banira.Identifier.id().parse(id);
         return loc != null ? getBiome(loc) : null;
     }
 
-    public static Biome getBiome(ResourceLocation id) {
+    public static Biome getBiome(Identifier id) {
         if (id == null) return null;
         MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
+            return server.registryAccess().lookupOrThrow(Registries.BIOME).getOptional(id).orElse(null);
         }
         Object biome = Banira.platform().registryService().biome(id.toString());
         return biome instanceof Biome ? (Biome) biome : null;
     }
 
-    public static Biome getBiome(ServerLevel world, ResourceLocation id) {
+    public static Biome getBiome(ServerLevel world, Identifier id) {
         if (id == null) return null;
         if (world != null) {
-            return world.registryAccess().registryOrThrow(Registries.BIOME).getOptional(id).orElse(null);
+            return world.registryAccess().lookupOrThrow(Registries.BIOME).getOptional(id).orElse(null);
         }
         return getBiome(id);
     }
@@ -70,8 +69,8 @@ public final class BiomeUtils {
     public static Set<String> getAllIds() {
         MinecraftServer server = BaniraServerRuntime.server();
         if (server != null) {
-            return server.registryAccess().registryOrThrow(Registries.BIOME).keySet().stream()
-                    .map(ResourceLocation::toString)
+            return server.registryAccess().lookupOrThrow(Registries.BIOME).keySet().stream()
+                    .map(Identifier::toString)
                     .collect(Collectors.toSet());
         }
         return new HashSet<>(Banira.platform().registryService().biomeIds());
@@ -82,7 +81,7 @@ public final class BiomeUtils {
      */
     public static WorldCoordinate findNearestBiome(ServerLevel world, WorldCoordinate start, Biome biome, int radius, int minDistance) {
         if (world == null || start == null || biome == null) return null;
-        var registry = world.registryAccess().registryOrThrow(Registries.BIOME);
+        var registry = world.registryAccess().lookupOrThrow(Registries.BIOME);
         var biomeKey = registry.getResourceKey(biome).orElse(null);
         if (biomeKey == null) return null;
         Pair<BlockPos, Holder<Biome>> nearestBiome = world.findClosestBiome3d(holder -> holder.is(biomeKey), start.toBlockPos(), radius, minDistance, minDistance);

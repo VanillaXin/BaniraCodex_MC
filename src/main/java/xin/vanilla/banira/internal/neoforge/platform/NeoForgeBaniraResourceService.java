@@ -1,11 +1,13 @@
 package xin.vanilla.banira.internal.neoforge.platform;
 
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.jarcontents.JarContents;
+import net.neoforged.fml.jarcontents.JarResource;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,14 +17,13 @@ import xin.vanilla.banira.internal.common.BaniraServerRuntime;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.TreeMap;
 
 /**
- * NeoForge 1.21.1 资源包与模组文件语言资源适配。
+ * NeoForge 资源包与模组文件语言资源适配。
  */
 public final class NeoForgeBaniraResourceService {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -56,28 +57,25 @@ public final class NeoForgeBaniraResourceService {
         try {
             IModFileInfo modFile = ModList.get().getModFileById(modId);
             if (modFile == null) return;
-            collectLanguageDirectory(modFile.getFile().findResource("assets/" + modId + "/lang"), result);
+            collectModFileLanguages(modFile.getFile().getContents(), modId, result);
         } catch (Throwable throwable) {
             LOGGER.debug("Failed to list lang from registered mod file {}: {}", modId, throwable.getMessage());
         }
     }
 
-    static void collectLanguageDirectory(Path directory, Map<String, JsonObject> result) {
-        if (directory == null || result == null || !Files.isDirectory(directory)) return;
-        try (Stream<Path> files = Files.list(directory)) {
-            files.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().toLowerCase().endsWith(".json"))
-                    .sorted()
-                    .forEach(path -> loadLanguage(path, result));
-        } catch (Exception exception) {
-            LOGGER.debug("Failed to list lang directory {}: {}", directory, exception.getMessage());
-        }
+    static void collectModFileLanguages(JarContents contents, String modId, Map<String, JsonObject> result) {
+        String prefix = "assets/" + modId + "/lang/";
+        Map<String, JarResource> languages = new TreeMap<>();
+        contents.visitContent(prefix, (path, resource) -> {
+            if (!path.startsWith(prefix) || path.indexOf('/', prefix.length()) >= 0) return;
+            if (path.toLowerCase(Locale.ROOT).endsWith(".json")) languages.putIfAbsent(path, resource.retain());
+        });
+        languages.forEach((path, resource) -> loadBaseLanguage(path, resource, result));
     }
 
-    private static void loadLanguage(Path path, Map<String, JsonObject> result) {
-        try (InputStreamReader reader = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8)) {
-            String fileName = path.getFileName().toString();
-            String languageCode = fileName.substring(0, fileName.length() - 5).toLowerCase();
+    private static void loadBaseLanguage(String path, JarResource resource, Map<String, JsonObject> result) {
+        try (var reader = resource.bufferedReader(StandardCharsets.UTF_8)) {
+            String languageCode = languageCode(path);
             JsonObject base = JsonUtils.parseObject(reader);
             JsonObject override = result.get(languageCode);
             if (override != null) JsonUtils.mergeInPlace(base, override);
@@ -100,10 +98,10 @@ public final class NeoForgeBaniraResourceService {
         }
     }
 
-    private static void loadLanguage(IoSupplier<InputStream> supplier, ResourceLocation location,
+    private static void loadLanguage(IoSupplier<InputStream> supplier, Identifier location,
                                      Map<String, JsonObject> result) {
         try (InputStreamReader reader = new InputStreamReader(supplier.get(), StandardCharsets.UTF_8)) {
-            String languageCode = languageCode(location);
+            String languageCode = languageCode(location.getPath());
             JsonObject json = JsonUtils.parseObject(reader);
             JsonObject existing = result.get(languageCode);
             if (existing == null) result.put(languageCode, json);
@@ -113,10 +111,9 @@ public final class NeoForgeBaniraResourceService {
         }
     }
 
-    private static String languageCode(ResourceLocation location) {
-        String path = location.getPath();
+    private static String languageCode(String path) {
         int slash = path.lastIndexOf('/');
         String name = slash >= 0 ? path.substring(slash + 1) : path;
-        return name.substring(0, name.length() - 5).toLowerCase();
+        return name.substring(0, name.length() - 5).toLowerCase(Locale.ROOT);
     }
 }

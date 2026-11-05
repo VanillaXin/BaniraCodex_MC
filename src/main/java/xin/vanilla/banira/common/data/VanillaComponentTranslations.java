@@ -85,6 +85,11 @@ final class VanillaComponentTranslations {
     }
 
     private static boolean foreignFont(JsonElement font) {
+        if (font.isJsonObject()) {
+            JsonObject description = font.getAsJsonObject();
+            return description.has("id") && foreignFont(description.get("id"));
+        }
+        if (!font.isJsonPrimitive()) return false;
         String name = font.getAsString();
         return name.indexOf(':') >= 0 && !name.startsWith("minecraft:");
     }
@@ -136,25 +141,38 @@ final class VanillaComponentTranslations {
         JsonObject event = copied.getAsJsonObject();
         if (!event.has("action")) return event;
         String action = event.get("action").getAsString();
+        // Modern hover events inline their payload; legacy transports wrap it in contents/value.
+        if ("show_text".equals(action) && event.has("value")) {
+            event.add("value", prepare(event.get("value"), language, vanillaOnly, format));
+        } else if ("show_entity".equals(action) && event.has("name")) {
+            event.add("name", prepare(event.get("name"), language, vanillaOnly, format));
+        } else if ("show_item".equals(action)) {
+            prepareItem(event, language, vanillaOnly, format);
+        }
         for (String field : new String[]{"contents", "value"}) {
             if (!event.has(field)) continue;
+            if ("show_text".equals(action) && "value".equals(field)) continue;
             if ("show_text".equals(action)) {
                 event.add(field, prepare(event.get(field), language, vanillaOnly, format));
             } else if ("show_entity".equals(action) && event.get(field).isJsonObject()) {
                 JsonObject entity = event.getAsJsonObject(field);
                 if (entity.has("name")) entity.add("name", prepare(entity.get("name"), language, vanillaOnly, format));
             } else if ("show_item".equals(action) && event.get(field).isJsonObject()) {
-                JsonObject item = event.getAsJsonObject(field);
-                if (item.has("components") && item.get("components").isJsonObject()) {
-                    JsonObject components = item.getAsJsonObject("components");
-                    for (String name : new String[]{"minecraft:custom_name", "minecraft:item_name", "minecraft:lore"})
-                        if (components.has(name)) components.add(name, prepare(components.get(name), language, vanillaOnly, format));
-                }
-                if (item.has("tag") && item.get("tag").isJsonPrimitive())
-                    item.addProperty("tag", Component.prepareItemHoverTag(item.get("tag").getAsString(), language, vanillaOnly));
+                prepareItem(event.getAsJsonObject(field), language, vanillaOnly, format);
             }
         }
         return event;
+    }
+
+    private static void prepareItem(JsonObject item, String language, boolean vanillaOnly,
+                                    BiFunction<String, JsonArray, JsonElement> format) {
+        if (item.has("components") && item.get("components").isJsonObject()) {
+            JsonObject components = item.getAsJsonObject("components");
+            for (String name : new String[]{"minecraft:custom_name", "minecraft:item_name", "minecraft:lore"})
+                if (components.has(name)) components.add(name, prepare(components.get(name), language, vanillaOnly, format));
+        }
+        if (item.has("tag") && item.get("tag").isJsonPrimitive())
+            item.addProperty("tag", Component.prepareItemHoverTag(item.get("tag").getAsString(), language, vanillaOnly));
     }
 
     private static JsonElement copy(JsonElement input) {

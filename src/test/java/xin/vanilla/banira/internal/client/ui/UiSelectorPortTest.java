@@ -23,6 +23,9 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 import static org.junit.Assert.*;
 
 public class UiSelectorPortTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();
@@ -53,13 +56,13 @@ public class UiSelectorPortTest {
         assertFalse(editor.submit());
         editor.draft(0, "{marker:42}");
         assertTrue(editor.submit());
-        assertEquals(42, session.item().get(DataComponents.CUSTOM_DATA).copyTag().getInt("marker"));
+        assertEquals(42, session.item().get(DataComponents.CUSTOM_DATA).copyTag().getInt("marker").orElseThrow().intValue());
         var itemEditor = session.editor("item");
         itemEditor.draft(0, "minecraft:diamond");
         assertTrue(itemEditor.submit());
         assertEquals(Items.DIAMOND, session.item().getItem());
         assertEquals(11, session.item().getCount());
-        assertEquals(42, session.item().get(DataComponents.CUSTOM_DATA).copyTag().getInt("marker"));
+        assertEquals(42, session.item().get(DataComponents.CUSTOM_DATA).copyTag().getInt("marker").orElseThrow().intValue());
     }
 
     @Test
@@ -67,11 +70,11 @@ public class UiSelectorPortTest {
         var session = new SelectorUiSession(new EffectSelectScreen.Args().parentScreen(UiSelectorParityTest.parent())
                 .defaultEffect(new MobEffectInstance(MobEffects.LUCK, 601, 3)).onDataReceived1(effect -> fail("Editing must not submit the selector")));
         session.select("minecraft:strength");
-        assertEquals(MobEffects.DAMAGE_BOOST, session.effect().getEffect());
+        assertEquals(MobEffects.STRENGTH, session.effect().getEffect());
         var editor = session.editor("effect");
         editor.draft(0, "minecraft:speed");
         assertTrue(editor.submit());
-        assertEquals(MobEffects.MOVEMENT_SPEED, session.effect().getEffect());
+        assertEquals(MobEffects.SPEED, session.effect().getEffect());
         assertEquals(601, session.effect().getDuration());
         assertEquals(3, session.effect().getAmplifier());
         assertEquals("0:00:30.05", session.editor("duration").draft(0));

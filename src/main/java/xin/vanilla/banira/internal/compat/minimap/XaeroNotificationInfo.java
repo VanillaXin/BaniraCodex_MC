@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.compat.minimap;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xaero.hud.minimap.info.InfoDisplay;
 import xaero.hud.minimap.info.InfoDisplayManager;
 import xaero.hud.minimap.info.codec.InfoDisplayCommonStateCodecs;
@@ -24,13 +24,13 @@ import java.util.function.Consumer;
 /** Loaded only by guarded Xaero mixins. */
 public final class XaeroNotificationInfo {
     private static final Set<InfoDisplayManager> MANAGERS = Collections.newSetFromMap(new WeakHashMap<>());
-    private static final Map<ResourceLocation, InfoDisplay<Boolean>> DISPLAYS = new HashMap<>();
+    private static final Map<Identifier, InfoDisplay<Boolean>> DISPLAYS = new HashMap<>();
     private static boolean listening;
 
     private XaeroNotificationInfo() {
     }
 
-    private static String nativeId(ResourceLocation id) {
+    private static String nativeId(Identifier id) {
         return id.toString().equals("banira_codex:unread") ? "banira_unread" : "banira_line_" + id;
     }
 

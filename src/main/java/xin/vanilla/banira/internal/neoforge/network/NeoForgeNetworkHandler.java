@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.neoforge.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -16,11 +16,11 @@ import java.util.function.Function;
 public final class NeoForgeNetworkHandler implements NetworkPacketRegistrar {
     private static final String DEFAULT_PROTOCOL = "1";
 
-    private final ResourceLocation channel;
+    private final Identifier channel;
     private final String protocolVersion;
     private final boolean optionalClient;
 
-    private NeoForgeNetworkHandler(ResourceLocation channel, String protocolVersion, boolean optionalClient) {
+    private NeoForgeNetworkHandler(Identifier channel, String protocolVersion, boolean optionalClient) {
         this.channel = channel;
         this.protocolVersion = protocolVersion == null || protocolVersion.isBlank() ? DEFAULT_PROTOCOL : protocolVersion;
         this.optionalClient = optionalClient;
@@ -32,7 +32,7 @@ public final class NeoForgeNetworkHandler implements NetworkPacketRegistrar {
 
     public static NeoForgeNetworkHandler create(String channelName, BaniraIdentifier identifier,
                                                 String protocolVersion, boolean optionalClient) {
-        return new NeoForgeNetworkHandler(ResourceLocation.fromNamespaceAndPath(
+        return new NeoForgeNetworkHandler(Identifier.fromNamespaceAndPath(
                 identifier.getNamespace(), channelName), protocolVersion, optionalClient);
     }
 

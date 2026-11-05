@@ -1,15 +1,13 @@
 package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
+import net.minecraft.resources.Identifier;
+import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fStack;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -53,11 +51,11 @@ public final class AbstractGuiUtils {
     private static final Random random = new Random();
 
 
-    public static void renderByDepth(PoseStack stack, Consumer<PoseStack> drawFunc) {
+    public static void renderByDepth(Matrix3x2fStack stack, Consumer<Matrix3x2fStack> drawFunc) {
         AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.DEFAULT, drawFunc);
     }
 
-    public static void renderByDepth(PoseStack stack, EnumRenderDepth depth, Consumer<PoseStack> drawFunc) {
+    public static void renderByDepth(Matrix3x2fStack stack, EnumRenderDepth depth, Consumer<Matrix3x2fStack> drawFunc) {
         if (depth != null) {
             renderByDepth(stack, depth.depth(), drawFunc);
         } else {
@@ -65,27 +63,13 @@ public final class AbstractGuiUtils {
         }
     }
 
-    public static void renderByDepth(PoseStack stack, int depth, Consumer<PoseStack> drawFunc) {
-        boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
-        int depthFunc = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
-
+    public static void renderByDepth(Matrix3x2fStack stack, int depth, Consumer<Matrix3x2fStack> drawFunc) {
+        stack.pushMatrix();
+        if (depth > 0) ExtractedGuiRenderer.nextStratum();
         try {
-            stack.pushPose();
-            stack.translate(0, 0, depth);
-
-            RenderSystem.enableDepthTest();
-            RenderSystem.depthFunc(GL11.GL_LEQUAL);
-
             drawFunc.accept(stack);
         } finally {
-            stack.popPose();
-
-            if (!depthTest) {
-                RenderSystem.disableDepthTest();
-            } else {
-                RenderSystem.enableDepthTest();
-            }
-            RenderSystem.depthFunc(depthFunc);
+            stack.popMatrix();
         }
     }
 
@@ -93,28 +77,24 @@ public final class AbstractGuiUtils {
     // region 绘制纹理
 
     @Deprecated
-    public static void bindTexture(ResourceLocation location) {
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, location);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+    public static void bindTexture(Identifier location) {
+        Minecraft.getInstance().getTextureManager().getTexture(location);
+        ExtractedGuiRenderer.textureColor(0xFFFFFFFF);
     }
 
     /**
-     * 恢复与 {@link net.minecraft.client.gui.GuiGraphics} 绘制链常见的 GUI 状态，供自定义绘制链结束后调用。
+     * 恢复与 {@link net.minecraft.client.gui.GuiGraphicsExtractor} 绘制链常见的 GUI 状态，供自定义绘制链结束后调用。
      */
     public static void restoreGuiRenderState() {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        ExtractedGuiRenderer.textureColor(0xFFFFFFFF);
     }
 
     /**
-     * 与 {@link net.minecraft.client.gui.GuiGraphics} 中 {@code innerBlit(ResourceLocation,...)} 等价的纹理四边形绘制（使用当前 PoseStack）。
+     * 与 {@link net.minecraft.client.gui.GuiGraphicsExtractor} 中 {@code innerBlit(Identifier,...)} 等价的纹理四边形绘制（使用当前 Matrix3x2fStack）。
      */
     private static void innerBlitTexture(
-            PoseStack poseStack,
-            ResourceLocation texture,
+            Matrix3x2fStack poseStack,
+            Identifier texture,
             int x0,
             int x1,
             int y0,
@@ -125,20 +105,12 @@ public final class AbstractGuiUtils {
             float v0,
             float v1
     ) {
-        RenderSystem.setShaderTexture(0, texture);
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        Matrix4f matrix4f = poseStack.last().pose();
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.addVertex(matrix4f, (float) x0, (float) y0, (float) z).setUv(u0, v0);
-        bufferBuilder.addVertex(matrix4f, (float) x0, (float) y1, (float) z).setUv(u0, v1);
-        bufferBuilder.addVertex(matrix4f, (float) x1, (float) y1, (float) z).setUv(u1, v1);
-        bufferBuilder.addVertex(matrix4f, (float) x1, (float) y0, (float) z).setUv(u1, v0);
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        ExtractedGuiRenderer.texture(poseStack, texture, x0, y0, x1, y1, u0, u1, v0, v1);
     }
 
     private static void blitInner(
-            PoseStack poseStack,
-            ResourceLocation texture,
+            Matrix3x2fStack poseStack,
+            Identifier texture,
             int x0,
             int x1,
             int y0,
@@ -166,7 +138,7 @@ public final class AbstractGuiUtils {
         );
     }
 
-    public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
+    public static void blit(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
         AbstractGuiUtils.bindTexture(texture);
         innerBlitTexture(
                 stack,
@@ -183,34 +155,34 @@ public final class AbstractGuiUtils {
         );
     }
 
-    public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
+    public static void blitBlend(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int z, int destWidth, int destHeight, TextureAtlasSprite sprite) {
         blitByBlend(() -> blit(stack, texture, x0, y0, z, destWidth, destHeight, sprite));
     }
 
-    public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
+    public static void blit(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
         AbstractGuiUtils.bindTexture(texture);
         blitInner(stack, texture, x0, x0 + width, y0, y0 + height, z, (float) u0, (float) v0, width, height, textureWidth, textureHeight);
     }
 
-    public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
+    public static void blitBlend(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int z, double u0, double v0, int width, int height, int textureHeight, int textureWidth) {
         blitByBlend(() -> blit(stack, texture, x0, y0, z, u0, v0, width, height, textureHeight, textureWidth));
     }
 
-    public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
+    public static void blit(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
         AbstractGuiUtils.bindTexture(texture);
         blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, srcWidth, srcHeight, textureWidth, textureHeight);
     }
 
-    public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
+    public static void blitBlend(Matrix3x2fStack stack, Identifier texture, int x0, int y0, int destWidth, int destHeight, double u0, double v0, int srcWidth, int srcHeight, int textureWidth, int textureHeight) {
         blitByBlend(() -> blit(stack, texture, x0, y0, destWidth, destHeight, u0, v0, srcWidth, srcHeight, textureWidth, textureHeight));
     }
 
-    public static void blit(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
+    public static void blit(Matrix3x2fStack stack, Identifier texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
         AbstractGuiUtils.bindTexture(texture);
         blitInner(stack, texture, x0, x0 + destWidth, y0, y0 + destHeight, 0, (float) u0, (float) v0, destWidth, destHeight, textureWidth, textureHeight);
     }
 
-    public static void blitBlend(PoseStack stack, ResourceLocation texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
+    public static void blitBlend(Matrix3x2fStack stack, Identifier texture, int x0, int y0, double u0, double v0, int destWidth, int destHeight, int textureWidth, int textureHeight) {
         blitByBlend(() -> blit(stack, texture, x0, y0, u0, v0, destWidth, destHeight, textureWidth, textureHeight));
     }
 
@@ -218,11 +190,8 @@ public final class AbstractGuiUtils {
      * 启用混合模式来绘制纹理
      */
     public static void blitByBlend(Runnable drawFunc) {
-        // 启用混合模式来正确处理透明度
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        // GUI pipelines carry their own blend state.
         drawFunc.run();
-        // 勿在此处 disableBlend：会破坏后续 Screen/控件与字体的混合绘制
     }
 
     /**
@@ -233,7 +202,7 @@ public final class AbstractGuiUtils {
     public static void renderByTransform(TransformArgs args, Consumer<TransformDrawArgs> drawFunc) {
 
         // 保存当前矩阵状态
-        args.stack().pushPose();
+        args.stack().pushMatrix();
 
         // 计算目标点：pivot 为矩形内固定点（用未缩放宽高），tranW/tranH 为缩放后回移量
         double pivotX = 0, pivotY = 0;
@@ -286,52 +255,35 @@ public final class AbstractGuiUtils {
         double tranX = args.x() + pivotX;
         double tranY = args.y() + pivotY;
         // 移至目标点
-        args.stack().translate(tranX, tranY, 0);
+        args.stack().translate((float) tranX, (float) tranY);
 
         // 缩放
-        args.stack().scale((float) args.scale(), (float) args.scale(), 1);
+        args.stack().scale((float) args.scale(), (float) args.scale());
 
         // 旋转
         if (args.angle() % 360 != 0) {
-            args.stack().mulPose(new Quaternionf().rotationZ((float) Math.toRadians(args.angle())));
+            args.stack().rotate((float) Math.toRadians(args.angle()));
         }
 
         // 翻转
         if (args.flipHorizontal()) {
-            args.stack().mulPose(new Quaternionf().rotationY((float) Math.PI));
+            args.stack().scale(-1, 1);
         }
         if (args.flipVertical()) {
-            args.stack().mulPose(new Quaternionf().rotationX((float) Math.PI));
+            args.stack().scale(1, -1);
         }
 
         // 返回原点
-        args.stack().translate(-tranW, -tranH, 0);
-
-        // 关闭背面剔除
-        RenderSystem.disableCull();
+        args.stack().translate((float) -tranW, (float) -tranH);
         // 绘制方法
         TransformDrawArgs drawArgs = new TransformDrawArgs(args.stack());
         drawArgs.x(0).y(0).width(args.width()).height(args.height()).alpha((int) args.alpha());
 
-        // 启用混合模式
-        if (args.blend() || args.alpha() < 0xFF) {
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
+        try {
+            drawFunc.accept(drawArgs);
+        } finally {
+            args.stack().popMatrix();
         }
-
-        drawFunc.accept(drawArgs);
-
-        // 勿在此处 disableBlend：会破坏后续 GUI 绘制
-        if (args.blend() || args.alpha() < 0xFF) {
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-        }
-
-        // 恢复背面剔除
-        RenderSystem.enableCull();
-
-        // 恢复矩阵状态
-        args.stack().popPose();
     }
 
     // endregion 绘制纹理
@@ -640,7 +592,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制有宽度的线段
      */
-    public static void drawLine(PoseStack stack, float x1, float y1, float x2, float y2, float lineWidth, int color) {
+    public static void drawLine(Matrix3x2fStack stack, float x1, float y1, float x2, float y2, float lineWidth, int color) {
         if (lineWidth <= 0) return;
 
         float dx = x2 - x1;
@@ -664,10 +616,9 @@ public final class AbstractGuiUtils {
         float x2Bottom = x2 - perpX * halfWidth;
         float y2Bottom = y2 - perpY * halfWidth;
 
-        setupBlendRender();
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLES);
 
         addVertexWithColor(builder, m4, x1Top, y1Top, 0, color);
         addVertexWithColor(builder, m4, x2Top, y2Top, 0, color);
@@ -683,7 +634,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制带方形端帽的线段，适合拼接箭头、对勾等需要无缝连接的图形。
      */
-    public static void drawLineWithSquareCaps(PoseStack stack, float x1, float y1, float x2, float y2,
+    public static void drawLineWithSquareCaps(Matrix3x2fStack stack, float x1, float y1, float x2, float y2,
                                               float lineWidth, int color) {
         if (lineWidth <= 0) return;
         float dx = x2 - x1;
@@ -701,7 +652,7 @@ public final class AbstractGuiUtils {
      */
     private static void drawSectorRingShape(ShapeDrawArgs args) {
         ShapeDrawArgs.SectorRingParams params = args.sectorRing();
-        PoseStack stack = args.stack();
+        Matrix3x2fStack stack = args.stack();
         int color = args.color();
 
         int segments = params.segments();
@@ -721,7 +672,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制实心扇环
      */
-    public static void drawFilledSectorRing(PoseStack stack, ShapeDrawArgs.SectorRingParams params, float innerRadius, int segments, int color) {
+    public static void drawFilledSectorRing(Matrix3x2fStack stack, ShapeDrawArgs.SectorRingParams params, float innerRadius, int segments, int color) {
         float centerX = params.centerX();
         float centerY = params.centerY();
         float outerRadius = params.outerRadius();
@@ -740,8 +691,8 @@ public final class AbstractGuiUtils {
             endRad = Math.toRadians(endAngle);
         }
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleRange = endRad - startRad;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -755,14 +706,13 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
     /**
      * 绘制实心扇环
      */
-    public static void drawFilledSectorRingFromCenter(PoseStack stack, ShapeDrawArgs.SectorRingParams params, int segments, int color) {
+    public static void drawFilledSectorRingFromCenter(Matrix3x2fStack stack, ShapeDrawArgs.SectorRingParams params, int segments, int color) {
         float centerX = params.centerX();
         float centerY = params.centerY();
         float radius = params.outerRadius();
@@ -779,8 +729,8 @@ public final class AbstractGuiUtils {
             endRad = Math.toRadians(endAngle);
         }
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleRange = endRad - startRad;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -804,7 +754,6 @@ public final class AbstractGuiUtils {
             }
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -820,34 +769,33 @@ public final class AbstractGuiUtils {
      * @param y    像素的 Y 坐标
      * @param argb 像素的颜色
      */
-    public static void drawPixel(PoseStack stack, int x, int y, int argb) {
+    public static void drawPixel(Matrix3x2fStack stack, int x, int y, int argb) {
         fillEx(stack, x, y, 1f, 1f, argb);
     }
 
     /**
      * 绘制正方形
      */
-    public static void fill(PoseStack stack, int x, int y, int width, int argb) {
+    public static void fill(Matrix3x2fStack stack, int x, int y, int width, int argb) {
         AbstractGuiUtils.fill(stack, x, y, width, width, argb);
     }
 
     /**
      * 绘制矩形
      */
-    public static void fill(PoseStack stack, int x, int y, int width, int height, int argb) {
+    public static void fill(Matrix3x2fStack stack, int x, int y, int width, int height, int argb) {
         AbstractGuiUtils.drawRoundedRect(stack, x, y, width, height, argb, 0);
     }
 
     /**
      * 绘制矩形
      */
-    public static void fillEx(PoseStack stack, float x, float y, float width, float height, int color) {
+    public static void fillEx(Matrix3x2fStack stack, float x, float y, float width, float height, int color) {
         if (width <= 0 || height <= 0) return;
 
-        setupBlendRender();
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.QUADS);
 
         addVertexWithColor(builder, m4, x + width, y, 0, color);
         addVertexWithColor(builder, m4, x, y, 0, color);
@@ -860,7 +808,7 @@ public final class AbstractGuiUtils {
     /**
      * 在正方形区域内用9个实心方点绘制「×」
      */
-    public static void drawNineDotCloseIcon(PoseStack stack, float boxX, float boxY, float boxSize, int argb) {
+    public static void drawNineDotCloseIcon(Matrix3x2fStack stack, float boxX, float boxY, float boxSize, int argb) {
         drawNineDotCloseIcon(stack, boxX, boxY, boxSize, argb, 0.056f, 1f);
     }
 
@@ -869,7 +817,7 @@ public final class AbstractGuiUtils {
      * @param stepScale    网格步长 = {@code dotS * stepScale}。轴对齐方块沿 45° 排列时，取 {@code 1} 则相邻块中心距为
      *                     {@code dotS * sqrt(2)}，外角刚好相接不重叠；略大于 1 则块之间留出缝隙
      */
-    public static void drawNineDotCloseIcon(PoseStack stack, float boxX, float boxY, float boxSize, int argb,
+    public static void drawNineDotCloseIcon(Matrix3x2fStack stack, float boxX, float boxY, float boxSize, int argb,
                                             float dotSizeRatio, float stepScale) {
         if (boxSize <= 0f) {
             return;
@@ -879,9 +827,8 @@ public final class AbstractGuiUtils {
         float centerX = boxX + boxSize * 0.5f;
         float centerY = boxY + boxSize * 0.5f;
         float half = dotS * 0.5f;
-        setupBlendRender();
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.QUADS);
         for (int[] g : NINE_DOT_CLOSE_ICON_GRID) {
             float cx = centerX + g[0] * step;
             float cy = centerY + g[1] * step;
@@ -901,7 +848,7 @@ public final class AbstractGuiUtils {
      * @param thickness 边框厚度
      * @param argb      边框颜色
      */
-    public static void fillOutLine(PoseStack stack, int x, int y, int width, int height, int thickness, int argb) {
+    public static void fillOutLine(Matrix3x2fStack stack, int x, int y, int width, int height, int thickness, int argb) {
         // 上边
         AbstractGuiUtils.fill(stack, x, y, width - thickness, thickness, argb);
         // 下边
@@ -915,7 +862,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制精细圆角矩形。需要低成本像素圆角时应显式调用粗糙绘制入口。
      */
-    public static void drawRoundedRect(PoseStack stack, int x, int y, int width, int height, int argb, int radius) {
+    public static void drawRoundedRect(Matrix3x2fStack stack, int x, int y, int width, int height, int argb, int radius) {
         if (radius <= 0) {
             fillEx(stack, x, y, width, height, argb);
             return;
@@ -926,7 +873,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制低成本像素圆角。常规界面应使用默认的精细圆角入口。
      */
-    public static void drawRoundedRectRough(PoseStack stack, int x, int y,
+    public static void drawRoundedRectRough(Matrix3x2fStack stack, int x, int y,
                                             int width, int height, int argb, int radius) {
         if (radius <= 0) {
             fillEx(stack, x, y, width, height, argb);
@@ -967,7 +914,7 @@ public final class AbstractGuiUtils {
      * @param argb     圆角颜色
      * @param quadrant 指定绘制的象限（1=左上，2=右上，3=左下，4=右下）
      */
-    private static void drawCircleQuadrant(PoseStack stack, int centerX, int centerY, int radius, int argb, int quadrant) {
+    private static void drawCircleQuadrant(Matrix3x2fStack stack, int centerX, int centerY, int radius, int argb, int quadrant) {
         for (int dx = 0; dx <= radius; dx++) {
             for (int dy = 0; dy <= radius; dy++) {
                 if (dx * dx + dy * dy <= radius * radius) {
@@ -977,7 +924,7 @@ public final class AbstractGuiUtils {
         }
     }
 
-    private static void drawCircleQuadrantPixel(PoseStack stack, int centerX, int centerY, int argb, int quadrant, int dx, int dy) {
+    private static void drawCircleQuadrantPixel(Matrix3x2fStack stack, int centerX, int centerY, int argb, int quadrant, int dx, int dy) {
         switch (quadrant) {
             case 1: // 左上角
                 AbstractGuiUtils.drawPixel(stack, centerX - dx, centerY - dy, argb);
@@ -1005,14 +952,14 @@ public final class AbstractGuiUtils {
      * @param argb      边框颜色
      * @param radius    圆角半径（0-10）
      */
-    public static void drawRoundedRectOutLineRough(PoseStack stack, int x, int y, int width, int height, int thickness, int argb, int radius) {
+    public static void drawRoundedRectOutLineRough(Matrix3x2fStack stack, int x, int y, int width, int height, int thickness, int argb, int radius) {
         drawRoundedRectOutLineRough(stack, x, y, width, height, thickness, argb, radius, radius, radius, radius);
     }
 
     /**
      * 绘制圆角矩形边框（粗糙模式，支持四个不同的圆角半径）
      */
-    public static void drawRoundedRectOutLineRough(PoseStack stack, int x, int y, int width, int height, int thickness, int argb,
+    public static void drawRoundedRectOutLineRough(Matrix3x2fStack stack, int x, int y, int width, int height, int thickness, int argb,
                                                    int topLeft, int topRight, int bottomLeft, int bottomRight) {
         if (thickness <= 0) return;
 
@@ -1094,7 +1041,7 @@ public final class AbstractGuiUtils {
      * @param argb      边框颜色
      * @param quadrant  指定绘制的象限（1=左上，2=右上，3=左下，4=右下）
      */
-    private static void drawCircleBorder(PoseStack stack, int centerX, int centerY, int radius, int thickness, int argb, int quadrant) {
+    private static void drawCircleBorder(Matrix3x2fStack stack, int centerX, int centerY, int radius, int thickness, int argb, int quadrant) {
         for (int dx = 0; dx <= radius; dx++) {
             for (int dy = 0; dy <= radius; dy++) {
                 double sqrt = Math.sqrt(dx * dx + dy * dy);
@@ -1120,7 +1067,7 @@ public final class AbstractGuiUtils {
      * @param border      边框厚度
      * @param color       边框颜色
      */
-    public static void drawRoundedRectOutLine(PoseStack stack, float x, float y, float width, float height,
+    public static void drawRoundedRectOutLine(Matrix3x2fStack stack, float x, float y, float width, float height,
                                               float topLeft, float topRight, float bottomLeft, float bottomRight,
                                               float border, int color, ShapeDrawArgs.RoundedCornerMode mode) {
         if (border <= 0) return;
@@ -1149,7 +1096,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制圆角矩形边框
      */
-    private static void drawRoundedRectOutLineFine(PoseStack stack, float x, float y, float width, float height,
+    private static void drawRoundedRectOutLineFine(Matrix3x2fStack stack, float x, float y, float width, float height,
                                                    float topLeft, float topRight, float bottomLeft, float bottomRight,
                                                    float border, int color) {
         if (border <= 0) return;
@@ -1347,8 +1294,8 @@ public final class AbstractGuiUtils {
 
     // region 绘制圆
 
-    private static void addVertexWithColor(BufferBuilder builder, Matrix4f m4, float x, float y, float z, int argb) {
-        builder.addVertex(m4, x, y, z).setColor((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+    private static void addVertexWithColor(ExtractedGuiRenderer.VertexBatch builder, Matrix3x2fc m4, float x, float y, float z, int argb) {
+        builder.vertex(m4, x, y, argb);
     }
 
     /**
@@ -1367,29 +1314,21 @@ public final class AbstractGuiUtils {
         return Math.min(Math.max(64, (int) (radius * 6.0f + 32)), 256);
     }
 
-    private static void setupBlendRender() {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-    }
-
-    private static void finishBlendRender(BufferBuilder builder) {
-        BufferUploader.drawWithShader(builder.buildOrThrow());
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+    private static void finishBlendRender(ExtractedGuiRenderer.VertexBatch builder) {
+        builder.submit();
     }
 
     /**
      * 绘制圆角矩形框
      */
-    public static void drawRoundedRect(PoseStack stack, float x, float y, float w, float h, float r, int color) {
+    public static void drawRoundedRect(Matrix3x2fStack stack, float x, float y, float w, float h, float r, int color) {
         drawRoundedRect(stack, x, y, w, h, r, calculateOptimalSegments(r), color);
     }
 
     /**
      * 绘制带可变四角圆角的填充矩形
      */
-    public static void drawRoundedRect(PoseStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int color) {
+    public static void drawRoundedRect(Matrix3x2fStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int color) {
         float maxRadius = Math.max(Math.max(topLeft, topRight), Math.max(bottomLeft, bottomRight));
         drawRoundedRect(stack, x, y, w, h, topLeft, topRight, bottomLeft, bottomRight, calculateOptimalSegments(maxRadius), color);
     }
@@ -1397,7 +1336,7 @@ public final class AbstractGuiUtils {
     /**
      * 绘制带可变四角圆角的填充矩形
      */
-    public static void drawRoundedRect(PoseStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int part, int color) {
+    public static void drawRoundedRect(Matrix3x2fStack stack, float x, float y, float w, float h, float topLeft, float topRight, float bottomLeft, float bottomRight, int part, int color) {
         float halfW = w * 0.5f;
         float halfH = h * 0.5f;
         topLeft = clampRadius(topLeft, halfW, halfH);
@@ -1428,10 +1367,8 @@ public final class AbstractGuiUtils {
         if (topLeft > 0) addArc(verts, x + topLeft, y + topLeft, topLeft, 180f, 270f, part);
         else verts.add(new float[]{x, y});
 
-        Matrix4f m4 = stack.last().pose();
-        setupBlendRender();
-        RenderSystem.disableCull();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLES);
 
         float centerX = x + w * 0.5f;
         float centerY = y + h * 0.5f;
@@ -1446,10 +1383,7 @@ public final class AbstractGuiUtils {
             }
         }
 
-        BufferUploader.drawWithShader(builder.buildOrThrow());
-        RenderSystem.enableCull();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        builder.submit();
     }
 
     private static float clampRadius(float r, float halfW, float halfH) {
@@ -1468,25 +1402,25 @@ public final class AbstractGuiUtils {
     /**
      * 绘制圆角矩形
      */
-    public static void drawRoundedRect(PoseStack stack, float x, float y, float w, float h, float r, int part, int color) {
+    public static void drawRoundedRect(Matrix3x2fStack stack, float x, float y, float w, float h, float r, int part, int color) {
         drawRoundedRect(stack, x, y, w, h, r, r, r, r, part, color);
     }
 
     /**
      * 绘制填充圆形
      */
-    public static void drawCircle(PoseStack stack, float centerX, float centerY, float radius, int color) {
+    public static void drawCircle(Matrix3x2fStack stack, float centerX, float centerY, float radius, int color) {
         drawCircle(stack, centerX, centerY, radius, calculateCircleSegments(radius), color);
     }
 
     /**
      * 绘制填充圆形
      */
-    public static void drawCircle(PoseStack stack, float centerX, float centerY, float radius, int segments, int color) {
+    public static void drawCircle(Matrix3x2fStack stack, float centerX, float centerY, float radius, int segments, int color) {
         if (radius <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleStep = 2.0 * Math.PI / segments;
         float[] xCoords = new float[segments + 1];
@@ -1507,25 +1441,24 @@ public final class AbstractGuiUtils {
             }
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
     /**
      * 绘制圆环
      */
-    public static void drawCircleRing(PoseStack stack, float centerX, float centerY, float radius, float lineWidth, int color) {
+    public static void drawCircleRing(Matrix3x2fStack stack, float centerX, float centerY, float radius, float lineWidth, int color) {
         drawCircleRing(stack, centerX, centerY, radius, lineWidth, calculateCircleSegments(radius), color);
     }
 
     /**
      * 绘制圆环
      */
-    public static void drawCircleRing(PoseStack stack, float centerX, float centerY, float radius, float lineWidth, int segments, int color) {
+    public static void drawCircleRing(Matrix3x2fStack stack, float centerX, float centerY, float radius, float lineWidth, int segments, int color) {
         if (radius <= 0 || lineWidth <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         float innerRadius = Math.max(0, radius - lineWidth);
         double angleStep = 2.0 * Math.PI / segments;
@@ -1538,14 +1471,13 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
     /**
      * 绘制填充椭圆
      */
-    public static void drawEllipse(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, int color) {
+    public static void drawEllipse(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipse(stack, centerX, centerY, radiusX, radiusY, calculateCircleSegments(maxRadius), color);
     }
@@ -1553,11 +1485,11 @@ public final class AbstractGuiUtils {
     /**
      * 绘制填充椭圆
      */
-    public static void drawEllipse(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, int segments, int color) {
+    public static void drawEllipse(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleStep = 2.0 * Math.PI / segments;
         float[] xCoords = new float[segments + 1];
@@ -1578,14 +1510,13 @@ public final class AbstractGuiUtils {
             }
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
     /**
      * 绘制椭圆环
      */
-    public static void drawEllipseRing(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int color) {
+    public static void drawEllipseRing(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipseRing(stack, centerX, centerY, radiusX, radiusY, lineWidth, calculateCircleSegments(maxRadius), color);
     }
@@ -1593,11 +1524,11 @@ public final class AbstractGuiUtils {
     /**
      * 绘制椭圆环
      */
-    public static void drawEllipseRing(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int segments, int color) {
+    public static void drawEllipseRing(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, float lineWidth, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         float innerRadiusX = Math.max(0, radiusX - lineWidth);
         float innerRadiusY = Math.max(0, radiusY - lineWidth);
@@ -1611,7 +1542,6 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + cos * innerRadiusX, centerY + sin * innerRadiusY, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -1620,7 +1550,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipse(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
+    public static void drawEllipse(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipse(stack, centerX, centerY, radiusX, radiusY, rotation, calculateCircleSegments(maxRadius), color);
     }
@@ -1630,7 +1560,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipse(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
+    public static void drawEllipse(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
         drawEllipseRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), segments, color);
     }
 
@@ -1639,7 +1569,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseRad(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
+    public static void drawEllipseRad(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipseRad(stack, centerX, centerY, radiusX, radiusY, rotation, calculateCircleSegments(maxRadius), color);
     }
@@ -1649,11 +1579,11 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseRad(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
+    public static void drawEllipseRad(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleStep = 2.0 * Math.PI / segments;
         float cosRot = (float) Math.cos(rotation);
@@ -1679,7 +1609,6 @@ public final class AbstractGuiUtils {
             }
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -1688,7 +1617,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipseRing(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+    public static void drawEllipseRing(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipseRing(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
     }
@@ -1698,7 +1627,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转角度, 0为正右, 顺时针
      */
-    public static void drawEllipseRing(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+    public static void drawEllipseRing(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
         drawEllipseRingRad(stack, centerX, centerY, radiusX, radiusY, Math.toRadians(rotation), lineWidth, segments, color);
     }
 
@@ -1707,7 +1636,7 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseRingRad(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
+    public static void drawEllipseRingRad(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int color) {
         float maxRadius = Math.max(radiusX, radiusY);
         drawEllipseRingRad(stack, centerX, centerY, radiusX, radiusY, rotation, lineWidth, calculateCircleSegments(maxRadius), color);
     }
@@ -1717,11 +1646,11 @@ public final class AbstractGuiUtils {
      *
      * @param rotation 旋转弧度, 0为正右, 顺时针
      */
-    public static void drawEllipseRingRad(PoseStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
+    public static void drawEllipseRingRad(Matrix3x2fStack stack, float centerX, float centerY, float radiusX, float radiusY, double rotation, float lineWidth, int segments, int color) {
         if (radiusX <= 0 || radiusY <= 0 || lineWidth <= 0 || segments < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         float innerRadiusX = Math.max(0, radiusX - lineWidth);
         float innerRadiusY = Math.max(0, radiusY - lineWidth);
@@ -1740,7 +1669,6 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + xInner * cosRot - yInner * sinRot, centerY + xInner * sinRot + yInner * cosRot, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -1750,7 +1678,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawSector(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+    public static void drawSector(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
         drawSectorRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), calculateCircleSegments(radius), color);
     }
 
@@ -1760,7 +1688,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawSector(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
+    public static void drawSector(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
         drawSectorRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), segments, color);
     }
 
@@ -1770,7 +1698,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawSectorRad(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
+    public static void drawSectorRad(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int color) {
         drawSectorRad(stack, centerX, centerY, radius, startAngle, endAngle, calculateCircleSegments(radius), color);
     }
 
@@ -1780,11 +1708,11 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawSectorRad(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
+    public static void drawSectorRad(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, int segments, int color) {
         if (radius <= 0 || segments < 2) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double angleRange = endAngle - startAngle;
         if (angleRange < 0) angleRange += 2.0 * Math.PI;
@@ -1808,7 +1736,6 @@ public final class AbstractGuiUtils {
             }
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -1818,7 +1745,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawSectorRing(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+    public static void drawSectorRing(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
         drawSectorRingRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, calculateCircleSegments(radius), color);
     }
 
@@ -1828,7 +1755,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始角度, 0为正右
      * @param endAngle   结束角度, start至end顺时针旋转
      */
-    public static void drawSectorRing(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+    public static void drawSectorRing(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
         drawSectorRingRad(stack, centerX, centerY, radius, Math.toRadians(startAngle), Math.toRadians(endAngle), lineWidth, segments, color);
     }
 
@@ -1838,7 +1765,7 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawSectorRingRad(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
+    public static void drawSectorRingRad(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int color) {
         drawSectorRingRad(stack, centerX, centerY, radius, startAngle, endAngle, lineWidth, calculateCircleSegments(radius), color);
     }
 
@@ -1848,11 +1775,11 @@ public final class AbstractGuiUtils {
      * @param startAngle 起始弧度, 0为正右
      * @param endAngle   结束弧度, start至end顺时针旋转
      */
-    public static void drawSectorRingRad(PoseStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
+    public static void drawSectorRingRad(Matrix3x2fStack stack, float centerX, float centerY, float radius, double startAngle, double endAngle, float lineWidth, int segments, int color) {
         if (radius <= 0 || lineWidth <= 0 || segments < 2) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         float innerRadius = Math.max(0, radius - lineWidth);
         double angleRange = endAngle - startAngle;
@@ -1867,7 +1794,6 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -1881,11 +1807,11 @@ public final class AbstractGuiUtils {
      * @param sides    边数（n边形，n >= 3）
      * @param rotation 旋转角度
      */
-    public static void drawPolygon(PoseStack stack, float centerX, float centerY, float radius, int sides, double rotation, int color) {
+    public static void drawPolygon(Matrix3x2fStack stack, float centerX, float centerY, float radius, int sides, double rotation, int color) {
         if (radius <= 0 || sides < 3) return;
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         double rotationRad = Math.toRadians(rotation);
         double angleStep = 2.0 * Math.PI / sides;
@@ -1912,14 +1838,13 @@ public final class AbstractGuiUtils {
         addVertexWithColor(builder, m4, xCoords[0], yCoords[0], 0, color);
         addVertexWithColor(builder, m4, centerX, centerY, 0, color);
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
     /**
      * 绘制多边形边框
      */
-    public static void drawPolygonBorder(PoseStack stack, ShapeDrawArgs.PolygonParams polygon, int color) {
+    public static void drawPolygonBorder(Matrix3x2fStack stack, ShapeDrawArgs.PolygonParams polygon, int color) {
         float centerX = polygon.centerX();
         float centerY = polygon.centerY();
         float radius = polygon.radius();
@@ -1933,8 +1858,8 @@ public final class AbstractGuiUtils {
         double angleStep = 2.0 * Math.PI / sides;
         float innerRadius = Math.max(0, radius - borderWidth);
 
-        Matrix4f m4 = stack.last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        Matrix3x2fc m4 = stack;
+        ExtractedGuiRenderer.VertexBatch builder = ExtractedGuiRenderer.begin(ExtractedGuiRenderer.Primitive.TRIANGLE_STRIP);
 
         // 绘制每条边的边框
         for (int i = 0; i <= sides; i++) {
@@ -1945,7 +1870,6 @@ public final class AbstractGuiUtils {
             addVertexWithColor(builder, m4, centerX + cos * innerRadius, centerY + sin * innerRadius, 0, color);
         }
 
-        setupBlendRender();
         finishBlendRender(builder);
     }
 
@@ -2003,76 +1927,30 @@ public final class AbstractGuiUtils {
      * 使用 GUI 坐标（左上角为原点）。
      */
     public static void enableScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
-        int x = guiX * scale;
-        int y = window.getHeight() - (guiY + guiHeight) * scale;
-        int w = Math.max(0, guiWidth * scale);
-        int h = Math.max(0, guiHeight * scale);
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x, y, w, h);
+        ExtractedGuiRenderer.withPose(new Matrix3x2f(), () -> ExtractedGuiRenderer.graphics().enableScissor(
+                guiX, guiY, guiX + Math.max(0, guiWidth), guiY + Math.max(0, guiHeight)));
     }
 
     /**
      * 禁用裁剪
      */
     public static void disableScissor() {
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        ExtractedGuiRenderer.graphics().disableScissor();
     }
-
-    private static final Deque<int[]> scissorStack = new ArrayDeque<>();
 
     /**
      * 压入裁剪区域：与当前裁剪取交集，用于嵌套裁剪。
      * 使用后必须调用 {@link #popScissor()} 恢复。
      */
     public static void pushScissor(int guiX, int guiY, int guiWidth, int guiHeight) {
-        Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
-        int scale = (int) window.getGuiScale();
-        int winW = window.getWidth() / scale;
-        int winH = window.getHeight() / scale;
-        int[] prev = new int[5];
-        prev[0] = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST) ? 1 : 0;
-        if (prev[0] == 1) {
-            int[] box = new int[4];
-            GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, box);
-            prev[1] = box[0] / scale;
-            prev[2] = (window.getHeight() - box[1] - box[3]) / scale;
-            prev[3] = box[2] / scale;
-            prev[4] = box[3] / scale;
-        } else {
-            prev[1] = 0;
-            prev[2] = 0;
-            prev[3] = winW;
-            prev[4] = winH;
-        }
-        scissorStack.push(prev);
-
-        int left = Math.max(guiX, prev[1]);
-        int top = Math.max(guiY, prev[2]);
-        int right = Math.min(guiX + guiWidth, prev[1] + prev[3]);
-        int bottom = Math.min(guiY + guiHeight, prev[2] + prev[4]);
-        int w = Math.max(0, right - left);
-        int h = Math.max(0, bottom - top);
-        enableScissor(left, top, w, h);
+        enableScissor(guiX, guiY, guiWidth, guiHeight);
     }
 
     /**
      * 弹出裁剪区域，恢复之前的状态。
      */
     public static void popScissor() {
-        int[] prev = scissorStack.poll();
-        if (prev == null) {
-            disableScissor();
-            return;
-        }
-        if (prev[0] == 1) {
-            enableScissor(prev[1], prev[2], prev[3], prev[4]);
-        } else {
-            disableScissor();
-        }
+        disableScissor();
     }
 
     public static String getClipboard() {

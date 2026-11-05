@@ -3,14 +3,13 @@ package xin.vanilla.banira.common.util;
 import com.mojang.brigadier.StringReader;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 
@@ -25,7 +24,7 @@ public final class BlockUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final ResourceLocation UNKNOWN_BLOCK = Identifier.id().create("unknown_block");
+    private static final Identifier UNKNOWN_BLOCK = xin.vanilla.banira.Identifier.id().create("unknown_block");
 
     /**
      * 所有方块缓存（注册表遍历顺序）
@@ -45,12 +44,12 @@ public final class BlockUtils {
      * @param block 方块
      */
     @Nullable
-    public static ResourceLocation getBlockRegistry(Block block) {
+    public static Identifier getBlockRegistry(Block block) {
         if (block == null) {
             return null;
         }
         String key = Banira.platform().registryService().blockKey(block);
-        return key != null ? ResourceLocation.tryParse(key) : null;
+        return key != null ? Identifier.tryParse(key) : null;
     }
 
     /**
@@ -59,7 +58,7 @@ public final class BlockUtils {
      * @param block 方块
      */
     public static String getBlockRegistryString(Block block) {
-        ResourceLocation registryName = getBlockRegistry(block);
+        Identifier registryName = getBlockRegistry(block);
         return registryName != null ? registryName.toString() : UNKNOWN_BLOCK.toString();
     }
 
@@ -69,7 +68,7 @@ public final class BlockUtils {
      * @param state 方块状态
      */
     @Nullable
-    public static ResourceLocation getBlockRegistry(BlockState state) {
+    public static Identifier getBlockRegistry(BlockState state) {
         if (state == null) {
             return null;
         }
@@ -207,7 +206,7 @@ public final class BlockUtils {
         return state == null || getBlockRegistryString(state).equals(UNKNOWN_BLOCK.toString());
     }
 
-    public static boolean isUnknownBlock(ResourceLocation blockId) {
+    public static boolean isUnknownBlock(Identifier blockId) {
         return blockId == null || blockId.toString().equals(UNKNOWN_BLOCK.toString());
     }
 
@@ -245,7 +244,7 @@ public final class BlockUtils {
         return deserializeCache.computeIfAbsent(key, k -> {
             try {
                 StringReader reader = new StringReader(k);
-                return BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), reader, true).blockState();
+                return BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK, reader, true).blockState();
             } catch (Exception e) {
                 LOGGER.error("Failed to deserialize block state from string: {}", k, e);
                 return Blocks.AIR.defaultBlockState();
@@ -255,12 +254,12 @@ public final class BlockUtils {
 
     @Nullable
     public static Block getBlockFromRegistry(String blockId) {
-        ResourceLocation location = Identifier.id().parse(blockId);
+        Identifier location = xin.vanilla.banira.Identifier.id().parse(blockId);
         return getBlockFromRegistry(location);
     }
 
     @Nullable
-    public static Block getBlockFromRegistry(@Nullable ResourceLocation location) {
+    public static Block getBlockFromRegistry(@Nullable Identifier location) {
         if (location == null) {
             return null;
         }
@@ -285,9 +284,9 @@ public final class BlockUtils {
     }
 
     /**
-     * 根据 {@link ResourceLocation} 得到默认 {@link BlockState}
+     * 根据 {@link Identifier} 得到默认 {@link BlockState}
      */
-    public static BlockState getDefaultBlockState(@Nullable ResourceLocation location) {
+    public static BlockState getDefaultBlockState(@Nullable Identifier location) {
         if (location == null) {
             return Blocks.AIR.defaultBlockState();
         }
@@ -317,12 +316,12 @@ public final class BlockUtils {
         if (allBlocksCache.isEmpty()) {
             synchronized (BlockUtils.class) {
                 if (allBlocksCache.isEmpty()) {
-                    Map<ResourceLocation, Block> byId = new LinkedHashMap<>();
+                    Map<Identifier, Block> byId = new LinkedHashMap<>();
                     for (Object value : Banira.platform().registryService().blocks()) {
                         if (!(value instanceof Block)) continue;
                         Block block = (Block) value;
                         if (block == null) continue;
-                        ResourceLocation rl = getBlockRegistry(block);
+                        Identifier rl = getBlockRegistry(block);
                         if (rl == null) rl = UNKNOWN_BLOCK;
                         byId.putIfAbsent(rl, block);
                     }

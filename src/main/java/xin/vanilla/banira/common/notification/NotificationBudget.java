@@ -60,7 +60,8 @@ public final class NotificationBudget {
     static Payload encodePrepared(Component copy, String language, RegistryAccess registries) {
         Objects.requireNonNull(registries, "registries");
         String componentJson = componentJson(copy, registries);
-        String vanillaJson = net.minecraft.network.chat.Component.Serializer.toJson(copy.toChat(language), registries);
+        String vanillaJson = ComponentSerialization.CODEC.encodeStart(
+                registries.createSerializationContext(JsonOps.INSTANCE), copy.toChat(language)).getOrThrow().toString();
         // Measure the conservative common budget again after native translation/formatting.
         validateUtf8(vanillaJson, MAX_COMPONENT_JSON_BYTES, "vanilla component JSON");
         Payload payload = new Payload(componentJson, vanillaJson, registries);
@@ -84,8 +85,9 @@ public final class NotificationBudget {
         // Component.clone copies Banira children/args, but shares native objects.
         // toChat can rewrite their styles and append siblings in place.
         if (copy.original() instanceof net.minecraft.network.chat.Component) {
-            copy.original(net.minecraft.network.chat.Component.Serializer.fromJson(
-                    net.minecraft.network.chat.Component.Serializer.toJson((net.minecraft.network.chat.Component) copy.original(), registries), registries));
+            var ops = registries.createSerializationContext(JsonOps.INSTANCE);
+            copy.original(ComponentSerialization.CODEC.parse(ops, ComponentSerialization.CODEC.encodeStart(
+                    ops, (net.minecraft.network.chat.Component) copy.original()).getOrThrow()).getOrThrow());
         }
         if (copy.hoverEvent() != null) {
             var ops = registries.createSerializationContext(JsonOps.INSTANCE);
@@ -132,7 +134,8 @@ public final class NotificationBudget {
         }
 
         public net.minecraft.network.chat.Component vanillaMessage() {
-            return net.minecraft.network.chat.Component.Serializer.fromJson(vanillaJson, registries);
+            return ComponentSerialization.CODEC.parse(registries.createSerializationContext(JsonOps.INSTANCE),
+                    JsonUtils.parseElement(vanillaJson)).getOrThrow();
         }
     }
 }

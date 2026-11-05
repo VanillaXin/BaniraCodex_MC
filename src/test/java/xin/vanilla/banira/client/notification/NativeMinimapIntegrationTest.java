@@ -47,7 +47,7 @@ public class NativeMinimapIntegrationTest {
     @Test
     public void atlasCapturesNativeTextCoordinatesWithoutLocalVariables() throws Exception {
         ClassNode node = read("internal/mixin/compat/minimap/MapAtlasesNotificationMixin");
-        assertTrue(node.methods.stream().anyMatch(m -> m.name.equals("banira$appendUnread") && m.desc.startsWith("(Lnet/minecraft/client/gui/GuiGraphics;IILpepjebs/mapatlases/client/Anchoring;")));
+        assertTrue(node.methods.stream().anyMatch(m -> m.name.equals("banira$appendUnread") && m.desc.startsWith("(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IILpepjebs/mapatlases/client/Anchoring;")));
         assertTrue(node.fields.stream().anyMatch(f -> f.name.equals("globalScale") && f.desc.equals("F")));
     }
 }

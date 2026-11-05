@@ -1,12 +1,12 @@
 package xin.vanilla.banira.internal.compat.aui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.effect.MobEffectInstance;
-import org.lwjgl.opengl.GL11;
+import xin.vanilla.banira.client.util.ExtractedGuiRenderer;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
@@ -37,18 +37,15 @@ public final class AuiGameElements {
         return iconBounds(slot, 16, slot.width() >= 20 && slot.height() >= 20 ? 2 : 0);
     }
 
-    public static void renderElement(GuiGraphics graphics, xin.vanilla.banira.api.client.ui.UiGameElement element,
+    public static void renderElement(GuiGraphicsExtractor graphics, xin.vanilla.banira.api.client.ui.UiGameElement element,
                                      ScreenCoordinate bounds, ScreenCoordinate clip, xin.vanilla.banira.client.data.BaniraColorConfig theme) {
         if (element == null || bounds.width() <= 0 || bounds.height() <= 0 || bounds.x() >= clip.x() + clip.width()
                 || bounds.y() >= clip.y() + clip.height() || bounds.x() + bounds.width() <= clip.x() || bounds.y() + bounds.height() <= clip.y())
             return;
-        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
-        graphics.flush();
+        NativeGuiGraphics.bind(graphics);
         graphics.enableScissor((int) Math.max(bounds.x(), clip.x()), (int) Math.max(bounds.y(), clip.y()),
                 (int) Math.ceil(Math.min(bounds.x() + bounds.width(), clip.x() + clip.width())), (int) Math.ceil(Math.min(bounds.y() + bounds.height(), clip.y() + clip.height())));
-        // Scissor changes may flush GuiGraphics and re-enable depth testing.
-        RenderSystem.disableDepthTest();
-        try {
+        try (var scope = ExtractedGuiRenderer.bind(graphics)) {
             switch (element.kind()) {
                 case SPRITE:
                     ImageWidget.blitBlend(graphics.pose(), element.option().texture()[0],
@@ -69,10 +66,7 @@ public final class AuiGameElements {
                     break;
             }
         } finally {
-            graphics.flush();
             graphics.disableScissor();
-            if (depth) RenderSystem.enableDepthTest();
-            else RenderSystem.disableDepthTest();
         }
     }
 
@@ -102,7 +96,8 @@ public final class AuiGameElements {
 
         public net.minecraft.network.chat.Style styleAt(ScreenCoordinate bounds, ScreenCoordinate clip, double x, double y) {
             int index = lineAt(bounds, clip, x, y, Minecraft.getInstance().font.lineHeight, lines.size());
-            return index < 0 ? null : Minecraft.getInstance().font.getSplitter().componentStyleAtWidth(lines.get(index), (int) (x - bounds.x()));
+            return index < 0 ? null : xin.vanilla.banira.client.util.NativeTextHit.styleAt(
+                    Minecraft.getInstance().font.getSplitter(), lines.get(index), (int) (x - bounds.x()));
         }
     }
 
@@ -114,50 +109,42 @@ public final class AuiGameElements {
         return index >= 0 && index < lines ? index : -1;
     }
 
-    public static void renderText(GuiGraphics graphics, TextLayout layout, ScreenCoordinate bounds, ScreenCoordinate clip) {
+    public static void renderText(GuiGraphicsExtractor graphics, TextLayout layout, ScreenCoordinate bounds, ScreenCoordinate clip) {
         if (layout == null || bounds.width() <= 0 || bounds.height() <= 0) return;
-        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
-        graphics.flush();
         graphics.enableScissor((int) clip.x(), (int) clip.y(), (int) Math.ceil(clip.x() + clip.width()), (int) Math.ceil(clip.y() + clip.height()));
-        RenderSystem.disableDepthTest();
         try {
             int lineHeight = Minecraft.getInstance().font.lineHeight;
             int first = Math.max(0, (int) Math.floor((clip.y() - bounds.y()) / lineHeight));
             int last = Math.min(layout.lines.size(), (int) Math.ceil((clip.y() + clip.height() - bounds.y()) / lineHeight));
-            for (int index = first; index < last; index++)
-                Minecraft.getInstance().font.drawInBatch(
-                        layout.lines.get(index), (float) bounds.x(), (float) bounds.y() + index * lineHeight, 0xff24272c, false,
-                        graphics.pose().last().pose(), graphics.bufferSource(), net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        } finally {
-            try {
-                graphics.flush();
-            } finally {
+            for (int index = first; index < last; index++) {
+                graphics.pose().pushMatrix();
                 try {
-                    graphics.disableScissor();
+                    graphics.pose().translate((float) bounds.x(), (float) bounds.y() + index * lineHeight);
+                    graphics.text(Minecraft.getInstance().font, layout.lines.get(index), 0, 0, 0xff24272c, false);
                 } finally {
-                    if (depth) RenderSystem.enableDepthTest();
-                    else RenderSystem.disableDepthTest();
+                    graphics.pose().popMatrix();
                 }
             }
+        } finally {
+            graphics.disableScissor();
         }
     }
 
-    public static void renderEffect(GuiGraphics graphics, MobEffectInstance effect, ScreenCoordinate bounds) {
+    public static void renderEffect(GuiGraphicsExtractor graphics, MobEffectInstance effect, ScreenCoordinate bounds) {
+        NativeGuiGraphics.bind(graphics);
         if (effect != null && bounds.width() > 0 && bounds.height() > 0)
             EffectIconWidget.drawEffectIcon(graphics.pose(), effect, bounds.xInt(), bounds.yInt(), bounds.widthInt(), bounds.heightInt(), false);
     }
 
-    public static void renderOption(GuiGraphics graphics, DropdownOption option, ScreenCoordinate bounds,
+    public static void renderOption(GuiGraphicsExtractor graphics, DropdownOption option, ScreenCoordinate bounds,
                                     ScreenCoordinate clip) {
         if (option == null || !option.hasIcon() || bounds.width() <= 0 || bounds.height() <= 0) return;
         if (clip != null && (bounds.y() + bounds.height() <= clip.y() || bounds.y() >= clip.y() + clip.height()))
             return;
-        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
-        graphics.flush();
+        NativeGuiGraphics.bind(graphics);
         if (clip != null) graphics.enableScissor((int) clip.x(), (int) clip.y(),
                 (int) Math.ceil(clip.x() + clip.width()), (int) Math.ceil(clip.y() + clip.height()));
-        RenderSystem.disableDepthTest();
-        try {
+        try (var scope = ExtractedGuiRenderer.bind(graphics)) {
             ScreenCoordinate icon = compactIcon(bounds);
             int size = icon.widthInt(), x = icon.xInt(), y = icon.yInt();
             if (size == 0) return;
@@ -166,10 +153,7 @@ public final class AuiGameElements {
                     ImageWidget.blitBlend(graphics.pose(), texture, x, y, size, size);
             } else ItemWidget.renderGuiItemScaled(graphics, option.icon(), x, y, size);
         } finally {
-            graphics.flush();
             if (clip != null) graphics.disableScissor();
-            if (depth) RenderSystem.enableDepthTest();
-            else RenderSystem.disableDepthTest();
         }
     }
 }

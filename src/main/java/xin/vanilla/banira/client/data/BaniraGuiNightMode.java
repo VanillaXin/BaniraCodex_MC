@@ -61,7 +61,7 @@ public final class BaniraGuiNightMode {
     private static boolean autoNight() {
         net.minecraft.world.level.Level level = BaniraClientRuntime.level();
         if (level != null) {
-            long t = level.getDayTime() % 24000L;
+            long t = level.getDefaultClockTime() % 24000L;
             return t >= 13000L && t < 23000L;
         }
         LocalTime now = LocalTime.now();

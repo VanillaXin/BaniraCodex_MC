@@ -12,7 +12,7 @@ public final class ServerPermissionAccess {
 
     public static boolean hasPermission(Object player, int permissionLevel) {
         ServerPlayer serverPlayer = asServerPlayer(player);
-        return serverPlayer != null && serverPlayer.createCommandSourceStack().hasPermission(permissionLevel);
+        return serverPlayer != null && NativePermissionLevels.has(serverPlayer.permissions(), permissionLevel);
     }
 
     public static boolean hasVirtualPermission(Object player, String fullPermissionKey) {

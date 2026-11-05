@@ -132,7 +132,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
     }
 
     public String dimensionId() {
-        return dimension.location().toString();
+        return dimension.identifier().toString();
     }
 
     // endregion Getters
@@ -279,7 +279,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         tag.putDouble("z", z);
         tag.putDouble("yaw", yaw);
         tag.putDouble("pitch", pitch);
-        tag.putString("dimension", dimension.location().toString());
+        tag.putString("dimension", dimension.identifier().toString());
         return tag;
     }
 
@@ -288,12 +288,12 @@ public class WorldCoordinate implements Serializable, Cloneable {
      */
     public static WorldCoordinate fromTag(CompoundTag tag) {
         WorldCoordinate coordinate = new WorldCoordinate();
-        coordinate.x = tag.getDouble("x");
-        coordinate.y = tag.getDouble("y");
-        coordinate.z = tag.getDouble("z");
-        coordinate.yaw = tag.getDouble("yaw");
-        coordinate.pitch = tag.getDouble("pitch");
-        coordinate.dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(tag.getString("dimension")));
+        coordinate.x = tag.getDoubleOr("x", 0.0);
+        coordinate.y = tag.getDoubleOr("y", 0.0);
+        coordinate.z = tag.getDoubleOr("z", 0.0);
+        coordinate.yaw = tag.getDoubleOr("yaw", 0.0);
+        coordinate.pitch = tag.getDoubleOr("pitch", 0.0);
+        coordinate.dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(tag.getStringOr("dimension", "")));
         return coordinate;
     }
 
@@ -315,7 +315,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         JsonUtils.set(json, "z", z);
         JsonUtils.set(json, "yaw", yaw);
         JsonUtils.set(json, "pitch", pitch);
-        JsonUtils.set(json, "dimension", dimension.location().toString());
+        JsonUtils.set(json, "dimension", dimension.identifier().toString());
         return json;
     }
 
@@ -336,7 +336,7 @@ public class WorldCoordinate implements Serializable, Cloneable {
         coordinate.z = JsonUtils.getDouble(json, "z", 0);
         coordinate.yaw = JsonUtils.getDouble(json, "yaw", 0);
         coordinate.pitch = JsonUtils.getDouble(json, "pitch", 0);
-        String dimensionStr = JsonUtils.getString(json, "dimension", Level.OVERWORLD.location().toString());
+        String dimensionStr = JsonUtils.getString(json, "dimension", Level.OVERWORLD.identifier().toString());
         coordinate.dimension = ResourceKey.create(Registries.DIMENSION, Identifier.id().parse(dimensionStr));
         return coordinate;
     }

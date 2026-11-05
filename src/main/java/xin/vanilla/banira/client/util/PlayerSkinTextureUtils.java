@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.PlayerUtils;
@@ -19,7 +19,7 @@ public final class PlayerSkinTextureUtils {
      * 返回脸部底层与帽子外层纹理。
      */
     @Nullable
-    public static Texture[] headFaceTextures(@Nullable ResourceLocation skin) {
+    public static Texture[] headFaceTextures(@Nullable Identifier skin) {
         if (skin == null) {
             return null;
         }

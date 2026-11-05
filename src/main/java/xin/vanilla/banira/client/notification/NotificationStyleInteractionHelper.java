@@ -1,10 +1,8 @@
 package xin.vanilla.banira.client.notification;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.Util;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -19,7 +17,8 @@ import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
-import java.net.URI;
+import xin.vanilla.banira.internal.client.InputStateManager;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -34,56 +33,42 @@ public final class NotificationStyleInteractionHelper {
             return false;
         }
         Screen screen = mc.screen;
-        if (screen != null) {
-            return screen.handleComponentClicked(style);
-        }
+        if (screen != null) return ClickBridge.handle(mc, screen, style.getClickEvent());
         return handleClickInGame(mc, style.getClickEvent());
     }
 
     private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
-        if (Screen.hasShiftDown()) {
+        if (InputStateManager.isKeyPressing(GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputStateManager.isKeyPressing(GLFW.GLFW_KEY_RIGHT_SHIFT)) {
             return false;
         }
-        switch (event.getAction()) {
-            case OPEN_URL:
-                if (!mc.options.chatLinks().get()) {
-                    return false;
-                }
-                try {
-                    URI uri = new URI(event.getValue());
-                    Util.getPlatform().openUri(uri);
-                    return true;
-                } catch (Exception ignored) {
-                    return false;
-                }
-            case RUN_COMMAND:
-                if (mc.player == null) {
-                    return false;
-                }
-                String cmd = event.getValue();
-                if (!cmd.startsWith("/")) {
-                    cmd = "/" + cmd;
-                }
-                String commandLine = cmd.startsWith("/") ? cmd.substring(1) : cmd;
-                if (!mc.player.connection.sendUnsignedCommand(commandLine)) {
-                    mc.player.connection.sendCommand(commandLine);
-                }
+        return ClickBridge.handle(mc, null, event);
+    }
+
+    private abstract static class ClickBridge extends Screen {
+        private ClickBridge() { super(Component.empty()); }
+
+        private static boolean handle(Minecraft mc, Screen screen, ClickEvent event) {
+            if (event instanceof ClickEvent.OpenUrl url) {
+                return mc.options.chatLinks().get() && clickUrlAction(mc, screen, url.uri());
+            }
+            if (event instanceof ClickEvent.RunCommand) {
+                if (mc.player == null) return false;
+                defaultHandleClickEvent(event, mc, screen);
                 return true;
-            case SUGGEST_COMMAND:
-                mc.setScreen(new ChatScreen(event.getValue()));
+            }
+            if (event instanceof ClickEvent.SuggestCommand || event instanceof ClickEvent.CopyToClipboard) {
+                defaultHandleClickEvent(event, mc, screen);
                 return true;
-            case COPY_TO_CLIPBOARD:
-                mc.keyboardHandler.setClipboard(event.getValue());
-                return true;
-            default:
-                return false;
+            }
+            return false;
         }
     }
 
     /**
-     * @param screenW screenH 预留与布局相关扩展，当前由 {@link GuiGraphics} 自行处理提示框位置
+     * @param screenW screenH 预留与布局相关扩展，当前由 {@link GuiGraphicsExtractor} 自行处理提示框位置
      */
-    public static void renderHoverTooltip(GuiGraphics graphics, int mouseX, int mouseY, int screenW, int screenH, Style style) {
+    public static void renderHoverTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int screenW, int screenH, Style style) {
         if (style == null) {
             return;
         }
@@ -91,33 +76,33 @@ public final class NotificationStyleInteractionHelper {
         if (hover == null) {
             return;
         }
-        if (hover.getAction() != HoverEvent.Action.SHOW_TEXT) {
+        if (!(hover instanceof HoverEvent.ShowText showText)) {
             return;
         }
-        Component tip = hover.getValue(HoverEvent.Action.SHOW_TEXT);
+        Component tip = showText.value();
         if (tip == null) {
             return;
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = graphics.pose();
         Minecraft mc = Minecraft.getInstance();
         BaniraColorConfig theme = ClientThemeManager.getEffectiveTheme();
         renderTextTooltip(stack, mouseX, mouseY, BaniraComponent.get().object(tip), theme);
     }
 
-    public static void renderTextTooltip(PoseStack stack, int mouseX, int mouseY,
+    public static void renderTextTooltip(Matrix3x2fStack stack, int mouseX, int mouseY,
                                          xin.vanilla.banira.common.data.Component component, BaniraColorConfig theme) {
         Screen screen = Minecraft.getInstance().screen;
         EnumSeason season = screen instanceof BaniraScreen ? ((BaniraScreen) screen).season() : EnumSeason.AUTO;
         Text tipText = new Text(component);
 
-        stack.pushPose();
-        stack.last().pose().identity();
+        stack.pushMatrix();
+        stack.identity();
         try {
             TooltipWidget.drawPopupMessage(stack,
                     FontDrawArgs.ofPopo(tipText.stack(stack).font(Minecraft.getInstance().font)).x(mouseX).y(mouseY).popupUseTexture(theme.tooltipUseTexture()),
                     theme, season);
         } finally {
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 
@@ -129,9 +114,9 @@ public final class NotificationStyleInteractionHelper {
             return null;
         }
         HoverEvent hover = style.getHoverEvent();
-        if (hover == null || hover.getAction() != HoverEvent.Action.SHOW_TEXT) {
+        if (!(hover instanceof HoverEvent.ShowText showText)) {
             return null;
         }
-        return hover.getValue(HoverEvent.Action.SHOW_TEXT);
+        return showText.value();
     }
 }

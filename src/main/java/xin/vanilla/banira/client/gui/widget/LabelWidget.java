@@ -1,13 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -117,8 +119,8 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -142,7 +144,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     /**
      * 当前标签在给定宽度与换行/省略设置下是否发生了可见截断。
      */
-    private boolean isLabelTextTruncated(PoseStack stack) {
+    private boolean isLabelTextTruncated(Matrix3x2fStack stack) {
         int mw = (int) width();
         if (mw <= 0 || StringUtils.isNullOrEmpty(text.content())) {
             return false;
@@ -155,7 +157,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         return wNatural > wFitted;
     }
 
-    private void maybeDeferTooltip(PoseStack stack) {
+    private void maybeDeferTooltip(Matrix3x2fStack stack) {
         if (screen == null || !enabled) {
             return;
         }
@@ -185,13 +187,13 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         int mouseX = (int) mx;
         int mouseY = (int) my;
         screen.addDeferredTooltipRender(graphics -> {
-            PoseStack s = graphics.pose();
-            s.pushPose();
-            s.last().pose().identity();
+            Matrix3x2fStack s = NativeGuiGraphics.bind(graphics);
+            s.pushMatrix();
+            s.identity();
             TooltipWidget.drawPopupMessage(s,
                     FontDrawArgs.ofPopo(deferredText.stack(s).font(fontForTip)).x(mouseX).y(mouseY).popupUseTexture(useTexture),
                     theme, tipSeason);
-            s.popPose();
+            s.popMatrix();
         });
     }
 
@@ -278,7 +280,7 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
             return;
         }
 
-        PoseStack stack = text.stack();
+        Matrix3x2fStack stack = text.stack();
         if (args.bgArgb() != 0) {
             int bgX = (int) args.x();
             int bgY = (int) args.y();
@@ -297,9 +299,9 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         double drawY = layout.drawY;
         boolean needsScale = Math.abs(layout.scale - 1.0f) > 0.001f;
         if (needsScale) {
-            stack.pushPose();
-            stack.translate(drawX, drawY, 0);
-            stack.scale(layout.scale, layout.scale, 1.0f);
+            stack.pushMatrix();
+            stack.translate((float) (drawX), (float) (drawY));
+            stack.scale(layout.scale, layout.scale);
             drawX = 0;
             drawY = 0;
         }
@@ -346,12 +348,12 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
         }
 
         if (needsScale) {
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 
-    public static void drawLimitedText(@Nonnull GuiGraphics graphics, @Nonnull FontDrawArgs args) {
-        GuiGraphics previous = args.guiGraphics();
+    public static void drawLimitedText(@Nonnull GuiGraphicsExtractor graphics, @Nonnull FontDrawArgs args) {
+        GuiGraphicsExtractor previous = args.guiGraphics();
         args.guiGraphics(graphics);
         try {
             drawLimitedText(args);
@@ -363,15 +365,15 @@ public class LabelWidget extends BaseWidget implements ITextWidget {
     private static void drawComponentLine(FontDrawArgs args, Font font,
                                           net.minecraft.network.chat.Component text,
                                           float x, float y, int color, boolean shadow) {
-        GuiGraphics graphics = args.guiGraphics();
+        GuiGraphicsExtractor graphics = args.guiGraphics();
         if (graphics != null) {
-            graphics.drawString(font, text, (int) x, (int) y, color, shadow);
+            NativeGuiGraphics.bind(graphics);
+            NativeGuiGraphics.text(args.text().stack(),
+                    font, text.getVisualOrderText(), x, y, color, shadow);
             return;
         }
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        font.drawInBatch(text.getVisualOrderText(), x, y, color, shadow,
-                args.text().stack().last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 15728880);
-        buffers.endBatch();
+        NativeGuiGraphics.text(args.text().stack(),
+                font, text.getVisualOrderText(), x, y, color, shadow);
     }
 
     private static TextLayout prepareTextLayout(@Nonnull FontDrawArgs args, boolean forDraw) {

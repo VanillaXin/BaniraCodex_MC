@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
@@ -86,6 +86,12 @@ public final class HudDrawList {
         return Collections.unmodifiableList(parts);
     }
 
+    List<Part> nativeRenderOrder() {
+        List<Part> ordered = new ArrayList<>(parts);
+        ordered.sort(Comparator.comparingDouble(part -> part.depth));
+        return ordered;
+    }
+
     public void clip(double x, double y, double width, double height) {
         clip = new ScreenCoordinate(x, y, width, height);
     }
@@ -124,16 +130,28 @@ public final class HudDrawList {
         add(new Part(Kind.UNREAD, x, y, 32, 22, 0, 0, count, null, null, false, null, clip, 0));
     }
 
-    public void renderNative(GuiGraphics graphics) {
+    public void renderNative(GuiGraphicsExtractor graphics) {
         renderContents(graphics, true);
     }
 
-    public void renderContents(GuiGraphics graphics, boolean nativeShells) {
-        for (Part part : parts) {
+    public void renderContents(GuiGraphicsExtractor graphics, boolean nativeShells) {
+        try (var scope = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(graphics)) {
+            renderBoundContents(graphics, nativeShells);
+        }
+    }
+
+    private void renderBoundContents(GuiGraphicsExtractor graphics, boolean nativeShells) {
+        NativeGuiGraphics.bind(graphics);
+        double previousDepth = Double.NaN;
+        for (Part part : nativeRenderOrder()) {
             if (part.kind == Kind.BOX && !nativeShells) continue;
             if (!nativeShells && quickActions != null && part.kind == Kind.TEXT) continue;
             if (!nativeShells && (part.kind == Kind.NOTIFICATION && part.notification.usesAuiLayout() || part.kind == Kind.UNREAD))
                 continue;
+            if (Double.compare(previousDepth, part.depth) != 0) {
+                graphics.nextStratum();
+                previousDepth = part.depth;
+            }
             List<ScreenCoordinate> regions = Collections.singletonList(part.clip);
             if (!nativeShells && quickActions != null && part.kind == Kind.ICON
                     && quickActions.occludes(new ScreenCoordinate(part.x, part.y, part.width, part.height), part.depth)) {
@@ -145,34 +163,44 @@ public final class HudDrawList {
                 if (region != null)
                     AbstractGuiUtils.pushScissor((int) region.x(), (int) region.y(), (int) region.width(), (int) region.height());
                 try {
-                    AbstractGuiUtils.renderByDepth(graphics.pose(), part.kind == Kind.NOTIFICATION ? 0 : (int) part.depth, stack -> {
-                        switch (part.kind) {
-                            case BOX:
-                                ShapeDrawArgs shape = ShapeDrawArgs.rect(stack, (float) part.x, (float) part.y, (float) part.width, (float) part.height, part.color);
-                                shape.rect().radius((float) part.radius).border((float) part.border);
-                                BaseShapeWidget.drawShape(shape);
-                                break;
-                            case TEXT:
-                                graphics.drawString(Minecraft.getInstance().font, part.text, (float) part.x, (float) part.y, part.color, false);
-                                break;
-                            case ICON:
-                                if (part.menuIcon)
-                                    part.icon.renderForMenu(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
-                                else
-                                    part.icon.render(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
-                                break;
-                            case NOTIFICATION:
-                                part.notification.paintPrepared(stack, new ScreenCoordinate(part.x, part.y, part.width, part.height), true);
-                                break;
-                            case UNREAD:
-                                xin.vanilla.banira.client.notification.NotificationUnreadHud.draw(graphics, (int) part.x, (int) part.y, part.color, unreadTheme);
-                                break;
-                        }
-                    });
+                    var stack = graphics.pose();
+                    switch (part.kind) {
+                        case BOX:
+                            ShapeDrawArgs shape = ShapeDrawArgs.rect(stack, (float) part.x, (float) part.y, (float) part.width, (float) part.height, part.color);
+                            shape.rect().radius((float) part.radius).border((float) part.border);
+                            BaseShapeWidget.drawShape(shape);
+                            break;
+                        case TEXT:
+                            drawText(graphics, part);
+                            break;
+                        case ICON:
+                            if (part.menuIcon)
+                                part.icon.renderForMenu(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
+                            else
+                                part.icon.render(graphics, Minecraft.getInstance(), (int) part.x, (int) part.y, (int) part.width);
+                            break;
+                        case NOTIFICATION:
+                            part.notification.paintPrepared(stack, new ScreenCoordinate(part.x, part.y, part.width, part.height), true);
+                            break;
+                        case UNREAD:
+                            xin.vanilla.banira.client.notification.NotificationUnreadHud.draw(graphics, (int) part.x, (int) part.y, part.color, unreadTheme);
+                            break;
+                    }
                 } finally {
                     if (region != null) AbstractGuiUtils.popScissor();
                 }
             }
+        }
+    }
+
+    private static void drawText(GuiGraphicsExtractor graphics, Part part) {
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        try {
+            pose.translate((float) (part.x), (float) (part.y));
+            graphics.text(Minecraft.getInstance().font, part.text, 0, 0, part.color, false);
+        } finally {
+            pose.popMatrix();
         }
     }
 }

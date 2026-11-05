@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.BaniraUi;
 import xin.vanilla.banira.api.client.ui.UiHudFrame;
@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
 
 public class UiManualHudTest {
     private UiHudFrame.Sprite sprite(String id) {
-        return new UiHudFrame.Sprite(id, ResourceLocation.fromNamespaceAndPath("aotake_sweep", "gui/" + id + ".png"), 30, 40, 20, 5, 90);
+        return new UiHudFrame.Sprite(id, Identifier.fromNamespaceAndPath("aotake_sweep", "gui/" + id + ".png"), 30, 40, 20, 5, 90);
     }
 
     private UiHudFrame.Text text(String time) {
@@ -134,7 +134,7 @@ public class UiManualHudTest {
         } catch (IllegalArgumentException expected) {
         }
         try {
-            new UiHudFrame.Sprite("leaf", ResourceLocation.fromNamespaceAndPath("a", "b"), Double.NaN, 0, 1, 1, 0);
+            new UiHudFrame.Sprite("leaf", Identifier.fromNamespaceAndPath("a", "b"), Double.NaN, 0, 1, 1, 0);
             fail();
         } catch (IllegalArgumentException expected) {
         }

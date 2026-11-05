@@ -22,7 +22,6 @@ tasks.named('shadowJar').configure {
     relocate 'org.codehaus.janino', 'xin.vanilla.banira.internal.shaded.janino'
     relocate 'org.codehaus.commons', 'xin.vanilla.banira.internal.shaded.commons'
     mergeServiceFiles()
-    manifest.inheritFrom(tasks.jar.manifest)
 }
 tasks.named('assemble').configure { dependsOn 'shadowJar' }
 tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.minimap;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 
 public class JourneyMapSupplierIsolationTest {
     private MinimapLine line(String name, java.util.function.Supplier<EnumNotificationHudHost> host) {
-        return new MinimapLine(ResourceLocation.fromNamespaceAndPath("isolation", name), Component.literal(name), () -> Component.literal(name), host, 200);
+        return new MinimapLine(Identifier.fromNamespaceAndPath("isolation", name), Component.literal(name), () -> Component.literal(name), host, 200);
     }
     private List<String> slots(MinimapLine broken, MinimapLine healthy) throws Exception {
         Class<?> plugin = Class.forName("xin.vanilla.banira.internal.neoforge.compat.minimap.JourneyMapNotificationPlugin");

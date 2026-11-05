@@ -1,6 +1,6 @@
 package xin.vanilla.banira.client.minimap;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
@@ -41,9 +41,9 @@ public class MinimapLineRegistryTest {
     }
 
     private Object line(String id, int order, EnumNotificationHudHost host, Supplier<Component> text) throws Exception {
-        return type(LINE).getConstructor(ResourceLocation.class, Component.class,
+        return type(LINE).getConstructor(Identifier.class, Component.class,
                 Supplier.class, Supplier.class, int.class).newInstance(
-                ResourceLocation.fromNamespaceAndPath("fixture", id), net.minecraft.network.chat.Component.literal(id), text,
+                Identifier.fromNamespaceAndPath("fixture", id), net.minecraft.network.chat.Component.literal(id), text,
                 (Supplier<EnumNotificationHudHost>) () -> host, order);
     }
 
@@ -190,7 +190,7 @@ public class MinimapLineRegistryTest {
         call(registry, "register", line("a", 1, XAERO, () -> net.minecraft.network.chat.Component.literal(text.get())));
         call(registry, "register", line("elsewhere", 2, EnumNotificationHudHost.JOURNEYMAP,
                 () -> net.minecraft.network.chat.Component.literal("elsewhere")));
-        assertEquals(Arrays.asList(ResourceLocation.fromNamespaceAndPath("fixture", "a")), call(registry, "requestedIds", XAERO));
+        assertEquals(Arrays.asList(Identifier.fromNamespaceAndPath("fixture", "a")), call(registry, "requestedIds", XAERO));
         assertTrue(snapshot(registry, XAERO, 0L).isEmpty());
         text.set("");
         assertEquals(new ArrayList<>(), call(registry, "requestedIds", XAERO));

@@ -10,8 +10,7 @@ import static org.junit.Assert.*;
 public class WorldCoordinateBlockGeometryTest {
     @BeforeClass
     public static void bootstrap() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     @Test

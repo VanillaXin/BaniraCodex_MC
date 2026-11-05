@@ -26,7 +26,7 @@ public class UiNotificationHudPresentationTest {
 
     @Test
     public void visualRunsRetainUnicodeAndOriginalActionWithoutHtmlParsing() {
-        Style action = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/list"));
+        Style action = Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand("/list"));
         FormattedCharSequence sequence = FormattedCharSequence.composite(
                 FormattedCharSequence.forward("<tag> ", Style.EMPTY),
                 FormattedCharSequence.forward("\ud83c\udf38 action", action));
@@ -62,7 +62,7 @@ public class UiNotificationHudPresentationTest {
         var field = unsafeType.getDeclaredField("theUnsafe");
         field.setAccessible(true);
         Notification n = (Notification) unsafeType.getMethod("allocateInstance", Class.class).invoke(field.get(null), Notification.class);
-        Style action = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/list"));
+        Style action = Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand("/list"));
         n.auiHitLayout(new ScreenCoordinate(0, 0, 120, 40), new ScreenCoordinate(105, 4, 11, 11),
                 new ScreenCoordinate(6, 18, 108, 18), List.of(new Notification.TextHit(new ScreenCoordinate(20, 18, 30, 10), action)));
         assertSame(action, n.styleAtTextPoint(25, 22));
@@ -89,7 +89,7 @@ public class UiNotificationHudPresentationTest {
         var aui = Notification.class.getDeclaredField("auiLayout");
         aui.setAccessible(true);
         aui.setBoolean(n, true);
-        Style action = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/list"));
+        Style action = Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand("/list"));
         n.richDrawLines(List.of(FormattedCharSequence.composite(FormattedCharSequence.forward("Literal <b>", Style.EMPTY),
                 FormattedCharSequence.forward(" /list", action))));
         var dom = new UiDomControlsTest.Dom();
@@ -155,7 +155,8 @@ public class UiNotificationHudPresentationTest {
     @Test
     public void unsupportedVanillaTextFormattingSelectsPerNotificationFallback() {
         for (Style style : List.of(Style.EMPTY.withObfuscated(true), Style.EMPTY.withStrikethrough(true),
-                Style.EMPTY.withFont(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("test", "font")))) {
+                Style.EMPTY.withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath("test", "font"))))) {
             assertFalse(xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(List.of(FormattedCharSequence.forward("action", style))));
         }
         assertTrue(xin.vanilla.banira.client.notification.NotificationBubbleLayout.supports(List.of(

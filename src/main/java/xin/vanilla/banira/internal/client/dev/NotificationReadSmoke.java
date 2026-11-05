@@ -1,8 +1,6 @@
 package xin.vanilla.banira.internal.client.dev;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.NotificationLogEntry;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
@@ -33,11 +31,13 @@ final class NotificationReadSmoke {
     private static Notification bubble;
     private static NotificationLogScreen screen;
     private static long selectedId;
+    private static boolean screenshotRequested;
 
     private NotificationReadSmoke() {
     }
 
     static boolean tick(Minecraft client) throws Exception {
+        if (!SmokeScreenshotCapture.ready()) return false;
         if (finished) return true;
         NotificationManager manager = NotificationManager.get();
         if ("phase-two".equals(BaniraNetworkSmokeStatus.phase())) {
@@ -94,7 +94,7 @@ final class NotificationReadSmoke {
             case 40:
                 require(selectedId == selectedEntry().id(), "incoming record changed the selected detail");
                 require(manager.unreadCount() == 2, "live refresh changed unread state");
-                screen.resize(client, screen.width, screen.height);
+                screen.resize(screen.width, screen.height);
                 require(selectedId == selectedEntry().id(), "resizing history changed the selected detail");
                 require(manager.tryHandleHudClick(bubble.closeBtnLeft() + 2, bubble.closeBtnTop() + 2, 0),
                         "close control was not clickable");
@@ -106,7 +106,12 @@ final class NotificationReadSmoke {
                     require(!((List<?>) group).contains(muted), "muted bubble was queued");
                 break;
             case 60:
-                screenshot(client);
+                if (!screenshotRequested) {
+                    screenshot(client);
+                    screenshotRequested = true;
+                    ticks--;
+                    return false;
+                }
                 ButtonWidget allRead = (ButtonWidget) field(screen, "markAllReadButton");
                 click(screen, allRead.bounds().x() + 12, allRead.bounds().y() + 10);
                 require(manager.unreadCount() == 0, "mark-all button failed");
@@ -156,9 +161,7 @@ final class NotificationReadSmoke {
         Path status = Paths.get(System.getProperty("banira.networkSmoke.status"));
         Path output = status.getParent().resolve("notification-history-read.png");
         Files.createDirectories(output.getParent());
-        try (NativeImage image = Screenshot.takeScreenshot(client.getMainRenderTarget())) {
-            image.writeToFile(output);
-        }
+        SmokeScreenshotCapture.capture(output);
     }
 
     private static void require(boolean condition, String message) {

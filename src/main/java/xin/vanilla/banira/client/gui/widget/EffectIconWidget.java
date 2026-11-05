@@ -1,17 +1,19 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffectInstance;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
+
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -75,8 +77,8 @@ public class EffectIconWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) return;
         if (renderCoordinate == null) return;
 
@@ -101,11 +103,11 @@ public class EffectIconWidget extends BaseWidget {
         }
     }
 
-    private void renderTooltip(GuiGraphics graphics, PoseStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
+    private void renderTooltip(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int mouseX, int mouseY, MobEffectInstance effectInstance) {
         String tip = tooltipString(effectInstance);
         if (!tip.isEmpty()) {
-            stack.pushPose();
-            stack.translate(-absoluteX(), -absoluteY(), 0);
+            stack.pushMatrix();
+            stack.translate((float) (-absoluteX()), (float) (-absoluteY()));
             if (screen != null) {
                 if (seasonTooltip) {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
@@ -115,10 +117,10 @@ public class EffectIconWidget extends BaseWidget {
                                     .popupUseTexture(theme.tooltipUseTexture()),
                             theme, screen.season());
                 } else {
-                    graphics.renderTooltip(screen.getFont(), vanillaTooltip(tip), mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(screen.getFont(), vanillaTooltip(tip), mouseX, mouseY);
                 }
             }
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 
@@ -195,21 +197,9 @@ public class EffectIconWidget extends BaseWidget {
     }
 
 
-    private static void drawEffectIconText(Font font, PoseStack stack, net.minecraft.network.chat.Component vanilla, float x, float y, int color) {
-        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-        font.drawInBatch(
-                vanilla.getVisualOrderText(),
-                x,
-                y,
-                color,
-                false,
-                stack.last().pose(),
-                bufferSource,
-                Font.DisplayMode.NORMAL,
-                0,
-                15728880
-        );
-        bufferSource.endBatch();
+    private static void drawEffectIconText(Font font, Matrix3x2fStack stack, net.minecraft.network.chat.Component vanilla, float x, float y, int color) {
+        NativeGuiGraphics.text(stack,
+                font, vanilla.getVisualOrderText(), x, y, color, false);
     }
 
     /**
@@ -222,7 +212,7 @@ public class EffectIconWidget extends BaseWidget {
      * @param height         目标矩形的高度，决定了图像在屏幕上的高度
      * @param showText       是否显示效果等级和持续时间
      */
-    public static void drawEffectIcon(PoseStack stack, MobEffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
+    public static void drawEffectIcon(Matrix3x2fStack stack, MobEffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
         drawEffectIcon(stack, AbstractGuiUtils.getFont(), effectInstance, x, y, width, height, showText);
     }
 
@@ -236,8 +226,8 @@ public class EffectIconWidget extends BaseWidget {
      * @param height         目标矩形的高度，决定了图像在屏幕上的高度
      * @param showText       是否显示效果等级和持续时间
      */
-    public static void drawEffectIcon(PoseStack stack, Font font, MobEffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
-        ResourceLocation effectIcon = TextureUtils.getEffectTexture(Identifier.id(), effectInstance);
+    public static void drawEffectIcon(Matrix3x2fStack stack, Font font, MobEffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
+        Identifier effectIcon = TextureUtils.getEffectTexture(xin.vanilla.banira.Identifier.id(), effectInstance);
         if (effectIcon != null) {
             AbstractGuiUtils.blit(stack, effectIcon, x, y, 0, 0, width, height, width, height);
         }
@@ -259,13 +249,13 @@ public class EffectIconWidget extends BaseWidget {
                 float fontX = x + (width - durationWidth * scale) / 2;
                 float fontY = y + height - font.lineHeight * scale;
                 int argb = 0xFFFFFFFF;
-                stack.pushPose();
+                stack.pushMatrix();
                 try {
-                    stack.translate(fontX, fontY, 0);
-                    stack.scale(scale, scale, 1);
+                    stack.translate((float) (fontX), (float) (fontY));
+                    stack.scale(scale, scale);
                     drawEffectIconText(font, stack, durationString.color(Color.argb(argb)).toVanilla(), 0, 0, argb);
                 } finally {
-                    stack.popPose();
+                    stack.popMatrix();
                 }
             }
         }
@@ -279,7 +269,7 @@ public class EffectIconWidget extends BaseWidget {
      * @param y              矩形的左上角y坐标
      * @param showText       是否显示效果等级和持续时间
      */
-    public static void drawEffectIcon(PoseStack stack, MobEffectInstance effectInstance, int x, int y, boolean showText) {
+    public static void drawEffectIcon(Matrix3x2fStack stack, MobEffectInstance effectInstance, int x, int y, boolean showText) {
         drawEffectIcon(stack, AbstractGuiUtils.getFont(), effectInstance, x, y, showText);
     }
 
@@ -291,7 +281,7 @@ public class EffectIconWidget extends BaseWidget {
      * @param y              矩形的左上角y坐标
      * @param showText       是否显示效果等级和持续时间
      */
-    public static void drawEffectIcon(PoseStack stack, Font font, MobEffectInstance effectInstance, int x, int y, boolean showText) {
+    public static void drawEffectIcon(Matrix3x2fStack stack, Font font, MobEffectInstance effectInstance, int x, int y, boolean showText) {
         drawEffectIcon(stack, font, effectInstance, x, y, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE, showText);
     }
 }

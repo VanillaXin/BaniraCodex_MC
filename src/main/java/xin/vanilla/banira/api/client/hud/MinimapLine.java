@@ -1,6 +1,6 @@
 package xin.vanilla.banira.api.client.hud;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
@@ -8,13 +8,13 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class MinimapLine {
-    private final ResourceLocation id;
+    private final Identifier id;
     private final Component displayName;
     private final Supplier<Component> text;
     private final Supplier<EnumNotificationHudHost> host;
     private final int order;
 
-    public MinimapLine(ResourceLocation id, Component displayName, Supplier<Component> text,
+    public MinimapLine(Identifier id, Component displayName, Supplier<Component> text,
                        Supplier<EnumNotificationHudHost> host, int order) {
         this.id = Objects.requireNonNull(id, "id");
         this.displayName = Objects.requireNonNull(displayName, "displayName").copy();
@@ -23,7 +23,7 @@ public final class MinimapLine {
         this.order = order;
     }
 
-    public ResourceLocation id() {
+    public Identifier id() {
         return id;
     }
 

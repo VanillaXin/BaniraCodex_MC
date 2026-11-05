@@ -142,7 +142,7 @@ public final class BaniraNetworkSmokeServerRunner {
         BaniraNetworkSmokeStatus.append("PASS config-hot-reload");
         BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).putString("network_smoke", "persisted");
         BaniraServerRuntime.playerDataManager().saveToDisk(player.getUUID());
-        if (!"persisted".equals(BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getString("network_smoke")))
+        if (!"persisted".equals(BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getStringOr("network_smoke", "")))
             throw new IllegalStateException("Player data was not written");
         BaniraNetworkSmokeStatus.append("PASS player-data-file");
         Path file = CustomConfig.getConfigDirectory().resolve("network-smoke.txt");
@@ -178,7 +178,7 @@ public final class BaniraNetworkSmokeServerRunner {
         }
         BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).putInt("network_smoke_cycle", cycle);
         BaniraServerRuntime.playerDataManager().saveToDisk(player.getUUID());
-        if (BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getInt("network_smoke_cycle") != cycle) {
+        if (BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getIntOr("network_smoke_cycle", 0) != cycle) {
             throw new IllegalStateException("Player data cycle was not persisted");
         }
         Path file = CustomConfig.getConfigDirectory().resolve("network-smoke-cycle.txt");
@@ -204,8 +204,8 @@ public final class BaniraNetworkSmokeServerRunner {
         int expectedHelp = Integer.parseInt(checkpoint.getProperty("helpNumPerPage"));
         if (!player.getUUID().toString().equals(checkpoint.getProperty("player"))
                 || expectedCycle < BaniraNetworkSmokeProfilePlan.MINIMUM_CYCLES
-                || BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getInt("network_smoke_cycle") != expectedCycle
-                || !"persisted".equals(BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).getString("network_smoke"))) {
+                || BaniraServerRuntime.playerDataManager().loadFromDisk(player.getUUID()).getIntOr("network_smoke_cycle", 0) != expectedCycle
+                || !"persisted".equals(BaniraServerRuntime.playerDataManager().getOrCreate(player.getUUID()).getStringOr("network_smoke", ""))) {
             throw new IllegalStateException("Final player data cycle did not survive restart");
         }
         if (CustomConfig.getHelpNumPerPage() != expectedHelp)

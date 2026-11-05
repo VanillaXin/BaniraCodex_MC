@@ -1,8 +1,9 @@
 package xin.vanilla.banira.internal.mixin.injections;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.world.item.CreativeModeTab;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,7 +17,7 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 @Mixin(CreativeModeInventoryScreen.class)
 public abstract class CreativeScreenQuickActionMixin {
     @Inject(method = "checkTabHovering", at = @At("HEAD"), cancellable = true)
-    private void banira$suppressCoveredTabTooltip(GuiGraphics graphics, CreativeModeTab group,
+    private void banira$suppressCoveredTabTooltip(GuiGraphicsExtractor graphics, CreativeModeTab group,
                                                   int mouseX, int mouseY,
                                                   CallbackInfoReturnable<Boolean> callback) {
         if (banira$captures(mouseX, mouseY)) {
@@ -25,17 +26,17 @@ public abstract class CreativeScreenQuickActionMixin {
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void banira$suppressCoveredTabClick(double mouseX, double mouseY, int button,
+    private void banira$suppressCoveredTabClick(MouseButtonEvent event, boolean doubleClick,
                                                 CallbackInfoReturnable<Boolean> callback) {
-        if (banira$captures(mouseX, mouseY)) {
+        if (banira$captures(event.x(), event.y())) {
             callback.setReturnValue(true);
         }
     }
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
-    private void banira$suppressCoveredTabRelease(double mouseX, double mouseY, int button,
+    private void banira$suppressCoveredTabRelease(MouseButtonEvent event,
                                                   CallbackInfoReturnable<Boolean> callback) {
-        if (banira$captures(mouseX, mouseY)) {
+        if (banira$captures(event.x(), event.y())) {
             callback.setReturnValue(true);
         }
     }

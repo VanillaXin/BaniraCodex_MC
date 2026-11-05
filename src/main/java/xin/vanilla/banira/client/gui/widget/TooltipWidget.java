@@ -1,13 +1,15 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.BaniraComponent;
@@ -107,8 +109,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) return;
         // Disabled parents skip updates but still render their passive tooltips.
         if (screen != null) {
@@ -129,23 +131,23 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                 Text textToDraw = text;
                 boolean useTexture = resolvePopupUseTexture(theme);
                 screen.addDeferredTooltipRender(g -> {
-                    g.pose().pushPose();
-                    g.pose().last().pose().identity();
+                    g.pose().pushMatrix();
+                    g.pose().identity();
                     if (itemStack != null && !itemStack.isEmpty()) {
                         drawItemTooltip(g.pose(), itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
                     } else if (vanillaTooltip) {
                         List<net.minecraft.network.chat.Component> tip = new ArrayList<>();
                         tip.add(textToDraw.toComponent().toChat());
-                        g.renderTooltip(screen.getFont(), tip, java.util.Optional.empty(), mouseX, mouseY);
+                        g.setTooltipForNextFrame(screen.getFont(), tip, java.util.Optional.empty(), mouseX, mouseY);
                     } else {
                         drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(textToDraw.stack(g.pose())).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
                     }
-                    g.pose().popPose();
+                    g.pose().popMatrix();
                 });
             } else {
-                stack.pushPose();
+                stack.pushMatrix();
                 if (parent != null) {
-                    stack.translate(-absoluteX(), -absoluteY(), 0);
+                    stack.translate((float) (-absoluteX()), (float) (-absoluteY()));
                 }
                 if (itemStack != null && !itemStack.isEmpty()) {
                     drawItemTooltip(stack, itemStack, mouseX, mouseY, seasonTooltip ? screen.season() : null);
@@ -153,13 +155,13 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
                     if (tooltip.isEmpty()) {
                         tooltip.add(text.toComponent().toChat());
                     }
-                    graphics.renderTooltip(screen.getFont(), tooltip, java.util.Optional.empty(), mouseX, mouseY);
+                    graphics.setTooltipForNextFrame(screen.getFont(), tooltip, java.util.Optional.empty(), mouseX, mouseY);
                 } else {
                     BaniraColorConfig theme = screen.getEffectiveTheme();
                     EnumSeason season = screen.season();
                     drawPopupMessage(stack, FontDrawArgs.ofPopo(text.stack(stack)).x(mouseX).y(mouseY).popupUseTexture(resolvePopupUseTexture(theme)), theme, season);
                 }
-                stack.popPose();
+                stack.popMatrix();
             }
         }
         renderChildren(graphics, partialTicks);
@@ -200,7 +202,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      * @param theme  主题配置，颜色绘制时使用（非空时直接使用，否则按 season 解析季节预设）
      * @param season 季节，纹理绘制时选择季节纹理，颜色绘制时解析季节主题
      */
-    public static void drawPopupMessage(PoseStack stack, FontDrawArgs args,
+    public static void drawPopupMessage(Matrix3x2fStack stack, FontDrawArgs args,
                                         @Nullable BaniraColorConfig theme, @Nullable EnumSeason season) {
         FontDrawArgs drawArgs = args.clone();
         boolean useTextureMode = drawArgs.popupUseTexture();
@@ -271,18 +273,25 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 在所有屏幕浮层完成后，只绘制本帧视觉层级最高的 Tooltip。
      */
-    public static void flushPopupFrame(PoseStack stack) {
+    public static void flushPopupFrame(Matrix3x2fStack stack) {
         flushPopupFrame(stack, true);
     }
 
     /**
      * 刷新晚于默认屏幕后置事件提交的 Tooltip；本轮没有提交时不推进消失动画。
      */
-    public static void flushSubmittedPopupFrame(PoseStack stack) {
+    public static void flushSubmittedPopupFrame(Matrix3x2fStack stack) {
         flushPopupFrame(stack, false);
     }
 
-    private static void flushPopupFrame(PoseStack stack, boolean resolveMissing) {
+    /**
+     * 高版本渲染回调可直接提交 GuiGraphicsExtractor，无需调用方拆取矩阵栈。
+     */
+    public static void flushSubmittedPopupFrame(GuiGraphicsExtractor graphics) {
+        flushSubmittedPopupFrame(NativeGuiGraphics.bind(graphics));
+    }
+
+    private static void flushPopupFrame(Matrix3x2fStack stack, boolean resolveMissing) {
         collectingPopupRequests = false;
         long now = System.nanoTime();
         if (!POPUP_REQUESTS.hasWinner()) {
@@ -305,17 +314,17 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         renderTransitionFrame(stack, frame);
     }
 
-    private static void renderTransitionFrame(PoseStack stack, TooltipTransitionFrame<PopupRenderData> frame) {
+    private static void renderTransitionFrame(Matrix3x2fStack stack, TooltipTransitionFrame<PopupRenderData> frame) {
         if (frame.bounds().width() < 1.0D || frame.bounds().height() < 1.0D) return;
         PopupRenderData visible = frame.contentKey();
         if (visible == null) return;
 
-        stack.pushPose();
+        stack.pushMatrix();
         try {
-            stack.last().pose().identity();
+            stack.identity();
             renderPopup(stack, visible, frame.bounds());
         } finally {
-            stack.popPose();
+            stack.popMatrix();
         }
     }
 
@@ -350,21 +359,21 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 使用当前季节颜色绘制
      */
-    public static void drawPopupMessageWithSeason(PoseStack stack, FontDrawArgs args) {
+    public static void drawPopupMessageWithSeason(Matrix3x2fStack stack, FontDrawArgs args) {
         drawPopupMessage(stack, args.clone(), null, null);
     }
 
     /**
      * 使用当前季节纹理绘制
      */
-    public static void drawPopupMessageWithSeasonTexture(PoseStack stack, FontDrawArgs args) {
+    public static void drawPopupMessageWithSeasonTexture(Matrix3x2fStack stack, FontDrawArgs args) {
         drawPopupMessageWithSeasonTexture(stack, args, EnumSeason.AUTO);
     }
 
     /**
      * 使用指定季节纹理绘制
      */
-    public static void drawPopupMessageWithSeasonTexture(PoseStack stack, FontDrawArgs args, EnumSeason season) {
+    public static void drawPopupMessageWithSeasonTexture(Matrix3x2fStack stack, FontDrawArgs args, EnumSeason season) {
         FontDrawArgs drawArgs = args.clone().popupUseTexture(true);
         drawPopupMessage(stack, drawArgs, null, season);
     }
@@ -372,7 +381,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 使用默认样式绘制
      */
-    public static void drawPopupMessage(PoseStack stack, FontDrawArgs args) {
+    public static void drawPopupMessage(Matrix3x2fStack stack, FontDrawArgs args) {
         drawPopupMessage(stack, args.clone(), null, null);
     }
 
@@ -381,8 +390,8 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
      *
      * @param season 季节，非 null 时使用该季节的主题纹理；null 时使用默认样式
      */
-    public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
-        boolean advanced = Screen.hasShiftDown();
+    public static void drawItemTooltip(Matrix3x2fStack stack, ItemStack itemStack, double x, double y, @Nullable EnumSeason season) {
+        boolean advanced = xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing();
         List<Component> tooltipList = ItemUtils.getItemTooltip(itemStack, Minecraft.getInstance().player, advanced);
         Component tooltipComponent = BaniraComponent.get().empty();
         for (int idx = 0; idx < tooltipList.size(); idx++) {
@@ -405,7 +414,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
     /**
      * 绘制物品提示
      */
-    public static void drawItemTooltip(PoseStack stack, ItemStack itemStack, double x, double y, boolean season) {
+    public static void drawItemTooltip(Matrix3x2fStack stack, ItemStack itemStack, double x, double y, boolean season) {
         drawItemTooltip(stack, itemStack, x, y, season ? EnumSeason.AUTO : null);
     }
 
@@ -556,7 +565,7 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
         );
     }
 
-    private static void renderPopup(PoseStack stack, PopupRenderData data, TooltipBounds bounds) {
+    private static void renderPopup(Matrix3x2fStack stack, PopupRenderData data, TooltipBounds bounds) {
         FontDrawArgs args = data.args;
         int drawX = (int) Math.round(bounds.x());
         int drawY = (int) Math.round(bounds.y());
@@ -566,16 +575,16 @@ public class TooltipWidget extends BaseWidget implements ITextWidget {
 
         AbstractGuiUtils.renderByDepth(stack, EnumRenderDepth.TOOLTIP, (s) -> {
             if (args.texture() != null && data.ninePatchInfo != null) {
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
+
+
                 NinePatchImageWidget.drawNinePatch(s, args.texture(), drawX, drawY, drawWidth, drawHeight, data.textureScale);
-                AbstractGuiUtils.restoreGuiRenderState();
+
             } else if (args.texture() != null) {
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
+
+
                 Texture tex = args.texture();
                 ImageWidget.blit(s, tex, drawX, drawY, drawWidth, drawHeight);
-                AbstractGuiUtils.restoreGuiRenderState();
+
             } else if (data.useThemeColor && data.theme != null) {
                 int radius = args.bgBorderRadius();
                 int borderThickness = args.bgBorderThickness();

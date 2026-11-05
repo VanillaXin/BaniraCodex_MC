@@ -36,7 +36,7 @@ public final class MessageUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayer player, Component message) {
-        player.server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toChat()), false);
+        player.level().getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toChat()), false);
     }
 
     /**
@@ -69,7 +69,7 @@ public final class MessageUtils {
         if (player instanceof ServerPlayer sp) {
             sp.sendSystemMessage(chat);
         } else {
-            player.displayClientMessage(chat, false);
+            player.sendSystemMessage(chat);
         }
     }
 
@@ -84,7 +84,7 @@ public final class MessageUtils {
         if (player instanceof ServerPlayer sp) {
             sp.sendSystemMessage(chat);
         } else {
-            player.displayClientMessage(chat, false);
+            player.sendSystemMessage(chat);
         }
     }
 
@@ -138,7 +138,7 @@ public final class MessageUtils {
         if (player instanceof ServerPlayer sp) {
             sp.sendSystemMessage(chat);
         } else {
-            player.displayClientMessage(chat, false);
+            player.sendSystemMessage(chat);
         }
     }
 
@@ -176,7 +176,7 @@ public final class MessageUtils {
      * 发送操作栏消息
      */
     public static void sendActionBarMessage(ServerPlayer player, Component message) {
-        player.displayClientMessage(message.toChat(Translator.getPlayerLanguage(player)), true);
+        player.sendSystemMessage(message.toChat(Translator.getPlayerLanguage(player)), true);
     }
 
     // region 指定通知类型 — sendNotification / broadcastNotification
@@ -249,7 +249,7 @@ public final class MessageUtils {
                                                  String tid) {
         if (!PlayerUtils.isRemoteClientModInstalled(player, Banira.MOD_ID)) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
-                player.displayClientMessage(payload.vanillaMessage(), true);
+                player.sendSystemMessage(payload.vanillaMessage(), true);
             } else {
                 player.sendSystemMessage(payload.vanillaMessage());
             }
@@ -258,7 +258,7 @@ public final class MessageUtils {
         String uuid = PlayerUtils.getPlayerUUIDString(player);
         if (CustomConfig.notificationReceiveModeVanillaMessage.equals(CustomConfig.getPlayerNotificationReceiveMode(uuid))) {
             if (vanillaFallback == EnumNotificationVanillaFallback.ACTION_BAR) {
-                player.displayClientMessage(payload.vanillaMessage(), true);
+                player.sendSystemMessage(payload.vanillaMessage(), true);
             } else {
                 player.sendSystemMessage(payload.vanillaMessage());
             }

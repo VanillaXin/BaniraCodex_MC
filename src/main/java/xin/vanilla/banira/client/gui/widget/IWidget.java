@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import org.joml.Matrix3x2fStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.event.MouseDragEvent;
@@ -31,10 +31,10 @@ public interface IWidget {
     /**
      * 渲染本组件。
      *
-     * @param graphics     当前帧 GUI 绘制上下文（与 {@link PoseStack} 通过 {@link GuiGraphics#pose()} 对应）
+     * @param graphics     当前帧 GUI 绘制上下文（与 {@link Matrix3x2fStack} 通过 {@link GuiGraphicsExtractor#pose()} 对应）
      * @param partialTicks 部分 tick（用于动画插值）
      */
-    void render(GuiGraphics graphics, float partialTicks);
+    void render(GuiGraphicsExtractor graphics, float partialTicks);
 
     /**
      * 每帧更新，用于动画、光标闪烁等。
@@ -83,6 +83,12 @@ public interface IWidget {
      * 处理字符输入（用于文本输入框）。
      */
     boolean handleCharTyped(char codePoint, int modifiers);
+
+    default boolean handleTextInput(String text, int modifiers) {
+        boolean consumed = false;
+        for (char character : text.toCharArray()) consumed |= handleCharTyped(character, modifiers);
+        return consumed;
+    }
 
     /**
      * 处理鼠标拖拽事件。

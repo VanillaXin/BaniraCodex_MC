@@ -3,7 +3,7 @@ package xin.vanilla.banira.common.util;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
@@ -98,7 +98,7 @@ public final class AdvancementUtils {
      */
     public static void advancementData(Collection<AdvancementData> advancementData) {
         if (CollectionUtils.isNotNullOrEmpty(advancementData)) {
-            Map<ResourceLocation, AdvancementData> byId = new LinkedHashMap<>();
+            Map<Identifier, AdvancementData> byId = new LinkedHashMap<>();
             for (AdvancementData d : advancementData) {
                 if (d != null) {
                     byId.put(d.id(), d);
@@ -180,7 +180,7 @@ public final class AdvancementUtils {
     public static List<AdvancementData> getDisplayableAdvancements() {
         return getAllAdvancements().stream()
                 .filter(Objects::nonNull)
-                .filter(o -> o.displayInfo().getIcon().getItem() != Items.AIR)
+                .filter(o -> !AdvancementData.iconStackForListRendering(o.displayInfo().getIcon()).isEmpty())
                 .collect(Collectors.toList());
     }
 

@@ -16,8 +16,7 @@ public class UiDomControlsTest {
     @org.junit.BeforeClass
     public static void bootstrap() {
         xin.vanilla.banira.common.util.RegistryKeyReuseTest.initializeStandaloneLoader();
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     @org.junit.Before

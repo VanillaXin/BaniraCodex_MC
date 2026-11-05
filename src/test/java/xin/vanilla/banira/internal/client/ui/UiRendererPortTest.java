@@ -89,7 +89,7 @@ public class UiRendererPortTest {
             }
             int factories = 0;
             for (var method : node.methods) for (var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/ResourceLocation")) {
+                if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/Identifier")) {
                     assertNotEquals("Private constructors are not a supported 1.21 API", "<init>", call.name);
                     if (call.name.equals("fromNamespaceAndPath")) factories++;
                 }

@@ -117,11 +117,11 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    public void resize(Minecraft minecraft, int width, int height) {
+    public void resize(int width, int height) {
         UiViewState state = uiState != null ? uiState : new UiViewState();
         captureUiState(state);
         prepareUiState(state);
-        super.resize(minecraft, width, height);
+        super.resize(width, height);
     }
 
     @Override
@@ -436,7 +436,7 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    protected void renderWidgets(net.minecraft.client.gui.GuiGraphics stack, float partialTicks) {
+    protected void renderWidgets(net.minecraft.client.gui.GuiGraphicsExtractor stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
         actionBar.renderChrome(stack.pose(), theme, viewport.cardX(), viewport.cardY(), viewport.cardW(), viewport.cardH(),
                 CARD_INNER);
@@ -449,7 +449,7 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
     }
 
     @Override
-    protected void onRender(net.minecraft.client.gui.GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(net.minecraft.client.gui.GuiGraphicsExtractor stack, int mouseX, int mouseY, float partialTicks) {
         renderWidgets(stack, partialTicks);
     }
 

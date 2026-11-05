@@ -15,11 +15,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 public class UiSharedFormPageTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         xin.vanilla.banira.common.util.RegistryKeyReuseTest.initializeStandaloneLoader();
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     @org.junit.Before
@@ -27,12 +29,12 @@ public class UiSharedFormPageTest {
         xin.vanilla.banira.platform.BaniraPlatforms.install(new xin.vanilla.banira.platform.TestBaniraPlatform());
         xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().registerIcon("banira_codex:b09_header_test",
                 xin.vanilla.banira.client.gui.quickaction.QuickIcon.resource(xin.vanilla.banira.client.data.Texture.of(
-                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("banira_codex", "gui/quick_icon.png"), 64, 64)),
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath("banira_codex", "gui/quick_icon.png"), 64, 64)),
                 xin.vanilla.banira.BaniraComponent.get().literal("Shared form"), null);
         for (String namespace : new String[]{"narcissus_farewell", "aotake_sweep", "sakura_sign_in"})
             xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry.get().registerIcon(namespace + ":b09_header_test",
                     xin.vanilla.banira.client.gui.quickaction.QuickIcon.resource(xin.vanilla.banira.client.data.Texture.of(
-                            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(namespace, "gui/quick_icon.png"), 64, 64)),
+                            net.minecraft.resources.Identifier.fromNamespaceAndPath(namespace, "gui/quick_icon.png"), 64, 64)),
                     xin.vanilla.banira.BaniraComponent.get().literal(namespace), null);
     }
 

@@ -23,11 +23,11 @@ import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 @JourneyMapPlugin(apiVersion = "2.0.0")
 public final class JourneyMapNotificationPlugin implements IClientPlugin {
     private InfoSlotRegistryEvent registry;
-    private final java.util.Set<net.minecraft.resources.ResourceLocation> registered = new java.util.HashSet<>();
+    private final java.util.Set<net.minecraft.resources.Identifier> registered = new java.util.HashSet<>();
     private boolean previousAllowed;
     private EnumNotificationHudHost previousAutomaticOwner;
     private long previousRevision = -1;
-    private java.util.List<net.minecraft.resources.ResourceLocation> previousRequested = java.util.Collections.emptyList();
+    private java.util.List<net.minecraft.resources.Identifier> previousRequested = java.util.Collections.emptyList();
 
     @Override
     public String getModId() {
@@ -90,7 +90,7 @@ public final class JourneyMapNotificationPlugin implements IClientPlugin {
                 && journeymap.client.JourneymapClient.getInstance().getStateHandler().isMinimapEnabled()
                 && MinimapLineLayout.allowsLegacyJourneyScreen(Minecraft.getInstance().screen != null,
                 Minecraft.getInstance().screen instanceof ChatScreen);
-        java.util.List<net.minecraft.resources.ResourceLocation> requested =
+        java.util.List<net.minecraft.resources.Identifier> requested =
                 MinimapLineRegistry.shared().requestedIds(EnumNotificationHudHost.JOURNEYMAP);
         EnumNotificationHudHost automaticOwner = MinimapLineRegistry.shared()
                 .selectedHost(EnumNotificationHudHost.AUTO, System.nanoTime());

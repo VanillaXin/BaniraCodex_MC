@@ -3,7 +3,7 @@ package xin.vanilla.banira.internal.neoforge.network;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -34,13 +34,13 @@ import java.util.function.Function;
 public final class NeoForgeNetworkChannels {
     private static final Map<String, List<PendingRegistration<?>>> PENDING = new ConcurrentHashMap<>();
     private static final Map<Class<?>, PayloadBinding<?>> BY_PACKET = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, List<ResourceLocation>> BY_CHANNEL = new ConcurrentHashMap<>();
-    private static volatile ResourceLocation defaultChannel;
+    private static final Map<Identifier, List<Identifier>> BY_CHANNEL = new ConcurrentHashMap<>();
+    private static volatile Identifier defaultChannel;
 
     private NeoForgeNetworkChannels() {
     }
 
-    static <MSG extends INetworkPacket> void bind(ResourceLocation channel,
+    static <MSG extends INetworkPacket> void bind(Identifier channel,
                                                   String protocolVersion,
                                                   boolean optionalClient,
                                                   int packetId,
@@ -48,7 +48,7 @@ public final class NeoForgeNetworkChannels {
                                                   BiConsumer<MSG, BaniraPacketBuffer> encoder,
                                                   Function<BaniraPacketBuffer, MSG> decoder,
                                                   BiConsumer<MSG, BaniraNetworkContext> handler) {
-        ResourceLocation payloadId = ResourceLocation.fromNamespaceAndPath(
+        Identifier payloadId = Identifier.fromNamespaceAndPath(
                 channel.getNamespace(), channel.getPath() + "/" + packetId);
         CustomPacketPayload.Type<NeoForgePayload<MSG>> type = new CustomPacketPayload.Type<>(payloadId);
         StreamCodec<RegistryFriendlyByteBuf, NeoForgePayload<MSG>> codec = StreamCodec.of(
@@ -83,7 +83,7 @@ public final class NeoForgeNetworkChannels {
         }
         CustomPacketPayload payload = binding.wrap(packet);
         if (payload != null) {
-            PacketDistributor.sendToServer(payload);
+            NeoForgeClientNetworkAccess.sendToServer(payload);
         }
     }
 
@@ -106,15 +106,15 @@ public final class NeoForgeNetworkChannels {
         return defaultChannel != null && channelPayloads(defaultChannel).stream().anyMatch(NeoForgeClientNetworkAccess::hasChannel);
     }
 
-    public static boolean hasLocalChannel(ResourceLocation channel) {
+    public static boolean hasLocalChannel(Identifier channel) {
         return BY_CHANNEL.containsKey(channel);
     }
 
-    public static boolean hasPlayerChannel(ServerPlayer player, ResourceLocation channel) {
+    public static boolean hasPlayerChannel(ServerPlayer player, Identifier channel) {
         return channelPayloads(channel).stream().anyMatch(id -> NetworkRegistry.hasChannel(player.connection, id));
     }
 
-    private static List<ResourceLocation> channelPayloads(ResourceLocation channel) {
+    private static List<Identifier> channelPayloads(Identifier channel) {
         return BY_CHANNEL.getOrDefault(channel, List.of());
     }
 
@@ -134,7 +134,7 @@ public final class NeoForgeNetworkChannels {
     }
 
     private record PayloadBinding<MSG extends INetworkPacket>(
-            ResourceLocation channel,
+            Identifier channel,
             CustomPacketPayload.Type<NeoForgePayload<MSG>> type) {
         @SuppressWarnings("unchecked")
         private CustomPacketPayload wrap(BaniraNetworkPacket packet) {

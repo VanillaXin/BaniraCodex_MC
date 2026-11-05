@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -114,7 +113,7 @@ public final class BaniraCodexClientBootstrap {
             }
 
             @Override
-            public boolean renderHud(String id, net.minecraft.client.gui.GuiGraphics graphics) {
+            public boolean renderHud(String id, net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
                 return UI_HUDS.renderManual(id, graphics);
             }
 
@@ -127,7 +126,7 @@ public final class BaniraCodexClientBootstrap {
         BaniraClientEventHub.ModLifecycle.onClientSetup(event -> {
             LogoModifier.register(Banira.MOD_ID, () -> Math.random() > 0.5 ? "logo_.png" : "logo.png");
 
-            ResourceLocation texture = Identifier.id().create("gui/quick_icon.png");
+            net.minecraft.resources.Identifier texture = Identifier.id().create("gui/quick_icon.png");
             Component label = BaniraComponent.get().transClient("key.banira_codex.categories");
             Consumer<QuickActionContext> action = ctx ->
                     BaniraClientRuntime.setScreen(

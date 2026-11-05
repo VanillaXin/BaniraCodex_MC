@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.neoforge.platform;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
@@ -35,14 +35,14 @@ public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nullable String blockKey(@Nullable Object block) {
-        ResourceLocation key = block instanceof Block ? BuiltInRegistries.BLOCK.getKey((Block) block) : null;
+        Identifier key = block instanceof Block ? BuiltInRegistries.BLOCK.getKey((Block) block) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object block(@Nullable String id) {
-        ResourceLocation location = parse(id);
-        return location != null ? BuiltInRegistries.BLOCK.get(location) : null;
+        Identifier location = parse(id);
+        return location != null ? BuiltInRegistries.BLOCK.getValue(location) : null;
     }
 
     @Override
@@ -52,14 +52,14 @@ public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nullable String itemKey(@Nullable Object item) {
-        ResourceLocation key = item instanceof Item ? BuiltInRegistries.ITEM.getKey((Item) item) : null;
+        Identifier key = item instanceof Item ? BuiltInRegistries.ITEM.getKey((Item) item) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object item(@Nullable String id) {
-        ResourceLocation location = parse(id);
-        return location != null ? BuiltInRegistries.ITEM.get(location) : null;
+        Identifier location = parse(id);
+        return location != null ? BuiltInRegistries.ITEM.getValue(location) : null;
     }
 
     @Override
@@ -74,21 +74,21 @@ public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
         }
         return ((Item) item).builtInRegistryHolder().tags()
                 .map(TagKey::location)
-                .sorted(ResourceLocation::compareTo)
-                .map(ResourceLocation::toString)
+                .sorted(Identifier::compareTo)
+                .map(Identifier::toString)
                 .collect(Collectors.toList());
     }
 
     @Override
     public @Nullable String entityTypeKey(@Nullable Object entityType) {
-        ResourceLocation key = entityType instanceof EntityType ? BuiltInRegistries.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
+        Identifier key = entityType instanceof EntityType ? BuiltInRegistries.ENTITY_TYPE.getKey((EntityType<?>) entityType) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object entityType(@Nullable String id) {
-        ResourceLocation location = parse(id);
-        return location != null ? BuiltInRegistries.ENTITY_TYPE.get(location) : null;
+        Identifier location = parse(id);
+        return location != null ? BuiltInRegistries.ENTITY_TYPE.getValue(location) : null;
     }
 
     @Override
@@ -98,14 +98,14 @@ public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
 
     @Override
     public @Nullable String effectKey(@Nullable Object effect) {
-        ResourceLocation key = effect instanceof MobEffect ? BuiltInRegistries.MOB_EFFECT.getKey((MobEffect) effect) : null;
+        Identifier key = effect instanceof MobEffect ? BuiltInRegistries.MOB_EFFECT.getKey((MobEffect) effect) : null;
         return key != null ? key.toString() : null;
     }
 
     @Override
     public @Nullable Object effect(@Nullable String id) {
-        ResourceLocation location = parse(id);
-        return location != null ? BuiltInRegistries.MOB_EFFECT.get(location) : null;
+        Identifier location = parse(id);
+        return location != null ? BuiltInRegistries.MOB_EFFECT.getValue(location) : null;
     }
 
     @Override
@@ -127,7 +127,7 @@ public enum NeoForgeBaniraRegistryService implements BaniraRegistryService {
         return StreamSupport.stream(registry.spliterator(), false).collect(Collectors.toList());
     }
 
-    private static ResourceLocation parse(String id) {
-        return id == null ? null : ResourceLocation.tryParse(id);
+    private static Identifier parse(String id) {
+        return id == null ? null : Identifier.tryParse(id);
     }
 }

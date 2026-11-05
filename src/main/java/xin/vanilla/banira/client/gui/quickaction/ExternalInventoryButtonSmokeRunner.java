@@ -1,8 +1,6 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +26,7 @@ public final class ExternalInventoryButtonSmokeRunner {
     private static boolean hostApplied;
     private static boolean finished;
     private static int ticks;
+    private static java.util.concurrent.CompletableFuture<Void> capture;
 
     private ExternalInventoryButtonSmokeRunner() {
     }
@@ -62,6 +61,13 @@ public final class ExternalInventoryButtonSmokeRunner {
         if (++ticks < CAPTURE_TICKS) return;
 
         EnumExternalInventoryButtonHost effective = manager.effectiveHost();
+        if (capture == null) {
+            Path path = Paths.get("screenshots", "external-buttons-smoke",
+                    effective.name().toLowerCase(java.util.Locale.ROOT) + ".png");
+            capture = xin.vanilla.banira.internal.client.dev.SmokeScreenshotCapture.capture(path);
+            return;
+        }
+        if (!capture.isDone()) return;
         String screenshot = writeScreenshot(minecraft, effective);
         String status = screenshot.startsWith("ERROR:") ? "FAILED" : "FINISHED";
         writeResult("requestedHost=" + (configured ? "CONFIGURED" : requested) + '\n'
@@ -98,12 +104,7 @@ public final class ExternalInventoryButtonSmokeRunner {
                 host.name().toLowerCase(java.util.Locale.ROOT) + ".png");
         try {
             Files.createDirectories(path.getParent());
-            NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget());
-            try {
-                image.writeToFile(path);
-            } finally {
-                image.close();
-            }
+            capture.join();
             return path.toString().replace('\\', '/');
         } catch (Exception exception) {
             LOGGER.error("Unable to capture external inventory button smoke screenshot", exception);

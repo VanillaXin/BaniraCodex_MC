@@ -8,13 +8,12 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.effect.MobEffectInstance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -40,14 +39,14 @@ public final class TextureUtils {
      */
     public static final String DEFAULT_EFFECT_DIR = "textures/mob_effect/";
 
-    private static final Map<ResourceLocation, NativeImage> CACHE = new ConcurrentHashMap<>();
-    private static final Map<ResourceLocation, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Identifier, NativeImage> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Identifier, KeyValue<Integer, Integer>> TEXTURE_SIZE_CACHE = new ConcurrentHashMap<>();
     private static final Map<Texture, NinePatchInfo> NINE_PATCH_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 由 {@link #loadCustomTexture} 注册到 {@link TextureManager} 的外部文件动态纹理；{@link #clearAll()} 时 {@link TextureManager#release}，{@link #getTextureImage} 据此读取像素。
      */
-    private static final Set<ResourceLocation> REGISTERED_DYNAMIC_TEXTURE_LOCATIONS = ConcurrentHashMap.newKeySet();
+    private static final Set<Identifier> REGISTERED_DYNAMIC_TEXTURE_LOCATIONS = ConcurrentHashMap.newKeySet();
 
     private static String normalizeTexturePath(String name) {
         String n = name.replace('\\', '/');
@@ -61,14 +60,14 @@ public final class TextureUtils {
         return normalized.length() >= 2 && normalized.charAt(1) == ':' && Character.isLetter(normalized.charAt(0));
     }
 
-    public static ResourceLocation loadCustomTexture(IIdentifier factory, String name) {
+    public static Identifier loadCustomTexture(IIdentifier factory, String name) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
             return factory.empty();
         }
         String normalized = normalizeTexturePath(name);
         String safePath = getSafeTexturePath(normalized);
-        ResourceLocation rl = factory.create(safePath);
+        Identifier rl = factory.create(safePath);
         ResourceManager resourceManager = mc.getResourceManager();
         TextureManager textureManager = mc.getTextureManager();
 
@@ -77,7 +76,7 @@ public final class TextureUtils {
             return rl;
         }
         if (!looksLikeWindowsDrivePath(normalized) && normalized.indexOf(':') >= 0) {
-            ResourceLocation parsed = ResourceLocation.tryParse(normalized);
+            Identifier parsed = Identifier.tryParse(normalized);
             if (parsed != null && resourceManager.getResource(parsed).isPresent()) {
                 return parsed;
             }
@@ -91,14 +90,14 @@ public final class TextureUtils {
                 textureFile = textureFile.getCanonicalFile();
             } catch (IOException ignored) {
             }
-            ResourceLocation externalRl = factory.create("dynamic/ext_" + Integer.toHexString(textureFile.getAbsolutePath().hashCode()));
+            Identifier externalRl = factory.create("dynamic/ext_" + Integer.toHexString(textureFile.getAbsolutePath().hashCode()));
             synchronized (TextureUtils.class) {
                 if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(externalRl)) {
                     return externalRl;
                 }
                 try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
                     NativeImage nativeImage = NativeImage.read(inputStream);
-                    DynamicTexture dynamicTexture = new DynamicTexture(nativeImage);
+                    DynamicTexture dynamicTexture = new DynamicTexture(() -> externalRl.toString(), nativeImage);
                     textureManager.register(externalRl, dynamicTexture);
                     REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.add(externalRl);
                     return externalRl;
@@ -119,7 +118,7 @@ public final class TextureUtils {
         return path.toLowerCase().replaceAll("[^a-z0-9/._-]", "_");
     }
 
-    public static boolean isTextureAvailable(ResourceLocation location) {
+    public static boolean isTextureAvailable(Identifier location) {
         if (location == null) {
             return false;
         }
@@ -131,17 +130,17 @@ public final class TextureUtils {
             return false;
         }
         TextureManager textureManager = mc.getTextureManager();
-        AbstractTexture miss = MissingTextureAtlasSprite.getTexture();
+        AbstractTexture miss = textureManager.getTexture(MissingTextureAtlasSprite.getLocation());
 
         if (REGISTERED_DYNAMIC_TEXTURE_LOCATIONS.contains(location)) {
             AbstractTexture t = textureManager.getTexture(location);
             if (t == miss) {
                 return false;
             }
-            if (!RenderSystem.isOnRenderThreadOrInit()) {
+            if (!RenderSystem.isOnRenderThread()) {
                 return true;
             }
-            return t.getId() != -1;
+            return t.getTexture() != null && !t.getTexture().isClosed();
         }
 
         ResourceManager resourceManager = mc.getResourceManager();
@@ -149,7 +148,7 @@ public final class TextureUtils {
             return false;
         }
 
-        if (!RenderSystem.isOnRenderThreadOrInit()) {
+        if (!RenderSystem.isOnRenderThread()) {
             return true;
         }
 
@@ -157,15 +156,15 @@ public final class TextureUtils {
         if (texture == miss) {
             return false;
         }
-        return texture.getId() != -1;
+        return texture.getTexture() != null && !texture.getTexture().isClosed();
     }
 
     /**
      * 获取药水效果图标
      */
-    public static ResourceLocation getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
-        ResourceLocation effectIcon;
-        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect().value());
+    public static Identifier getEffectTexture(IIdentifier factory, MobEffectInstance effectInstance) {
+        Identifier effectIcon;
+        Identifier registryName = BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect().value());
         if (registryName != null) {
             effectIcon = factory.create(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
@@ -258,7 +257,7 @@ public final class TextureUtils {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             TextureManager tm = mc.getTextureManager();
-            for (ResourceLocation loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
+            for (Identifier loc : REGISTERED_DYNAMIC_TEXTURE_LOCATIONS) {
                 tm.release(loc);
             }
         }
@@ -277,9 +276,9 @@ public final class TextureUtils {
     /**
      * 从资源中加载纹理并转换为 NativeImage。
      *
-     * @param texture 纹理的 ResourceLocation
+     * @param texture 纹理的 Identifier
      */
-    public static NativeImage getTextureImage(ResourceLocation texture) {
+    public static NativeImage getTextureImage(Identifier texture) {
         // 优先从缓存中获取
         if (CACHE.containsKey(texture)) {
             return CACHE.get(texture);
@@ -315,7 +314,7 @@ public final class TextureUtils {
     /**
      * 获取纹理的宽高
      */
-    public static KeyValue<Integer, Integer> getTextureSize(ResourceLocation texture) {
+    public static KeyValue<Integer, Integer> getTextureSize(Identifier texture) {
         KeyValue<Integer, Integer> size = new KeyValue<>(0, 0);
         if (TEXTURE_SIZE_CACHE.containsKey(texture)) {
             size = TEXTURE_SIZE_CACHE.get(texture);
@@ -332,7 +331,7 @@ public final class TextureUtils {
     /**
      * 解析用于绘制的纹理尺寸：优先资源/缓存图像，失败时从已上传的 GPU 纹理查询（适用于玩家皮肤等不在资源包中的纹理）
      */
-    public static KeyValue<Integer, Integer> resolveTextureSizeForDraw(ResourceLocation texture) {
+    public static KeyValue<Integer, Integer> resolveTextureSizeForDraw(Identifier texture) {
         KeyValue<Integer, Integer> cached = TEXTURE_SIZE_CACHE.get(texture);
         if (cached != null && cached.key() > 0 && cached.val() > 0) {
             return cached;
@@ -357,7 +356,7 @@ public final class TextureUtils {
     }
 
     @Nullable
-    private static KeyValue<Integer, Integer> tryGetGpuTextureSize(ResourceLocation location) {
+    private static KeyValue<Integer, Integer> tryGetGpuTextureSize(Identifier location) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
             return null;
@@ -366,23 +365,12 @@ public final class TextureUtils {
         if (gpuTexture == null) {
             return null;
         }
-        int tid = gpuTexture.getId();
-        if (tid == -1) {
+        var texture = gpuTexture.getTexture();
+        if (texture == null || texture.isClosed()) {
             return null;
         }
-        int[] prev = new int[1];
-        GL11.glGetIntegerv(GL11.GL_TEXTURE_BINDING_2D, prev);
-        try {
-            RenderSystem.bindTexture(tid);
-            int w = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-            int h = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-            if (w <= 0 || h <= 0) {
-                return null;
-            }
-            return new KeyValue<>(w, h);
-        } finally {
-            RenderSystem.bindTexture(prev[0]);
-        }
+        int width = texture.getWidth(0), height = texture.getHeight(0);
+        return width > 0 && height > 0 ? new KeyValue<>(width, height) : null;
     }
 
     /**
@@ -440,8 +428,8 @@ public final class TextureUtils {
         List<Boolean> horizontalStretch = new ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
-        int firstPixel = image.getPixelRGBA(contentStartX, textureStartY);
-        Color firstColor = Color.abgr(firstPixel);
+        int firstPixel = image.getPixel(contentStartX, textureStartY);
+        Color firstColor = Color.argb(firstPixel);
         boolean firstIsBlack = !firstColor.isEmpty() && firstColor.red() < BLACK_THRESHOLD &&
                 firstColor.green() < BLACK_THRESHOLD && firstColor.blue() < BLACK_THRESHOLD;
 
@@ -451,8 +439,8 @@ public final class TextureUtils {
 
         boolean lastWasBlack = firstIsBlack;
         for (int x = contentStartX + 1; x <= contentEndX; x++) {
-            int pixel = image.getPixelRGBA(x, textureStartY);
-            Color color = Color.abgr(pixel);
+            int pixel = image.getPixel(x, textureStartY);
+            Color color = Color.argb(pixel);
 
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
@@ -478,8 +466,8 @@ public final class TextureUtils {
         List<Boolean> verticalStretch = new ArrayList<>();
 
         // 首先检查第一个像素，确定起始状态
-        int firstVPixel = image.getPixelRGBA(textureStartX, contentStartY);
-        Color firstVColor = Color.fromAbgr(firstVPixel);
+        int firstVPixel = image.getPixel(textureStartX, contentStartY);
+        Color firstVColor = Color.fromArgb(firstVPixel);
 
         boolean firstVIsBlack = !firstVColor.isEmpty() && firstVColor.red() < BLACK_THRESHOLD &&
                 firstVColor.green() < BLACK_THRESHOLD && firstVColor.blue() < BLACK_THRESHOLD;
@@ -490,8 +478,8 @@ public final class TextureUtils {
 
         lastWasBlack = firstVIsBlack;
         for (int y = contentStartY + 1; y <= contentEndY; y++) {
-            int pixel = image.getPixelRGBA(textureStartX, y);
-            Color color = Color.fromAbgr(pixel);
+            int pixel = image.getPixel(textureStartX, y);
+            Color color = Color.fromArgb(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
 
@@ -537,8 +525,8 @@ public final class TextureUtils {
 
         // 扫描整个右参考线，找到所有黑色像素段的最上和最下边界
         for (int y = contentStartY; y <= contentEndY; y++) {
-            int pixel = image.getPixelRGBA(textureEndX, y);
-            Color color = Color.fromAbgr(pixel);
+            int pixel = image.getPixel(textureEndX, y);
+            Color color = Color.fromArgb(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
             if (isBlack) {
@@ -570,8 +558,8 @@ public final class TextureUtils {
 
         // 扫描整个下参考线，找到所有黑色像素段的最左和最右边界
         for (int x = contentStartX; x <= contentEndX; x++) {
-            int pixel = image.getPixelRGBA(x, textureEndY);
-            Color color = Color.fromAbgr(pixel);
+            int pixel = image.getPixel(x, textureEndY);
+            Color color = Color.fromArgb(pixel);
             boolean isBlack = !color.isEmpty() && color.red() < BLACK_THRESHOLD &&
                     color.green() < BLACK_THRESHOLD && color.blue() < BLACK_THRESHOLD;
 
@@ -595,8 +583,8 @@ public final class TextureUtils {
 
         // 解析最右下角像素点作为文字颜色
         int textColor = 0x00FFFFFF;
-        int bottomRightPixel = image.getPixelRGBA(textureEndX, textureEndY);
-        Color bottomRightColor = Color.abgr(bottomRightPixel);
+        int bottomRightPixel = image.getPixel(textureEndX, textureEndY);
+        Color bottomRightColor = Color.argb(bottomRightPixel);
         if (!bottomRightColor.isEmpty()) {
             textColor = bottomRightColor.getArgb();
         }
@@ -609,7 +597,7 @@ public final class TextureUtils {
         int pixelIndex = 0;
         for (int y = sampleStartY; y <= sampleEndY; y++) {
             for (int x = sampleStartX; x <= sampleEndX; x++) {
-                textAreaPixels[pixelIndex++] = Color.fromAbgr(image.getPixelRGBA(x, y)).argb();
+                textAreaPixels[pixelIndex++] = Color.fromArgb(image.getPixel(x, y)).argb();
             }
         }
         int[] textBackgroundColors = representativeBackgroundColors(textAreaPixels);

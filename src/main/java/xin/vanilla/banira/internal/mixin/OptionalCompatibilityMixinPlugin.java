@@ -71,8 +71,8 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                     && method(target, "onPress", "(" + input + ")Z");
         if (mixin.endsWith("GuiIconToggleButtonMixin"))
             return field(target, "controller", "Lmezz/jei/api/gui/buttons/IIconButtonController;")
-                    && method(target, "draw", "(Lnet/minecraft/client/gui/GuiGraphics;IIF)V")
-                    && method(target, "drawTooltips", "(Lnet/minecraft/client/gui/GuiGraphics;II)V")
+                    && method(target, "draw", "(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V")
+                    && method(target, "drawTooltips", "(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V")
                     && method(target, "isMouseOver", "(DD)Z");
         return false;
     }
@@ -83,7 +83,7 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
         if (mixin.endsWith("XaeroInfoDisplayManagerMixin"))
             return method(target, "add", "(Lxaero/hud/minimap/info/InfoDisplay;)V")
                     && method(target, "applyLocalConfig", "()V");
-        String graphics = "Lnet/minecraft/client/gui/GuiGraphics;";
+        String graphics = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;";
         if (mixin.endsWith("JourneyMapTextBoundsMixin"))
             return matchesJourneyBounds(target, graphics, "Lnet/minecraft/network/chat/Component;",
                     "Lnet/minecraft/client/renderer/MultiBufferSource;");

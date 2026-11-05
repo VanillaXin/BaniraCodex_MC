@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;
@@ -297,7 +297,7 @@ public class CustomPlayerConfigEditScreen extends PlayerConfigScreen {
         }
 
         @Override
-        public void render(GuiGraphics graphics, float partialTicks) {
+        public void render(GuiGraphicsExtractor graphics, float partialTicks) {
             if (visible()) renderChildren(graphics, partialTicks);
         }
     }

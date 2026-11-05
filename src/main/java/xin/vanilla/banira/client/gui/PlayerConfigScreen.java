@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
@@ -437,7 +437,7 @@ public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativ
     }
 
     @Override
-    protected void renderWidgets(GuiGraphics stack, float partialTicks) {
+    protected void renderWidgets(GuiGraphicsExtractor stack, float partialTicks) {
         BaniraColorConfig theme = getEffectiveTheme();
         int background = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
         int buttonAreaHeight = BUTTON_HEIGHT + CARD_INNER;
@@ -464,14 +464,14 @@ public abstract class PlayerConfigScreen extends BaniraScreen implements UiNativ
         }
     }
 
-    private void renderManagedWidget(GuiGraphics stack, @Nullable IWidget widget, float partialTicks) {
+    private void renderManagedWidget(GuiGraphicsExtractor stack, @Nullable IWidget widget, float partialTicks) {
         if (widget == null || !widget.visible()) return;
         if (widget.enabled() && widget.needsUpdate()) widget.update();
         widget.render(stack, partialTicks);
     }
 
     @Override
-    protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor stack, int mouseX, int mouseY, float partialTicks) {
         renderWidgets(stack, partialTicks);
     }
 

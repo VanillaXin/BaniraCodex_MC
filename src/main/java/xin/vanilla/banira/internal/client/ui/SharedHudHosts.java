@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiHudBinding;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
@@ -19,7 +19,7 @@ public final class SharedHudHosts {
     }
 
     public interface Renderer {
-        void render(GuiGraphics graphics, HudDrawList frame);
+        void render(GuiGraphicsExtractor graphics, HudDrawList frame);
     }
 
     public static void install(AuiHudHost next) {
@@ -40,7 +40,7 @@ public final class SharedHudHosts {
         }, false, true));
     }
 
-    public static boolean render(String id, GuiGraphics graphics, HudDrawList frame) {
+    public static boolean render(String id, GuiGraphicsExtractor graphics, HudDrawList frame) {
         return host != null && host.render(id, view -> {
             if (!(view instanceof Renderer)) throw new IllegalStateException("HUD renderer unavailable");
             ((Renderer) view).render(graphics, frame);
@@ -51,7 +51,7 @@ public final class SharedHudHosts {
         return host != null && host.canRender(id);
     }
 
-    public static void renderOthers(GuiGraphics graphics) {
+    public static void renderOthers(GuiGraphicsExtractor graphics) {
         if (host != null) host.renderOthers(java.util.Set.of(NOTIFICATIONS, UNREAD, QUICK_ACTIONS, POINTER), view -> {
             if (!(view instanceof Renderer)) throw new IllegalStateException("HUD renderer unavailable");
             ((Renderer) view).render(graphics, new HudDrawList());

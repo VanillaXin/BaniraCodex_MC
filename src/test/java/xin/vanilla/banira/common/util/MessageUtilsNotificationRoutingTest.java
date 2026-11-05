@@ -45,7 +45,7 @@ import static xin.vanilla.banira.common.network.packet.NotificationToClientBudge
 public class MessageUtilsNotificationRoutingTest {
     @BeforeClass
     public static void bootstrapGame() throws Exception {
-        xin.vanilla.banira.common.network.packet.NotificationToClientBudgetTest.bootstrapGame();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     private RecordingPlayer player;
@@ -125,9 +125,8 @@ public class MessageUtilsNotificationRoutingTest {
                 .trans(EnumI18nType.FORMAT, "reward", text("apple"))
                 .translationFallback("Reward: %s").languageCode("zh_cn")
                 .color(xin.vanilla.banira.common.data.Color.argb(0xff55ff55)).italic(true)
-                .clickEvent(new net.minecraft.network.chat.ClickEvent(
-                        net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/reward"))
-                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, net.minecraft.network.chat.Component.literal("details")));
+                .clickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand("/reward"))
+                .hoverEvent(new HoverEvent.ShowText(net.minecraft.network.chat.Component.literal("details")));
         source.getChildren().add(text(" child").underlined(true));
         JsonObject original = source.toJson();
         xin.vanilla.banira.common.notification.NotificationBudget.Payload expected =
@@ -139,7 +138,7 @@ public class MessageUtilsNotificationRoutingTest {
             if (route == 2) {
                 assertEquals(expected.componentJson(), sink.customPackets.get(0).componentJson());
             } else {
-                assertEquals(expected.vanillaJson(), net.minecraft.network.chat.Component.Serializer.toJson(
+                assertEquals(expected.vanillaJson(), NativeComponentJson.toJson(
                         sink.nativePackets.get(0).content(), RegistryAccess.EMPTY));
             }
             assertEquals(original, source.toJson());
@@ -189,7 +188,7 @@ public class MessageUtilsNotificationRoutingTest {
     public void shortSingleMessagesValidateNativeExpansionAndEmptyTextHover() {
         Component expanding = new ScopedComponent("absent_optional_mod").trans(EnumI18nType.FORMAT, "key", repeat("x", 1900))
                 .translationFallback(repeat("%1$s", 10));
-        Component emptyWithHover = text("").hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+        Component emptyWithHover = text("").hoverEvent(new HoverEvent.ShowText(
                 net.minecraft.network.chat.Component.literal(repeat("\u4e2d", 6000))));
         for (int route = 0; route < 3; route++) {
             selectRoute(route);
@@ -296,7 +295,7 @@ public class MessageUtilsNotificationRoutingTest {
         }
 
         @Override
-        public void send(Packet<?> packet, PacketSendListener listener) {
+        public void send(Packet<?> packet, io.netty.channel.ChannelFutureListener listener) {
             sink.submit((ClientboundSystemChatPacket) packet);
         }
     }

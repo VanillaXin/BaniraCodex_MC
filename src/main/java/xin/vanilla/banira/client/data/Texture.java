@@ -4,8 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
-import xin.vanilla.banira.Identifier;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.JsonUtils;
@@ -24,7 +23,7 @@ public class Texture {
      * 材质资源
      */
     @Nonnull
-    private final ResourceLocation location;
+    private final Identifier location;
     /**
      * 材质尺寸
      */
@@ -35,7 +34,7 @@ public class Texture {
      */
     private int u0, v0, uWidth, vHeight;
 
-    private Texture(@Nonnull ResourceLocation location) {
+    private Texture(@Nonnull Identifier location) {
         this.location = location;
         KeyValue<Integer, Integer> size;
         size = TextureUtils.getTextureSize(location);
@@ -47,7 +46,7 @@ public class Texture {
         this.vHeight = uvHeight;
     }
 
-    private Texture(ResourceLocation location, int uvWidth, int uvHeight) {
+    private Texture(Identifier location, int uvWidth, int uvHeight) {
         this.location = location;
         this.uvWidth = uvWidth;
         this.uvHeight = uvHeight;
@@ -61,15 +60,15 @@ public class Texture {
         return EMPTY;
     }
 
-    public static Texture of(@Nonnull ResourceLocation location) {
+    public static Texture of(@Nonnull Identifier location) {
         return new Texture(location);
     }
 
-    public static Texture of(@Nonnull ResourceLocation location, int uvWidth, int uvHeight) {
+    public static Texture of(@Nonnull Identifier location, int uvWidth, int uvHeight) {
         return new Texture(location, uvWidth, uvHeight);
     }
 
-    public static Texture of(@Nonnull ResourceLocation location, Texture texture) {
+    public static Texture of(@Nonnull Identifier location, Texture texture) {
         return new Texture(location).from(texture);
     }
 
@@ -120,11 +119,11 @@ public class Texture {
     }
 
     public static Texture fromJson(JsonObject json) {
-        ResourceLocation location = null;
+        Identifier location = null;
         String locationStr = JsonUtils.getString(json, "location", null);
         if (StringUtils.isNotNullOrEmpty(locationStr)) {
             try {
-                location = Identifier.id().parse(locationStr);
+                location = xin.vanilla.banira.Identifier.id().parse(locationStr);
             } catch (Exception ignored) {
             }
         }

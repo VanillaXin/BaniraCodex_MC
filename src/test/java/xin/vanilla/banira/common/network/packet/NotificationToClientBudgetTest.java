@@ -19,17 +19,8 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.Assert.*;
 
 public class NotificationToClientBudgetTest {
-    private static boolean bootstrapped;
-
-    public static synchronized void bootstrapGame() throws Exception {
-        if (bootstrapped) return;
-        // NeoForge feature flags consult discovered mods during vanilla bootstrap.
-        // Keep the native registries/codecs real in this headless test context.
-        net.neoforged.fml.loading.LoadingModList.of(java.util.List.of(), java.util.List.of(),
-                java.util.List.of(), java.util.List.of(), java.util.Map.of());
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
-        bootstrapped = true;
+    public static void bootstrapGame() {
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     @BeforeClass

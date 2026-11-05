@@ -97,10 +97,11 @@ public final class CommandUtils {
     public static boolean executeCommand(@NonNull ServerPlayer player, @NonNull String command, int permission, boolean suppressedOutput) {
         boolean result = false;
         try {
-            MinecraftServer server = player.getServer();
+            MinecraftServer server = player.level().getServer();
             CommandSourceStack commandSourceStack = player.createCommandSourceStack();
             if (permission > 0) {
-                commandSourceStack = commandSourceStack.withPermission(permission);
+                commandSourceStack = commandSourceStack.withPermission(
+                        xin.vanilla.banira.internal.server.NativePermissionLevels.forLevel(permission));
             }
             if (suppressedOutput) {
                 commandSourceStack = commandSourceStack.withSuppressedOutput();
@@ -140,7 +141,7 @@ public final class CommandUtils {
      * 刷新玩家权限
      */
     public static void refreshPermission(@NonNull ServerPlayer player) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             server = BaniraServerRuntime.server();
         }
@@ -309,8 +310,8 @@ public final class CommandUtils {
             if (!playerData.isNotified()) {
                 Component button = BaniraComponent.get().literal(command)
                         .color(EnumMCColor.AQUA.getColor())
-                        .clickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                        .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, BaniraComponent.get().literal(command)
+                        .clickEvent(new ClickEvent.RunCommand(command))
+                        .hoverEvent(new HoverEvent.ShowText(BaniraComponent.get().literal(command)
                                 .toVanilla())
                         );
                 MessageUtils.sendNotification(player,

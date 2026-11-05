@@ -1,29 +1,29 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.render.BaniraDrawHandle;
 
 import javax.annotation.Nonnull;
 import java.util.function.Function;
 
 /**
- * 客户端绘制后端桥接点；加载器适配层负责安装当前版本的 PoseStack 包装器。
+ * 客户端绘制后端桥接点；加载器适配层保留当前 GUI 提取器及其原生渲染状态。
  */
 public final class BaniraClientDrawBridge {
     private BaniraClientDrawBridge() {
     }
 
-    private static Function<PoseStack, BaniraDrawHandle> drawHandleFactory;
+    private static Function<GuiGraphicsExtractor, BaniraDrawHandle> drawHandleFactory;
 
-    public static void install(@Nonnull Function<PoseStack, BaniraDrawHandle> factory) {
+    public static void install(@Nonnull Function<GuiGraphicsExtractor, BaniraDrawHandle> factory) {
         drawHandleFactory = factory;
     }
 
     @Nonnull
-    public static BaniraDrawHandle handle(@Nonnull PoseStack poseStack) {
+    public static BaniraDrawHandle handle(@Nonnull GuiGraphicsExtractor graphics) {
         if (drawHandleFactory == null) {
             throw new IllegalStateException("Banira client draw bridge has not been installed.");
         }
-        return drawHandleFactory.apply(poseStack);
+        return drawHandleFactory.apply(graphics);
     }
 }

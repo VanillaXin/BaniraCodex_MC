@@ -28,8 +28,7 @@ public class UiConfigListDraftTest {
     @BeforeClass
     public static void bootstrap() {
         xin.vanilla.banira.common.util.RegistryKeyReuseTest.initializeStandaloneLoader();
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.banira.test.NativeBootstrap.initialize();
     }
 
     @Before
@@ -51,7 +50,7 @@ public class UiConfigListDraftTest {
         assertNotNull(instance);
         screen = new xin.vanilla.banira.client.gui.BaniraScreen(net.minecraft.network.chat.Component.literal("list")) {
             @Override
-            protected void onRender(net.minecraft.client.gui.GuiGraphics graphics, int x, int y, float partialTicks) {
+            protected void onRender(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int x, int y, float partialTicks) {
             }
         };
     }

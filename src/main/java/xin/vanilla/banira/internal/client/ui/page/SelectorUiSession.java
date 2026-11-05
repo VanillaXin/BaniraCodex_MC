@@ -4,14 +4,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
+
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.gui.*;
@@ -42,7 +42,7 @@ public final class SelectorUiSession implements UiPageSession {
     private final boolean closesAfterSubmit;
     private ItemStack item;
     private MobEffectInstance effect;
-    private ResourceLocation advancement;
+    private Identifier advancement;
     private String query = "", error = "";
     private boolean mode, closed, submitted, submitting, loading;
     private long version;
@@ -96,10 +96,10 @@ public final class SelectorUiSession implements UiPageSession {
         mode = true;
         callback = value -> {
             if (args.onDataReceived1() != null) {
-                args.onDataReceived1().accept((ResourceLocation) value);
+                args.onDataReceived1().accept((Identifier) value);
                 return "";
             }
-            return args.onDataReceived2().apply((ResourceLocation) value);
+            return args.onDataReceived2().apply((Identifier) value);
         };
     }
 
@@ -129,7 +129,7 @@ public final class SelectorUiSession implements UiPageSession {
         return effect == null ? null : EffectUtils.copyEffectInstance(effect);
     }
 
-    public ResourceLocation advancement() {
+    public Identifier advancement() {
         return advancement;
     }
 
@@ -183,7 +183,7 @@ public final class SelectorUiSession implements UiPageSession {
             if (value == null) return;
             effect = new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(value), effect.getDuration(), effect.getAmplifier());
         } else {
-            ResourceLocation parsed = Identifier.id().parse(id);
+            Identifier parsed = xin.vanilla.banira.Identifier.id().parse(id);
             if (parsed == null) return;
             advancement = parsed;
         }
@@ -288,12 +288,12 @@ public final class SelectorUiSession implements UiPageSession {
         } else if (kind == Kind.ADVANCEMENT && operation.equals("advancement")) {
             widget.title(Text.transAuto(Banira.MOD_ID, "enter_advancement_id")).defaultValue(Objects.toString(advancement, "")).validator(input -> {
                 try {
-                    return Identifier.id().parse(input.value()) == null ? failure("enter_advancement_id_error", input.value()) : null;
+                    return xin.vanilla.banira.Identifier.id().parse(input.value()) == null ? failure("enter_advancement_id_error", input.value()) : null;
                 } catch (IllegalArgumentException invalid) {
                     return failure("enter_advancement_id_error", input.value());
                 }
             });
-            apply = input -> advancement = Identifier.id().parse(input.firstValue());
+            apply = input -> advancement = xin.vanilla.banira.Identifier.id().parse(input.firstValue());
         } else throw new IllegalArgumentException("Unsupported selector editor");
         FormUiSession form = new FormUiSession(new InputFormScreen.Args().setParentScreen(editorParent()).addWidget(widget).setCallback(input -> {
             if (closed || submitted) {

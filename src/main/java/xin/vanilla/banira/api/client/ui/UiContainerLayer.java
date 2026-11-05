@@ -1,6 +1,6 @@
 package xin.vanilla.banira.api.client.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.Map;
 public interface UiContainerLayer extends AutoCloseable {
     UiView view();
 
-    boolean render(GuiGraphics graphics, Map<String, ScreenCoordinate> regions);
+    boolean render(GuiGraphicsExtractor graphics, Map<String, ScreenCoordinate> regions);
 
     void fallback();
 

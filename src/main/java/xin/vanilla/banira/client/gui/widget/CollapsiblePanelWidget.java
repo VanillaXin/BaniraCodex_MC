@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -196,8 +198,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -207,8 +209,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         double w = width();
         boolean isExpanded = expanded;
 
-        stack.pushPose();
-        stack.translate(ox, oy, 0);
+        stack.pushMatrix();
+        stack.translate((float) (ox), (float) (oy));
 
         // region 绘制标题栏
         int headerBg = mouseInside ? headerHoverBgColor : headerBgColor;
@@ -236,7 +238,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             args.x(textX).y(textY).maxWidth((int) Math.max(0, w - textX - 4)).wrap(false).inScreen(false);
             LabelWidget.drawLimitedText(graphics, args);
         }
-        stack.popPose();
+        stack.popMatrix();
         // endregion 绘制标题栏
 
         // region 绘制内容区（仅展开时）
@@ -247,8 +249,8 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
 
         // region 绘制左右下边框线
         if (borderLeftWidth > 0 || borderRightWidth > 0 || (isExpanded && borderBottomWidth > 0)) {
-            stack.pushPose();
-            stack.translate(ox, oy, 0);
+            stack.pushMatrix();
+            stack.translate((float) (ox), (float) (oy));
             int totalH = (int) height();
             if (borderLeftWidth > 0) {
                 AbstractGuiUtils.fill(stack, 0, 0, borderLeftWidth, totalH, headerBorderColor);
@@ -259,7 +261,7 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
             if (isExpanded && borderBottomWidth > 0) {
                 AbstractGuiUtils.fill(stack, 0, totalH - borderBottomWidth, (int) w, borderBottomWidth, headerBorderColor);
             }
-            stack.popPose();
+            stack.popMatrix();
         }
         // endregion 绘制边框线
 
@@ -288,25 +290,25 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         int x = (int) mouseX;
         int y = (int) mouseY;
         screen.addDeferredTooltipRender(graphics -> {
-            PoseStack stack = graphics.pose();
-            stack.pushPose();
-            stack.last().pose().identity();
+            Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
+            stack.pushMatrix();
+            stack.identity();
             TooltipWidget.drawPopupMessage(stack,
                     FontDrawArgs.ofPopo(tooltipText.stack(stack).font(screen.getFont()))
                             .x(x).y(y).popupUseTexture(theme.tooltipUseTexture()),
                     theme, tooltipSeason);
-            stack.popPose();
+            stack.popMatrix();
         });
     }
 
-    private void drawArrowDown(PoseStack stack, int x, int y, int size, int color) {
+    private void drawArrowDown(Matrix3x2fStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
         AbstractGuiUtils.drawPolygon(stack, cx, cy, r, 3, 90, color);
     }
 
-    private void drawArrowRight(PoseStack stack, int x, int y, int size, int color) {
+    private void drawArrowRight(Matrix3x2fStack stack, int x, int y, int size, int color) {
         float cx = x + size * 0.5f;
         float cy = y + size * 0.5f;
         float r = size * 0.35f;
@@ -318,18 +320,18 @@ public class CollapsiblePanelWidget extends BaseWidget implements ITextWidget {
         return this;
     }
 
-    private void renderVisibleChildren(GuiGraphics graphics, float partialTicks) {
+    private void renderVisibleChildren(GuiGraphicsExtractor graphics, float partialTicks) {
         if (!visible || children.isEmpty()) return;
-        PoseStack stack = graphics.pose();
-        stack.pushPose();
-        stack.translate(x(), y(), 0);
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
+        stack.pushMatrix();
+        stack.translate((float) (x()), (float) (y()));
         for (IWidget child : children) {
             if (shouldRenderChild(child)) {
                 applyRenderViewportToChild(child);
                 child.render(graphics, partialTicks);
             }
         }
-        stack.popPose();
+        stack.popMatrix();
     }
 
     private boolean shouldRenderChild(@Nullable IWidget child) {

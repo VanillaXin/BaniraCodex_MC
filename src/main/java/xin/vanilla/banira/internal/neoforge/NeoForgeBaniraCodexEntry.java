@@ -43,7 +43,7 @@ public final class NeoForgeBaniraCodexEntry {
         NeoForge.EVENT_BUS.register(NeoForgeBaniraGameEventAdapter.class);
         NetworkInit.register();
         BaniraNetworkSmokeServerRunner.register();
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             ClientBootstrapAccess.init(modBus);
         }
     }

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.common.util;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.serialization.JsonOps;
 import lombok.NonNull;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.HolderLookup;
@@ -10,8 +11,9 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -20,7 +22,6 @@ import net.minecraft.world.item.component.CustomData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
@@ -41,7 +42,7 @@ public final class ItemUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final ResourceLocation UNKNOWN_ITEM = Identifier.id().create("unknown_item");
+    private static final Identifier UNKNOWN_ITEM = xin.vanilla.banira.Identifier.id().create("unknown_item");
 
     /**
      * 所有物品缓存
@@ -94,13 +95,13 @@ public final class ItemUtils {
      * @param item 物品
      */
     @Nullable
-    public static ResourceLocation getItemRegistry(Item item) {
+    public static Identifier getItemRegistry(Item item) {
         if (item == null) return null;
         if (!BaniraPlatforms.isInstalled()) {
             return null;
         }
         Object id = BaniraPlatforms.get().registryService().itemKeyObject(item);
-        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
+        return id instanceof Identifier ? (Identifier) id : id instanceof String ? Identifier.tryParse((String) id) : null;
     }
 
     /**
@@ -109,7 +110,7 @@ public final class ItemUtils {
      * @param item 物品
      */
     public static String getItemRegistryString(Item item) {
-        ResourceLocation registryName = getItemRegistry(item);
+        Identifier registryName = getItemRegistry(item);
         return registryName != null ? registryName.toString() : UNKNOWN_ITEM.toString();
     }
 
@@ -119,7 +120,7 @@ public final class ItemUtils {
      * @param itemStack 物品堆叠
      */
     @Nullable
-    public static ResourceLocation getItemRegistry(ItemStack itemStack) {
+    public static Identifier getItemRegistry(ItemStack itemStack) {
         if (isItemNull(itemStack)) {
             return null;
         }
@@ -155,7 +156,7 @@ public final class ItemUtils {
      */
     public static String getItemNameKey(ItemStack itemStack) {
         if (isItemNull(itemStack)) return "";
-        return itemStack.getDescriptionId();
+        return itemStack.getItem().getDescriptionId();
     }
 
     /**
@@ -185,14 +186,16 @@ public final class ItemUtils {
 
     public static String getItemCustomNameJson(@NonNull ItemStack itemStack) {
         net.minecraft.network.chat.Component name = getItemCustomName(itemStack);
-        return name == null ? "" : net.minecraft.network.chat.Component.Serializer.toJson(name, registryAccess());
+        return name == null ? "" : ComponentSerialization.CODEC.encodeStart(
+                registryAccess().createSerializationContext(JsonOps.INSTANCE), name).getOrThrow().toString();
     }
 
     public static net.minecraft.network.chat.Component getItemCustomNameFromJson(String json) {
         net.minecraft.network.chat.Component result = null;
         if (StringUtils.isNotNullOrEmpty(json)) {
             try {
-                result = net.minecraft.network.chat.Component.Serializer.fromJson(json, registryAccess());
+                result = ComponentSerialization.CODEC.parse(
+                        registryAccess().createSerializationContext(JsonOps.INSTANCE), JsonUtils.parseElement(json)).getOrThrow();
             } catch (Exception e) {
                 LOGGER.error("Invalid unsafe item name: {}", json, e);
             }
@@ -225,7 +228,7 @@ public final class ItemUtils {
         CompoundTag tag = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(modId)) tag.put(modId, new CompoundTag());
         item.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-        return tag.getCompound(modId);
+        return tag.getCompoundOrEmpty(modId);
     }
 
     /**
@@ -349,7 +352,7 @@ public final class ItemUtils {
         return item == null || getItemRegistryString(item).equals(UNKNOWN_ITEM.toString());
     }
 
-    public static boolean isUnknownItem(ResourceLocation itemId) {
+    public static boolean isUnknownItem(Identifier itemId) {
         return itemId == null || itemId.toString().equals(UNKNOWN_ITEM.toString());
     }
 
@@ -369,7 +372,7 @@ public final class ItemUtils {
             return "";
         }
         try {
-            ResourceLocation itemId = getItemRegistry(itemStack);
+            Identifier itemId = getItemRegistry(itemStack);
             if (itemId == null) return "";
             String nbtString = serializeItemStackTag(itemStack);
             return itemId + nbtString;
@@ -387,7 +390,7 @@ public final class ItemUtils {
             return "";
         }
         try {
-            ResourceLocation itemId = getItemRegistry(itemStack);
+            Identifier itemId = getItemRegistry(itemStack);
             if (itemId == null) return "";
             return itemId + serializeItemStackTag(itemStack);
         } catch (Exception e) {
@@ -424,12 +427,12 @@ public final class ItemUtils {
     private static ItemStack deserializeItemStackUncached(String k) {
         try {
             if (k.startsWith("{")) {
-                CompoundTag root = TagParser.parseTag(k);
+                CompoundTag root = TagParser.parseCompoundFully(k);
                 return readItemStackFromRootTag(root);
             }
             int brace = k.indexOf('{');
             String idPart = brace >= 0 ? k.substring(0, brace).trim() : k.trim();
-            ResourceLocation rl = ResourceLocation.tryParse(idPart);
+            Identifier rl = Identifier.tryParse(idPart);
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
@@ -439,7 +442,7 @@ public final class ItemUtils {
             }
             ItemStack stack = new ItemStack(item);
             if (brace >= 0) {
-                CompoundTag extra = TagParser.parseTag(k.substring(brace));
+                CompoundTag extra = TagParser.parseCompoundFully(k.substring(brace));
                 CustomData.set(DataComponents.CUSTOM_DATA, stack, extra);
             }
             return stack;
@@ -453,7 +456,7 @@ public final class ItemUtils {
         if (!root.contains("id")) {
             return ItemStack.EMPTY;
         }
-        ResourceLocation id = ResourceLocation.tryParse(root.getString("id"));
+        Identifier id = Identifier.tryParse(root.getStringOr("id", ""));
         if (id == null) {
             return ItemStack.EMPTY;
         }
@@ -461,22 +464,22 @@ public final class ItemUtils {
         if (item == null || item == Items.AIR) {
             return ItemStack.EMPTY;
         }
-        int count = root.contains("Count") ? root.getInt("Count") : (root.contains("count") ? root.getInt("count") : 1);
+        int count = root.contains("Count") ? root.getIntOr("Count", 0) : (root.contains("count") ? root.getIntOr("count", 0) : 1);
         ItemStack stack = new ItemStack(item, Math.max(1, count));
         if (root.contains("tag")) {
-            CustomData.set(DataComponents.CUSTOM_DATA, stack, root.getCompound("tag"));
+            CustomData.set(DataComponents.CUSTOM_DATA, stack, root.getCompoundOrEmpty("tag"));
         }
         return stack;
     }
 
     @Nullable
     public static Item getItemFromRegistry(String itemId) {
-        ResourceLocation location = Identifier.id().parse(itemId);
+        Identifier location = xin.vanilla.banira.Identifier.id().parse(itemId);
         return getItemFromRegistry(location);
     }
 
     @Nullable
-    public static Item getItemFromRegistry(ResourceLocation location) {
+    public static Item getItemFromRegistry(Identifier location) {
         if (location == null) return null;
         try {
             Object item = Banira.platform().registryService().item(location.toString());
@@ -544,8 +547,8 @@ public final class ItemUtils {
         try {
             // 从创造模式标签收集可展示变体
             try {
-                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
-                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.SEARCH);
                 for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
                     if (tab == null || tab == hotbarTab) continue;
                     try {
@@ -659,7 +662,7 @@ public final class ItemUtils {
             // 获取标签
             try {
                 for (String tagId : Banira.platform().registryService().itemTagIds(item)) {
-                    ResourceLocation loc = ResourceLocation.tryParse(tagId);
+                    Identifier loc = Identifier.tryParse(tagId);
                     if (loc != null) {
                         tags.add(loc.toString().toLowerCase());
                         tags.add(loc.getPath().toLowerCase());
@@ -841,7 +844,7 @@ public final class ItemUtils {
      *
      * @param location 注册ID
      */
-    public static ItemStack findItemByRegistry(ResourceLocation location) {
+    public static ItemStack findItemByRegistry(Identifier location) {
         if (location == null) {
             return ItemStack.EMPTY;
         }
@@ -1077,7 +1080,7 @@ public final class ItemUtils {
                 tooltip.add(BaniraComponent.get().literal(hoverName.getString()));
             }
             if (advanced) {
-                ResourceLocation registryName = getItemRegistry(itemStack);
+                Identifier registryName = getItemRegistry(itemStack);
                 if (registryName != null) {
                     Component registryComponent = BaniraComponent.get().literal(registryName.toString())
                             .color(Color.argb(0xFF404040));
@@ -1113,7 +1116,7 @@ public final class ItemUtils {
                 }
 
                 Item item = itemStack.getItem();
-                ResourceLocation registryName = getItemRegistry(itemStack);
+                Identifier registryName = getItemRegistry(itemStack);
                 String registryString = registryName != null ? registryName.toString() : null;
                 boolean baseTooltipContainsRegistry = false;
 
@@ -1164,8 +1167,8 @@ public final class ItemUtils {
                 // 高级模式：物品名称 -> 物品组 -> 描述 -> 附魔特殊描述 -> 标签 -> 物品ID -> 模组名称
                 // 2. 物品组信息
                 CreativeModeTab itemGroup = null;
-                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
-                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
+                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.HOTBAR);
+                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.getValue(CreativeModeTabs.SEARCH);
                 for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
                     if (tab == null || tab == searchTab || tab == hotbarTab) continue;
                     try {

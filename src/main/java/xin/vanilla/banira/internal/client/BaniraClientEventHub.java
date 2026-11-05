@@ -1,10 +1,9 @@
 package xin.vanilla.banira.internal.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.Banira;
@@ -104,7 +103,7 @@ public final class BaniraClientEventHub {
         });
         Client.onTextureReload(event -> {
             // 公共事件只暴露字符串，内部再转换成当前 MC 版本的资源位置类型。
-            ResourceLocation atlasLocation = ResourceLocation.tryParse(event.atlasLocation());
+            Identifier atlasLocation = Identifier.tryParse(event.atlasLocation());
             if (atlasLocation != null && Banira.MOD_ID.equals(atlasLocation.getNamespace())) {
                 TextureUtils.resourceReloadEvent();
                 BaniraClientOverlayBridge.resetTextureCaches();
@@ -159,7 +158,7 @@ public final class BaniraClientEventHub {
         BaniraClientEvents.dispatchRenderOverlayPre(event);
     }
 
-    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
+    public static void dispatchRenderOverlayPreNative(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor nativeGraphics,
                                                       float partialTick, boolean screenOpen) {
         dispatchRenderOverlayPre(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
     }
@@ -348,23 +347,30 @@ public final class BaniraClientEventHub {
             BaniraClientEvents.Client.fireRenderOverlayPost(event);
         }
 
-        public static void fireDrawScreenPreNative(@Nonnull GuiGraphics nativeGraphics, @Nonnull Screen screen,
+        public static void fireDrawScreenPreNative(@Nonnull GuiGraphicsExtractor nativeGraphics, @Nonnull Screen screen,
                                                    double mouseX, double mouseY, float partialTick) {
-            TooltipWidget.beginPopupFrame(screen, mouseX, mouseY);
-            handleDrawScreenPre(screen, mouseX, mouseY);
-            fireDrawScreenPre(drawScreenEvent(nativeGraphics.pose(), screen, mouseX, mouseY, partialTick));
+            try (var scope = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(nativeGraphics)) {
+                TooltipWidget.beginPopupFrame(screen, mouseX, mouseY);
+                handleDrawScreenPre(screen, mouseX, mouseY);
+                fireDrawScreenPre(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+            }
         }
 
-        public static void fireDrawScreenPostNative(@Nonnull GuiGraphics nativeGraphics, @Nonnull Screen screen,
+        public static void fireDrawScreenPostNative(@Nonnull GuiGraphicsExtractor nativeGraphics, @Nonnull Screen screen,
                                                     double mouseX, double mouseY, float partialTick) {
-            BaniraClientOverlayBridge.renderScreenOverlay(nativeGraphics, screen, mouseX, mouseY, partialTick);
-            fireDrawScreenPost(drawScreenEvent(nativeGraphics.pose(), screen, mouseX, mouseY, partialTick));
-            TooltipWidget.flushPopupFrame(nativeGraphics.pose());
+            try (var scope = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(nativeGraphics)) {
+                xin.vanilla.banira.internal.client.ui.NativeGuiGraphics.bind(nativeGraphics);
+                BaniraClientOverlayBridge.renderScreenOverlay(nativeGraphics, screen, mouseX, mouseY, partialTick);
+                fireDrawScreenPost(drawScreenEvent(nativeGraphics, screen, mouseX, mouseY, partialTick));
+                TooltipWidget.flushPopupFrame(nativeGraphics.pose());
+            }
         }
 
-        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
+        public static void fireRenderOverlayPostNative(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor nativeGraphics,
                                                        float partialTick, boolean screenOpen) {
-            fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+            try (var scope = xin.vanilla.banira.client.util.ExtractedGuiRenderer.bind(nativeGraphics)) {
+                fireRenderOverlayPost(overlayEvent(element, nativeGraphics, partialTick, screenOpen));
+            }
         }
     }
 
@@ -413,22 +419,22 @@ public final class BaniraClientEventHub {
         keyPressTracker.reset();
     }
 
-    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull PoseStack nativeGraphics, @Nonnull Screen screen,
+    private static BaniraDrawScreenEvent drawScreenEvent(@Nonnull GuiGraphicsExtractor nativeGraphics, @Nonnull Screen screen,
                                                          double mouseX, double mouseY, float partialTick) {
         return new BaniraDrawScreenEvent(drawContext(nativeGraphics, partialTick), screenInfo(screen), mouseX, mouseY, partialTick);
     }
 
-    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull PoseStack nativeGraphics,
+    private static BaniraOverlayRenderEvent overlayEvent(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor nativeGraphics,
                                                          float partialTick, boolean screenOpen) {
         return new BaniraOverlayRenderEvent(element, hudContext(nativeGraphics, partialTick), partialTick, screenOpen);
     }
 
-    private static BaniraDrawContext drawContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
+    private static BaniraDrawContext drawContext(@Nonnull GuiGraphicsExtractor nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraDrawContext(BaniraClientDrawBridge.handle(nativeGraphics), screen.key(), screen.val(), partialTick);
     }
 
-    private static BaniraHudRenderContext hudContext(@Nonnull PoseStack nativeGraphics, float partialTick) {
+    private static BaniraHudRenderContext hudContext(@Nonnull GuiGraphicsExtractor nativeGraphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraHudRenderContext(drawContext(nativeGraphics, partialTick), screen.key(), screen.val(), partialTick);
     }

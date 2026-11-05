@@ -5,6 +5,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.UsernameCache;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
@@ -24,7 +25,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * NeoForge 1.21.1 的基础 platform 实现。
+ * NeoForge 的基础 platform 实现。
  */
 public final class NeoForgeBaniraPlatform implements BaniraPlatform {
     private final BaniraInputService input = createInputService();
@@ -33,7 +34,9 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
-    public BaniraCostService costService() { return costs; }
+    public BaniraCostService costService() {
+        return costs;
+    }
 
     @Nonnull
     @Override
@@ -44,22 +47,22 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
     @Nonnull
     @Override
     public String minecraftVersion() {
-        return SharedConstants.getCurrentVersion().getName();
+        return SharedConstants.getCurrentVersion().name();
     }
 
     @Override
     public boolean isClient() {
-        return FMLEnvironment.dist == Dist.CLIENT;
+        return FMLEnvironment.getDist() == Dist.CLIENT;
     }
 
     @Override
     public boolean isDedicatedServer() {
-        return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
+        return FMLEnvironment.getDist() == Dist.DEDICATED_SERVER;
     }
 
     @Override
     public boolean isDevelopment() {
-        return !FMLEnvironment.production;
+        return !FMLEnvironment.isProduction();
     }
 
     @Override
@@ -105,14 +108,7 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No loaded mod main class for mod id: " + modId));
         try {
-            Module module = NeoForgeBaniraPlatform.class.getModule().getLayer()
-                    .findModule(fileInfo.moduleName())
-                    .orElseThrow(() -> new ClassNotFoundException(className));
-            Class<?> type = Class.forName(module, className);
-            if (type == null) {
-                throw new ClassNotFoundException(className);
-            }
-            return type;
+            return Class.forName(className, false, FMLLoader.getCurrent().getCurrentClassLoader());
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Unable to load mod main class: " + className, e);
         }
@@ -185,13 +181,13 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
     }
 
     private static BaniraInputService createInputService() {
-        return FMLEnvironment.dist == Dist.CLIENT
+        return FMLEnvironment.getDist() == Dist.CLIENT
                 ? ClientServices.input()
                 : ServerInputService.INSTANCE;
     }
 
     private static BaniraLogoService createLogoService() {
-        return FMLEnvironment.dist == Dist.CLIENT
+        return FMLEnvironment.getDist() == Dist.CLIENT
                 ? ClientServices.logo()
                 : ServerLogoService.INSTANCE;
     }

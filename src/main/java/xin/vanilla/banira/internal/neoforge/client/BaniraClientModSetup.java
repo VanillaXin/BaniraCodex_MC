@@ -1,7 +1,8 @@
 package xin.vanilla.banira.internal.neoforge.client;
 
+import net.minecraft.resources.Identifier;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 import xin.vanilla.banira.BaniraComponent;
@@ -63,8 +64,8 @@ public final class BaniraClientModSetup {
         NeoForgeKeyBindingService.INSTANCE.flushPendingRegistrations(event);
     }
 
-    public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(BaniraColorThemeLoader.INSTANCE);
+    public static void onRegisterReloadListeners(AddClientReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(Banira.MOD_ID, "color_themes"), BaniraColorThemeLoader.INSTANCE);
     }
 
     public static void onTextureAtlasStitched(TextureAtlasStitchedEvent event) {

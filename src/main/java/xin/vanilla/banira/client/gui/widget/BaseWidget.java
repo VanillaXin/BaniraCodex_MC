@@ -1,10 +1,12 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -334,6 +336,20 @@ public abstract class BaseWidget implements IWidget {
         }
 
         return onCharTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public boolean handleTextInput(String text, int modifiers) {
+        if (text.length() == 1) return handleCharTyped(text.charAt(0), modifiers);
+        if (!visible || !enabled) return false;
+        if (findHandlingChild(child -> child.handleTextInput(text, modifiers)) != null) return true;
+        return onTextInput(text, modifiers);
+    }
+
+    protected boolean onTextInput(String text, int modifiers) {
+        boolean consumed = false;
+        for (char character : text.toCharArray()) consumed |= onCharTyped(character, modifiers);
+        return consumed;
     }
 
     @Override
@@ -826,14 +842,14 @@ public abstract class BaseWidget implements IWidget {
         return cachedAbsY;
     }
 
-    protected void renderChildren(GuiGraphics graphics, float partialTicks) {
+    protected void renderChildren(GuiGraphicsExtractor graphics, float partialTicks) {
         if (!visible || children.isEmpty()) {
             return;
         }
 
-        PoseStack stack = graphics.pose();
-        stack.pushPose();
-        stack.translate(x(), y(), 0);
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
+        stack.pushMatrix();
+        stack.translate((float) (x()), (float) (y()));
 
         for (IWidget child : children) {
             if (child != null && child.visible()) {
@@ -841,7 +857,7 @@ public abstract class BaseWidget implements IWidget {
             }
         }
 
-        stack.popPose();
+        stack.popMatrix();
     }
 
     // endregion Children Management

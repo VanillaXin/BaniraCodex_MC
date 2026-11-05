@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionOverlay;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -32,7 +32,7 @@ public final class BaniraClientOverlayBridge {
         QuickActionOverlay.resetSystemIconTextureCache();
     }
 
-    public static void renderScreenOverlay(@Nonnull GuiGraphics graphics, @Nonnull Screen screen,
+    public static void renderScreenOverlay(@Nonnull GuiGraphicsExtractor graphics, @Nonnull Screen screen,
                                            double mouseX, double mouseY, float partialTick) {
         if (QuickActionOverlay.isSupportedInventoryScreen(screen)) {
             QuickActionOverlay.get().render(graphics, screen, (int) Math.round(mouseX), (int) Math.round(mouseY), partialTick);
@@ -44,7 +44,7 @@ public final class BaniraClientOverlayBridge {
         }
     }
 
-    public static void renderHudOverlay(@Nonnull GuiGraphics graphics) {
+    public static void renderHudOverlay(@Nonnull GuiGraphicsExtractor graphics) {
         NotificationManager.get().render(graphics);
         xin.vanilla.banira.client.notification.NotificationUnreadHud.render(graphics);
     }

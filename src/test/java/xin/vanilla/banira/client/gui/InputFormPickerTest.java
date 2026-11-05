@@ -8,6 +8,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class InputFormPickerTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @org.junit.BeforeClass
     public static void bootstrap() throws Exception {
         xin.vanilla.banira.common.network.packet.NotificationToClientBudgetTest.bootstrapGame();

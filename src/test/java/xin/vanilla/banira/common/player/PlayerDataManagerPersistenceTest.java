@@ -58,6 +58,6 @@ public class PlayerDataManagerPersistenceTest {
         manager.saveToDisk(playerUuid);
         assertNotEquals(unchangedMarker, Files.getLastModifiedTime(playerFile));
         CompoundTag persisted = NBTUtils.readCompressed(playerFile.toFile());
-        assertEquals("changed", persisted.getCompound("test_mod").getString("value"));
+        assertEquals("changed", persisted.getCompound("test_mod").orElseThrow().getString("value").orElseThrow());
     }
 }

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -39,7 +39,7 @@ public final class ConfigEditorEntryRowWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics stack, float partialTicks) {
+    public void render(GuiGraphicsExtractor stack, float partialTicks) {
         if (!visible) {
             return;
         }

@@ -1,9 +1,11 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -46,8 +48,8 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!parent.previewExpanded()) return;
 
         ScreenCoordinate pb = parent.getPreviewBounds();
@@ -112,7 +114,8 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
                         AbstractGuiUtils.fill(s, (int) pb.x() + 1, itemY, contentWidth, ITEM_HEIGHT, popupSelected);
                     }
 
-                    graphics.drawString(font, display, (int) pb.x() + PAD, itemY + (ITEM_HEIGHT - font.lineHeight) / 2f, textColor, false);
+                    graphics.text(font, display, (int) pb.x() + PAD,
+                            (int) itemY + (ITEM_HEIGHT - font.lineHeight) / 2, textColor, false);
 
                     int closeX = (int) (pb.x() + contentWidth - PAD - TAG_CLOSE_SIZE);
                     int closeY = itemY + (ITEM_HEIGHT - TAG_CLOSE_SIZE) / 2;
@@ -137,7 +140,7 @@ class DropdownPreviewOverlayWidget extends BaseWidget {
         });
     }
 
-    private void drawScrollbar(PoseStack s, ScreenCoordinate pb, int scrollOffset, int contentHeight, int visibleHeight,
+    private void drawScrollbar(Matrix3x2fStack s, ScreenCoordinate pb, int scrollOffset, int contentHeight, int visibleHeight,
                                int trackColor, int thumbColor) {
         int maxScroll = Math.max(0, contentHeight - visibleHeight);
         if (maxScroll <= 0) return;

@@ -1,5 +1,8 @@
 package xin.vanilla.banira.internal.client.compat.jei;
 
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Optional;
@@ -7,28 +10,36 @@ import java.util.Optional;
 public final class JeiRuntimeAccess {
     private static final String INPUT_API = "mezz.jei.api.gui.inputs.IJeiUserInput";
     private static final ClassValue<Optional<Method>> CONFIG_GETTERS = new ClassValue<Optional<Method>>() {
-        @Override protected Optional<Method> computeValue(Class<?> type) {
+        @Override
+        protected Optional<Method> computeValue(Class<?> type) {
             Method getter = publicMethod(type, "lookupHistoryEnabled");
             if (getter == null) getter = publicMethod(type, "isLookupHistoryEnabled");
             return Optional.ofNullable(getter);
         }
     };
     private static final ClassValue<Optional<Method>> VALUE_GETTERS = new ClassValue<Optional<Method>>() {
-        @Override protected Optional<Method> computeValue(Class<?> type) {
+        @Override
+        protected Optional<Method> computeValue(Class<?> type) {
             return Optional.ofNullable(publicMethod(type, "get"));
         }
     };
     private static final ClassValue<Optional<InputFactory>> INPUT_FACTORIES = new ClassValue<Optional<InputFactory>>() {
-        @Override protected Optional<InputFactory> computeValue(Class<?> input) {
+        @Override
+        protected Optional<InputFactory> computeValue(Class<?> input) {
             try {
                 for (Method factory : input.getMethods()) {
                     Class<?>[] parameters = factory.getParameterTypes();
                     if (!factory.getName().equals("fromVanilla") || !Modifier.isStatic(factory.getModifiers())
-                            || factory.getReturnType() != Optional.class || parameters.length != 4
-                            || parameters[0] != double.class || parameters[1] != double.class
-                            || parameters[2] != int.class || !parameters[3].isEnum()) continue;
-                    Object execute = parameters[3].getField("EXECUTE").get(null);
-                    return Optional.of(new InputFactory(factory, execute));
+                            || factory.getReturnType() != Optional.class) continue;
+                    boolean nativeMouse = parameters.length == 3 && parameters[0] == MouseButtonEvent.class
+                            && parameters[1] == boolean.class;
+                    boolean legacyMouse = parameters.length == 4 && parameters[0] == double.class
+                            && parameters[1] == double.class && parameters[2] == int.class;
+                    if (!nativeMouse && !legacyMouse) continue;
+                    Class<?> inputType = parameters[parameters.length - 1];
+                    if (!inputType.isEnum()) continue;
+                    Object execute = inputType.getField("EXECUTE").get(null);
+                    return Optional.of(new InputFactory(factory, execute, nativeMouse));
                 }
                 return Optional.empty();
             } catch (ReflectiveOperationException | LinkageError exception) {
@@ -70,7 +81,10 @@ public final class JeiRuntimeAccess {
         Optional<InputFactory> input = inputFactory(loader);
         if (!input.isPresent()) return null;
         try {
-            Object result = input.get().factory.invoke(null, 0.0D, 0.0D, 0, input.get().execute);
+            InputFactory binding = input.get();
+            Object result = binding.nativeMouse
+                    ? binding.factory.invoke(null, new MouseButtonEvent(0, 0, new MouseButtonInfo(0, 0)), false, binding.execute)
+                    : binding.factory.invoke(null, 0.0D, 0.0D, 0, binding.execute);
             Object value = result instanceof Optional<?> ? ((Optional<?>) result).orElse(null) : null;
             Class<?> api = Class.forName(INPUT_API, false, loader);
             return api.isInstance(value) ? value : null;
@@ -114,9 +128,12 @@ public final class JeiRuntimeAccess {
     private static final class InputFactory {
         final Method factory;
         final Object execute;
-        InputFactory(Method factory, Object execute) {
+        final boolean nativeMouse;
+
+        InputFactory(Method factory, Object execute, boolean nativeMouse) {
             this.factory = factory;
             this.execute = execute;
+            this.nativeMouse = nativeMouse;
         }
     }
 }

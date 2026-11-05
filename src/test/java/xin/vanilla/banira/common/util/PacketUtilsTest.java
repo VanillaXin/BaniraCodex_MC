@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.api.INetworkPacket;
@@ -68,8 +68,8 @@ public class PacketUtilsTest {
     @Test
     public void channelStatusQueriesDelegateToPlatformNetworkService() {
         RecordingNetworkService service = installRecordingNetwork();
-        ResourceLocation localChannel = ResourceLocation.fromNamespaceAndPath("network_test", "local");
-        ResourceLocation playerChannel = ResourceLocation.fromNamespaceAndPath("network_test", "player");
+        Identifier localChannel = Identifier.fromNamespaceAndPath("network_test", "local");
+        Identifier playerChannel = Identifier.fromNamespaceAndPath("network_test", "player");
         service.defaultChannelResult = true;
         service.localChannelResult = true;
         service.playerChannelResult = false;

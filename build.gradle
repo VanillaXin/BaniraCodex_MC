@@ -3,11 +3,14 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'com.gradleup.shadow' version '8.3.8'
-    id 'net.neoforged.gradle.userdev' version '7.0.181'
+    id 'com.gradleup.shadow' version '9.2.2'
+    id 'net.neoforged.gradle.userdev' version '7.1.39'
 }
 
-def javaVer = 21
+def javaVer = 25
+if (JavaVersion.current() < JavaVersion.toVersion(javaVer)) {
+    throw new GradleException('Minecraft 26.1 requires a Java 25 or newer Gradle JVM')
+}
 
 apply from: 'gradle/aui-validation-output.gradle'
 
@@ -24,6 +27,10 @@ base {
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
     withSourcesJar()
+}
+
+if (providers.gradleProperty('banira.neoForgeDependencyRepo').isPresent()) {
+    minecraftArtifactCache.cacheDirectory.set(layout.projectDirectory.dir('.gradle/caches/minecraft'))
 }
 
 runs {
@@ -56,9 +63,40 @@ configurations {
 }
 
 repositories {
+    def offlineSupplement = providers.gradleProperty('banira.neoForgeOfflineSupplement').orNull
+    if (offlineSupplement != null) {
+        named('Mojang LWJGL Free Type Repository') {
+            url = uri(offlineSupplement)
+        }
+    }
+    def verifiedRepository = providers.gradleProperty('banira.neoForgeDependencyRepo').orNull
+    if (verifiedRepository != null) {
+        def verified = maven {
+            url = uri(verifiedRepository)
+            metadataSources {
+                gradleMetadata()
+                mavenPom()
+            }
+        }
+        remove(verified)
+        addFirst(verified)
+    }
+    mavenCentral()
+    maven {
+        url = 'https://libraries.minecraft.net'
+        content { includeGroup 'com.mojang' }
+    }
+    maven {
+        url = 'https://maven.fabricmc.net'
+        content { includeModule 'net.fabricmc', 'sponge-mixin' }
+    }
     maven {
         url = "https://maven.ftb.dev/releases"
         content { includeGroup "dev.ftb.mods" }
+    }
+    maven {
+        url = 'https://maven.blamejared.com/'
+        content { includeGroup 'mezz.jei' }
     }
     maven {
         name = "Modrinth"
@@ -77,10 +115,19 @@ repositories {
     // }
 }
 
+def xaeroCompileReference = 'maven.modrinth:xaeros-minimap:ktORDOcM'
+def journeyMapContract = 'maven.modrinth:journeymap:5YEj4JLa'
+def atlasCompileReference = 'maven.modrinth:map-atlases-forge:NdJwZprF'
+def jeiContract = 'mezz.jei:jei-26.1-neoforge:29.2.0.21'
 configurations.create('baniraMinimapLibraries') { transitive = false }
+configurations.create('baniraJeiContract') {
+    canBeConsumed = false
+    transitive = false
+}
+configurations.compileOnly.extendsFrom(configurations.baniraJeiContract)
 dependencies {
-    baniraMinimapLibraries "maven.modrinth:xaeros-minimap:irjR7dHk"
-    baniraMinimapLibraries "maven.modrinth:journeymap:CtFE7hwT"
+    baniraMinimapLibraries xaeroCompileReference
+    baniraMinimapLibraries journeyMapContract
 }
 def minimapCompilerLibraries = providers.provider {
     // Generated compile inputs must survive clean.
@@ -108,46 +155,48 @@ dependencies {
     testRuntimeOnly files(providers.provider {
         sourceSets.main.compileClasspath.files.findAll { (it.name.toLowerCase().contains('xaero') || it.name.toLowerCase().contains('journeymap')) }
     })
-    compileOnly "maven.modrinth:xaeros-minimap:irjR7dHk"
-    compileOnly "maven.modrinth:journeymap:CtFE7hwT"
-    compileOnly "curse.maven:ftb-chunks-forge-314906:7608681"
-    compileOnly("dev.ftb.mods:ftb-library-neoforge:2101.1.31") { transitive = false }
-    compileOnly "maven.modrinth:map-atlases-forge:ecuMnNO4"
+    // Xaero, FTB and Atlas currently publish NeoForge 26.1.2 references, not 26.1 runtime inputs.
+    compileOnly(xaeroCompileReference) { transitive = false }
+    compileOnly(journeyMapContract) { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-chunks-neoforge:26.1.2.10') { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-chunks:26.1.2.10') { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-library-neoforge:26.1.2.11') { transitive = false }
+    compileOnly('dev.ftb.mods:ftb-library:26.1.2.11') { transitive = false }
+    compileOnly(atlasCompileReference) { transitive = false }
     if (project.hasProperty('minimapSmoke')) {
         switch (project.property('minimapSmoke').toString()) {
             case '':
-            case 'xaero':
-                localRuntime "maven.modrinth:xaeros-minimap:irjR7dHk"
-                localRuntime files(minimapCompilerLibraries)
                 break
             case 'journey':
-                localRuntime "maven.modrinth:journeymap:CtFE7hwT"
-                localRuntime "maven.modrinth:common-network:pR7AeZk3"
+                localRuntime(journeyMapContract) { transitive = false }
                 break
+            case 'xaero':
             case 'atlas':
-                localRuntime "maven.modrinth:map-atlases-forge:ecuMnNO4"
-                localRuntime "maven.modrinth:moonlight:YfHkk7hg"
-                break
-            default: throw new GradleException('minimapSmoke: xaero, journey or atlas')
+                throw new GradleException('Xaero and Atlas are compile-only references on NeoForge 26.1')
+            default: throw new GradleException('minimapSmoke: journey')
         }
     }
 }
 
 dependencies {
-    runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     implementation "net.neoforged:neoforge:${neo_version}"
 
-    compileOnly 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
+    testCompileOnly 'org.projectlombok:lombok:1.18.48'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
     testImplementation 'junit:junit:4.13.2'
 
-    runtimeOnly "curse.maven:embeddium-908741:${embeddium_id}"
-    runtimeOnly "curse.maven:rubidium-extra-654373:${rubidium_extra_id}"
-    compileOnly "curse.maven:jei-238222:${jei_id}"
+    baniraJeiContract jeiContract
     if ((project.findProperty('banira.devInventoryIntegrations') ?: 'true').toString().toBoolean()) {
-        localRuntime "curse.maven:jei-238222:${jei_id}"
+        localRuntime(jeiContract) { transitive = false }
+    }
+}
+
+tasks.withType(Test).configureEach {
+    inputs.files(configurations.baniraJeiContract)
+    doFirst {
+        systemProperty 'banira.jei.contractJar', configurations.baniraJeiContract.singleFile.absolutePath
     }
 }
 

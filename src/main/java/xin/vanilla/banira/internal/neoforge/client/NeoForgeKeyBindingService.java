@@ -3,6 +3,8 @@ package xin.vanilla.banira.internal.neoforge.client;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.apache.commons.lang3.ArrayUtils;
 import xin.vanilla.banira.api.client.BaniraInput;
@@ -13,7 +15,11 @@ import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 
 /**
  * NeoForge 按键注册服务：静态初始化阶段先入队，注册事件到来时统一提交。
@@ -22,16 +28,27 @@ public final class NeoForgeKeyBindingService implements BaniraInputService {
     public static final NeoForgeKeyBindingService INSTANCE = new NeoForgeKeyBindingService();
 
     private final List<NeoForgeBaniraKeyHandle> pending = new ArrayList<>();
+    private final Map<String, KeyMapping.Category> categories = new HashMap<>();
     private boolean flushCompleted;
 
     private NeoForgeKeyBindingService() {
+    }
+
+    public static Component categoryLabel(Identifier id) {
+        for (var entry : INSTANCE.categories.entrySet()) {
+            if (entry.getValue().id().equals(id)) return Component.translatable(entry.getKey());
+        }
+        return null;
     }
 
     @Nonnull
     @Override
     public BaniraKeyHandle register(@Nonnull BaniraKeySpec spec) {
         String category = spec.category() != null ? spec.category() : BaniraInput.defaultCategory(spec.modId());
-        KeyMapping binding = new KeyMapping(BaniraInput.descriptionId(spec.modId(), spec.suffix()), spec.defaultKey(), category);
+        KeyMapping.Category nativeCategory = categories.computeIfAbsent(category, value ->
+                KeyMapping.Category.register(Identifier.fromNamespaceAndPath("banira_codex",
+                        "key_category/" + HexFormat.of().formatHex(value.getBytes(StandardCharsets.UTF_8)))));
+        KeyMapping binding = new KeyMapping(BaniraInput.descriptionId(spec.modId(), spec.suffix()), spec.defaultKey(), nativeCategory);
         NeoForgeBaniraKeyHandle handle = new NeoForgeBaniraKeyHandle(binding, category, spec.defaultKey());
         enqueueOrRegister(handle);
         return handle;

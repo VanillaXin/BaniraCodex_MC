@@ -1,7 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiGraphics;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
@@ -102,31 +104,37 @@ public final class NotificationHudPositionScreen extends BaniraScreen implements
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         if (button == 0 && hovered(mx, my)) {
             dragging = true;
             grabX = mx - pixelX();
             grabY = my - pixelY();
             return true;
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         if (dragging && button == 0) {
             uiSession.moveTo(NotificationHudState.relative(mx - grabX, width, NotificationUnreadHud.WIDTH),
                     NotificationHudState.relative(my - grabY, height, NotificationUnreadHud.HEIGHT));
             return true;
         }
-        return super.mouseDragged(mx, my, button, dx, dy);
+        return super.mouseDragged(event, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(double mx, double my, int button) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
         boolean wasDragging = dragging;
         dragging = false;
-        return wasDragging || super.mouseReleased(mx, my, button);
+        return wasDragging || super.mouseReleased(event);
     }
 
     @Override
@@ -141,8 +149,8 @@ public final class NotificationHudPositionScreen extends BaniraScreen implements
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         for (ButtonWidget control : controls) {
             if (control.bounds().y() != toolbarY()) {
                 control.bounds(new ScreenCoordinate(control.bounds().x(), toolbarY(),

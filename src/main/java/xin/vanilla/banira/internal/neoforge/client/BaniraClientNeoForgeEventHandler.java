@@ -204,7 +204,7 @@ public final class BaniraClientNeoForgeEventHandler {
         BaniraKeyboardEvent keyboardEvent = BaniraKeyboardEvent.charTyped(
                 BaniraClientEventHub.screenInfo(event.getScreen()),
                 event.getCodePoint(),
-                event.getModifiers()
+                0
         );
         BaniraClientEventHub.dispatchCharTypedPre(keyboardEvent);
         event.setCanceled(keyboardEvent.canceled());

@@ -1,6 +1,6 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -8,7 +8,6 @@ import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.internal.common.BaniraServerRuntime;
@@ -25,7 +24,7 @@ public final class EntityUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final ResourceLocation UNKNOWN_ENTITY = Identifier.id().create("unknown_entity");
+    private static final Identifier UNKNOWN_ENTITY = xin.vanilla.banira.Identifier.id().create("unknown_entity");
 
     /**
      * 所有实体类型缓存
@@ -45,7 +44,7 @@ public final class EntityUtils {
      * @param entityType 实体类型
      */
     @Nullable
-    public static ResourceLocation getEntityRegistry(EntityType<?> entityType) {
+    public static Identifier getEntityRegistry(EntityType<?> entityType) {
         if (entityType == null) {
             return null;
         }
@@ -53,7 +52,7 @@ public final class EntityUtils {
             return null;
         }
         Object id = BaniraPlatforms.get().registryService().entityTypeKeyObject(entityType);
-        return id instanceof ResourceLocation ? (ResourceLocation) id : id instanceof String ? ResourceLocation.tryParse((String) id) : null;
+        return id instanceof Identifier ? (Identifier) id : id instanceof String ? Identifier.tryParse((String) id) : null;
     }
 
     /**
@@ -62,7 +61,7 @@ public final class EntityUtils {
      * @param entityType 实体类型
      */
     public static String getEntityRegistryString(EntityType<?> entityType) {
-        ResourceLocation registryName = getEntityRegistry(entityType);
+        Identifier registryName = getEntityRegistry(entityType);
         return registryName != null ? registryName.toString() : UNKNOWN_ENTITY.toString();
     }
 
@@ -72,7 +71,7 @@ public final class EntityUtils {
      * @param entity 实体
      */
     @Nullable
-    public static ResourceLocation getEntityRegistry(Entity entity) {
+    public static Identifier getEntityRegistry(Entity entity) {
         if (entity == null) {
             return null;
         }
@@ -191,7 +190,7 @@ public final class EntityUtils {
         return type == null || getEntityRegistryString(type).equals(UNKNOWN_ENTITY.toString());
     }
 
-    public static boolean isUnknownEntity(ResourceLocation entityId) {
+    public static boolean isUnknownEntity(Identifier entityId) {
         return entityId == null || entityId.toString().equals(UNKNOWN_ENTITY.toString());
     }
 
@@ -210,7 +209,7 @@ public final class EntityUtils {
         if (entityType == null) {
             return "";
         }
-        ResourceLocation rl = getEntityRegistry(entityType);
+        Identifier rl = getEntityRegistry(entityType);
         return rl != null ? rl.toString() : "";
     }
 
@@ -236,12 +235,12 @@ public final class EntityUtils {
 
     @Nullable
     public static EntityType<?> getEntityTypeFromRegistry(String entityId) {
-        ResourceLocation location = Identifier.id().parse(entityId);
+        Identifier location = xin.vanilla.banira.Identifier.id().parse(entityId);
         return getEntityTypeFromRegistry(location);
     }
 
     @Nullable
-    public static EntityType<?> getEntityTypeFromRegistry(@Nullable ResourceLocation location) {
+    public static EntityType<?> getEntityTypeFromRegistry(@Nullable Identifier location) {
         if (location == null) {
             return null;
         }
@@ -290,11 +289,11 @@ public final class EntityUtils {
         if (allEntityTypesCache.isEmpty()) {
             synchronized (EntityUtils.class) {
                 if (allEntityTypesCache.isEmpty()) {
-                    Map<ResourceLocation, EntityType<?>> byId = new LinkedHashMap<>();
+                    Map<Identifier, EntityType<?>> byId = new LinkedHashMap<>();
                     for (Object value : Banira.platform().registryService().entityTypes()) {
                         if (!(value instanceof EntityType)) continue;
                         EntityType<?> entityType = (EntityType<?>) value;
-                        ResourceLocation rl = getEntityRegistry(entityType);
+                        Identifier rl = getEntityRegistry(entityType);
                         if (rl == null) rl = UNKNOWN_ENTITY;
                         byId.putIfAbsent(rl, entityType);
                     }

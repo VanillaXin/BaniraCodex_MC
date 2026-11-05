@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Style;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraComponent;
@@ -271,9 +271,15 @@ public final class NotificationManager {
         NotificationLogStore.saveAsync(history.snapshot());
     }
 
-    public void render(GuiGraphics graphics) {
+    public void render(GuiGraphicsExtractor graphics) {
+        try (var scope = ExtractedGuiRenderer.bind(graphics)) {
+            renderInContext(graphics);
+        }
+    }
+
+    private void renderInContext(GuiGraphicsExtractor graphics) {
         Minecraft mc = Minecraft.getInstance();
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = graphics.pose();
         ScreenCoordinate screenInfo = new ScreenCoordinate()
                 .width(mc.getWindow().getGuiScaledWidth())
                 .height(mc.getWindow().getGuiScaledHeight());
@@ -404,7 +410,7 @@ public final class NotificationManager {
             return;
         }
         Window win = mc.getWindow();
-        boolean down = GLFW.glfwGetMouseButton(win.getWindow(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean down = GLFW.glfwGetMouseButton(win.handle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (down && !prevLeftDown) {
             double[] m = scaledMouse(mc);
             tryHandleHudClick(m[0], m[1], 0);

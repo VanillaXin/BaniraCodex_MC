@@ -15,6 +15,9 @@ import java.util.function.Consumer;
 import static org.junit.Assert.*;
 
 public class UiQuickActionEditParityTest {
+    @org.junit.Rule
+    public final xin.vanilla.banira.test.NativeClientRule nativeClient = new xin.vanilla.banira.test.NativeClientRule();
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         UiDomControlsTest.bootstrap();

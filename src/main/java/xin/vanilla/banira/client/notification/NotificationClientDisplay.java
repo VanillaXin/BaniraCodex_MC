@@ -31,7 +31,7 @@ public final class NotificationClientDisplay {
             if (player == null) {
                 return false;
             }
-            player.displayClientMessage(component.toChat(lang), false);
+            player.sendSystemMessage(component.toChat(lang));
             return true;
         }
         if (mode == EnumNotificationTypeDisplayMode.ACTION_BAR) {
@@ -47,7 +47,7 @@ public final class NotificationClientDisplay {
             if (player == null) {
                 return false;
             }
-            mc.execute(() -> player.displayClientMessage(barMsg, true));
+            mc.execute(() -> mc.gui.setOverlayMessage(barMsg, false));
             return true;
         }
         return false;

@@ -36,7 +36,7 @@ public class TooltipPopupFrameOwnershipTest {
                     : "";
             if (method.getName().equals("flushSubmittedPopupFrame")
                     && method.getParameterCount() == 1
-                    && (parameterName.equals("MatrixStack") || parameterName.equals("PoseStack"))) {
+                    && (parameterName.equals("MatrixStack") || parameterName.equals("Matrix3x2fStack"))) {
                 method.invoke(null, new Object[]{null});
                 return;
             }

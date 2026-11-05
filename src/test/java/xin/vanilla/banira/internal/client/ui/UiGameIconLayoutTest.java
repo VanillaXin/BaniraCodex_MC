@@ -49,7 +49,7 @@ public class UiGameIconLayoutTest {
     }
 
     @Test
-    public void gameDrawingDisablesDepthAfterScissorAndRestoresItOnExit() throws Exception {
+    public void gameDrawingExtractsWithinScissorAndRestoresItOnExit() throws Exception {
         var type = new org.objectweb.asm.tree.ClassNode();
         try (var input = AuiGameElements.class.getResourceAsStream("AuiGameElements.class")) {
             assertNotNull(input);
@@ -63,29 +63,31 @@ public class UiGameIconLayoutTest {
                     var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
                     calls.add(call.owner + "." + call.name);
                 }
-            int clip = calls.indexOf("net/minecraft/client/gui/GuiGraphics.enableScissor");
-            int disable = calls.indexOf("com/mojang/blaze3d/systems/RenderSystem.disableDepthTest");
-            assertTrue(name + " must disable depth after the scissor flush", clip >= 0 && disable > clip);
-            int capture = calls.indexOf("org/lwjgl/opengl/GL11.glIsEnabled");
-            assertTrue(name + " must capture depth state", capture >= 0 && capture < clip);
-            assertTrue(name + " must restore both prior states", calls.lastIndexOf("com/mojang/blaze3d/systems/RenderSystem.enableDepthTest") > disable
-                    && calls.lastIndexOf("com/mojang/blaze3d/systems/RenderSystem.disableDepthTest") > disable);
+            int clip = calls.indexOf("net/minecraft/client/gui/GuiGraphicsExtractor.enableScissor");
+            int restore = calls.lastIndexOf("net/minecraft/client/gui/GuiGraphicsExtractor.disableScissor");
+            assertTrue(name + " must restore clipping after extraction", clip >= 0 && restore > clip);
+            assertTrue(name + " must not mutate immediate GPU depth state during extraction",
+                    calls.stream().noneMatch(call -> call.startsWith("org/lwjgl/opengl/GL11.")
+                            || call.startsWith("com/mojang/blaze3d/systems/RenderSystem.")));
             assertFalse(name + " must restore state on failure", method.tryCatchBlocks.isEmpty());
             if (name.equals("renderText")) {
-                boolean clipped = false;
+                int poses = 0, clips = 0;
                 for (var instruction : method.instructions)
                     if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
                         var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                        if (call.name.equals("enableScissor")) clipped = true;
-                        if (clipped && call.owner.equals("net/minecraft/client/gui/GuiGraphics")
-                                && (call.name.equals("flush") || call.name.equals("disableScissor"))) {
+                        if (call.name.equals("popMatrix")) poses++;
+                        if (call.name.equals("disableScissor")) clips++;
+                        if (call.owner.equals("net/minecraft/client/gui/GuiGraphicsExtractor")
+                                && call.name.equals("text")) {
                             int position = method.instructions.indexOf(call);
-                            assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails",
+                            assertTrue("Text extraction failures must unwind both pose and clipping",
                                     method.tryCatchBlocks.stream().anyMatch(block -> block.type == null
                                             && method.instructions.indexOf(block.start) <= position
                                             && position < method.instructions.indexOf(block.end)));
                         }
                     }
+                assertEquals("Normal and exceptional text exits restore the pose", 2, poses);
+                assertEquals("Normal and exceptional text exits restore clipping", 2, clips);
             }
         }
     }

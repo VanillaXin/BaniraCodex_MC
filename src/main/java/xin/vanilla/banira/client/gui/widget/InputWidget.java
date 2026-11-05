@@ -1,13 +1,18 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+
+import org.joml.Matrix3x2fStack;
+import org.joml.Vector2f;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.IMEPreeditOverlay;
+import net.minecraft.client.input.PreeditEvent;
+
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -22,6 +27,7 @@ import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -35,6 +41,7 @@ import java.util.function.Function;
 @Accessors(chain = true, fluent = true)
 public class InputWidget extends BaseWidget implements ITextWidget {
     private static long LAST_CLICK_TIME = 0L;
+    private IMEPreeditOverlay preeditOverlay;
     /**
      * 按下时的区域：0=无，1=清空按钮，2=文本区域。抬起时需在同一区域才触发
      */
@@ -392,8 +399,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     // region 渲染
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = NativeGuiGraphics.bind(graphics);
         if (!visible) {
             return;
         }
@@ -414,7 +421,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         renderChildren(graphics, partialTicks);
     }
 
-    private void render(GuiGraphics graphics, PoseStack stack, int x, int y, int width, int height) {
+    private void render(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int x, int y, int width, int height) {
         int drawX = x + marginLeft;
         int drawY = y + marginTop;
         int drawWidth = width - marginLeft - marginRight;
@@ -489,15 +496,17 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 String beforeCursor = cursorVisible ? visibleText.substring(0, Math.min(cursorInVisible, visibleText.length())) : visibleText;
                 if (!beforeCursor.isEmpty()) {
                     if (fontScale != 1.0f) {
-                        stack.pushPose();
-                        stack.translate(textX, textY, 0);
-                        stack.scale(fontScale, fontScale, 1.0f);
-                        textDrawX = (int) (textX + graphics.drawString(this.font, this.formatter.apply(beforeCursor, displayPos),
-                                0, 0, currentTextColor, false) * fontScale);
-                        stack.popPose();
+                        stack.pushMatrix();
+                        stack.translate((float) (textX), (float) (textY));
+                        stack.scale(fontScale, fontScale);
+                        FormattedCharSequence formatted = this.formatter.apply(beforeCursor, displayPos);
+                        graphics.text(this.font, formatted, 0, 0, currentTextColor, false);
+                        textDrawX = (int) (textX + this.font.width(formatted) * fontScale);
+                        stack.popMatrix();
                     } else {
-                        textDrawX = graphics.drawString(this.font, this.formatter.apply(beforeCursor, displayPos),
-                                (float) textX, (float) textY, currentTextColor, false);
+                        FormattedCharSequence formatted = this.formatter.apply(beforeCursor, displayPos);
+                        graphics.text(this.font, formatted, textX, textY, currentTextColor, false);
+                        textDrawX = textX + this.font.width(formatted);
                     }
                 }
             }
@@ -511,18 +520,28 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 textDrawX = cursorX;
             }
 
+            if (preeditOverlay != null && canConsumeInput() && !password) {
+                var position = stack.transformPosition(Math.max(textX, cursorX), textY, new Vector2f());
+                int caretX = Math.round(position.x);
+                int caretY = Math.round(position.y);
+                if (graphics.containsPointInScissor(caretX, caretY)) {
+                    preeditOverlay.updateInputPosition(caretX, caretY);
+                    graphics.setPreeditOverlay(preeditOverlay);
+                }
+            }
+
             if (!visibleText.isEmpty() && cursorVisible && cursorInVisible < visibleText.length()) {
                 String afterCursor = visibleText.substring(cursorInVisible);
                 if (fontScale != 1.0f) {
-                    stack.pushPose();
-                    stack.translate(textDrawX, textY, 0);
-                    stack.scale(fontScale, fontScale, 1.0f);
-                    graphics.drawString(this.font, this.formatter.apply(afterCursor, cursorPos),
+                    stack.pushMatrix();
+                    stack.translate((float) (textDrawX), (float) (textY));
+                    stack.scale(fontScale, fontScale);
+                    graphics.text(this.font, this.formatter.apply(afterCursor, cursorPos),
                             0, 0, currentTextColor, false);
-                    stack.popPose();
+                    stack.popMatrix();
                 } else {
-                    graphics.drawString(this.font, this.formatter.apply(afterCursor, cursorPos),
-                            (float) textDrawX, (float) textY, currentTextColor, false);
+                    graphics.text(this.font, this.formatter.apply(afterCursor, cursorPos),
+                            textDrawX, textY, currentTextColor, false);
                 }
             }
 
@@ -565,13 +584,13 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (shouldShowCursor) {
                 if (isAtEnd) {
                     if (fontScale != 1.0f) {
-                        stack.pushPose();
-                        stack.translate(cursorX, textY, 0);
-                        stack.scale(fontScale, fontScale, 1.0f);
-                        graphics.drawString(this.font, "_", 0, 0, currentTextColor, false);
-                        stack.popPose();
+                        stack.pushMatrix();
+                        stack.translate((float) (cursorX), (float) (textY));
+                        stack.scale(fontScale, fontScale);
+                        graphics.text(this.font, "_", 0, 0, currentTextColor, false);
+                        stack.popMatrix();
                     } else {
-                        graphics.drawString(this.font, "_", cursorX, textY, currentTextColor, false);
+                        graphics.text(this.font, "_", cursorX, textY, currentTextColor, false);
                     }
                 } else {
                     int cursorHeight = (int) actualFontSize;
@@ -587,9 +606,9 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     private static final int SELECTION_HIGHLIGHT_COLOR = 0x40000080;
 
     /**
-     * 绘制文本选择高亮。使用 PoseStack 确保在嵌套父级时坐标正确。
+     * 绘制文本选择高亮。使用 Matrix3x2fStack 确保在嵌套父级时坐标正确。
      */
-    private void renderHighlight(PoseStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
+    private void renderHighlight(Matrix3x2fStack stack, int x1, int y1, int x2, int y2, int fieldX, int fieldWidth) {
         if (x1 > x2) {
             int temp = x1;
             x1 = x2;
@@ -669,7 +688,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
     /**
      * 在屏幕坐标绘制悬浮提示。使用延迟渲染避免 scissor 裁剪和层级被覆盖。默认跟随主题配置。
      */
-    protected void drawTooltipAtScreenCoords(GuiGraphics graphics, double mx, double my, Text text) {
+    protected void drawTooltipAtScreenCoords(GuiGraphicsExtractor graphics, double mx, double my, Text text) {
         drawTooltipAtScreenCoords(graphics, mx, my, text, EnumTooltipTextureMode.AUTO);
     }
 
@@ -678,7 +697,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      *
      * @param textureMode AUTO 时使用主题配置，TEXTURE/COLOR 时使用指定模式
      */
-    protected void drawTooltipAtScreenCoords(GuiGraphics graphics, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
+    protected void drawTooltipAtScreenCoords(GuiGraphicsExtractor graphics, double mx, double my, Text text, EnumTooltipTextureMode textureMode) {
         if (screen == null) return;
         if (screen instanceof BaniraScreen && screen.isAnyDropdownSelectOpen()) {
             return;
@@ -692,16 +711,16 @@ public class InputWidget extends BaseWidget implements ITextWidget {
                 ? theme.tooltipUseTexture()
                 : (textureMode == EnumTooltipTextureMode.TEXTURE);
         screen.addDeferredTooltipRender(g -> {
-            g.pose().pushPose();
-            g.pose().last().pose().identity();
+            g.pose().pushMatrix();
+            g.pose().identity();
             TooltipWidget.drawPopupMessage(g.pose(), FontDrawArgs.ofPopo(textToDraw.stack(g.pose())).x(mouseX).y(mouseY).popupUseTexture(useTexture), theme, season);
-            g.pose().popPose();
+            g.pose().popMatrix();
         });
     }
 
     // endregion 渲染
 
-    private static void drawClearIcon(PoseStack stack, int centerX, int centerY, int color) {
+    private static void drawClearIcon(Matrix3x2fStack stack, int centerX, int centerY, int color) {
         float r = CLEAR_BUTTON_RADIUS * 0.4f; // x 略小于圆的 1/2
         AbstractGuiUtils.drawLine(stack, centerX - r, centerY - r, centerX + r, centerY + r, 1f, color);
         AbstractGuiUtils.drawLine(stack, centerX + r, centerY - r, centerX - r, centerY + r, 1f, color);
@@ -722,12 +741,14 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             if (elapsed >= threshold) {
                 lastArrowKeyRepeatTime = currentTime;
                 arrowKeyRepeatTriggered = true;
-                this.shiftPressed = Screen.hasShiftDown();
+                this.shiftPressed = xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing();
                 if (heldArrowKey == GLFWKey.GLFW_KEY_LEFT) {
-                    if (Screen.hasControlDown()) moveCursorToWordStart();
+                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing())
+                        moveCursorToWordStart();
                     else moveCursor(-1);
                 } else if (heldArrowKey == GLFWKey.GLFW_KEY_RIGHT) {
-                    if (Screen.hasControlDown()) moveCursorToWordEnd();
+                    if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing())
+                        moveCursorToWordEnd();
                     else moveCursor(1);
                 }
             }
@@ -803,7 +824,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             int textAreaWidth = getTextAreaWidth(width - marginLeft - marginRight);
             String visibleText = visibleText(this.value, this.displayPos, textAreaWidth);
             int textPos = this.font.plainSubstrByWidth(visibleText, clickX).length() + this.displayPos;
-            this.shiftPressed = Screen.hasShiftDown();
+            this.shiftPressed = xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing();
             moveCursorTo(textPos);
             if (!this.shiftPressed) this.highlightPos = textPos;
             return true;
@@ -829,32 +850,33 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return false;
         }
 
-        this.shiftPressed = Screen.hasShiftDown();
+        net.minecraft.client.input.KeyEvent event = new net.minecraft.client.input.KeyEvent(keyCode, scanCode, modifiers);
+        this.shiftPressed = event.hasShiftDown();
 
-        if (Screen.isSelectAll(keyCode)) {
+        if (event.isSelectAll()) {
             moveCursorTo(value.length());
             this.highlightPos = 0;
             this.updateDisplayPos();
             return true;
         }
 
-        if (Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Z && !Screen.hasShiftDown()) {
+        if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing() && keyCode == GLFWKey.GLFW_KEY_Z && !xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing()) {
             undo();
             return true;
         }
 
-        if ((Screen.hasControlDown() && keyCode == GLFWKey.GLFW_KEY_Y) ||
-                (Screen.hasControlDown() && Screen.hasShiftDown() && keyCode == GLFWKey.GLFW_KEY_Z)) {
+        if ((xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing() && keyCode == GLFWKey.GLFW_KEY_Y) ||
+                (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing() && xin.vanilla.banira.internal.client.InputStateManager.instance().isShiftPressing() && keyCode == GLFWKey.GLFW_KEY_Z)) {
             redo();
             return true;
         }
 
-        if (Screen.isCopy(keyCode)) {
-            AbstractGuiUtils.setClipboard(getHighlighted());
+        if (event.isCopy()) {
+            BaniraClientRuntime.clipboard(getHighlighted());
             return true;
         }
 
-        if (Screen.isPaste(keyCode)) {
+        if (event.isPaste()) {
             if (this.editable) {
                 this.saveToHistory();
                 insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
@@ -862,8 +884,8 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
 
-        if (Screen.isCut(keyCode)) {
-            AbstractGuiUtils.setClipboard(getHighlighted());
+        if (event.isCut()) {
+            BaniraClientRuntime.clipboard(getHighlighted());
             if (this.editable) {
                 this.saveToHistory();
                 insertText("");
@@ -875,7 +897,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_LEFT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) {
                 moveCursorToWordStart();
             } else {
                 moveCursor(-1);
@@ -886,7 +908,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             heldArrowKey = GLFWKey.GLFW_KEY_RIGHT;
             lastArrowKeyRepeatTime = System.currentTimeMillis();
             arrowKeyRepeatTriggered = false;
-            if (Screen.hasControlDown()) {
+            if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) {
                 moveCursorToWordEnd();
             } else {
                 moveCursor(1);
@@ -903,7 +925,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         }
 
         if (keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {
-            if (Screen.hasControlDown()) {
+            if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) {
                 deleteWords(-1);
             } else {
                 deleteChars(-1);
@@ -911,7 +933,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             return true;
         }
         if (keyCode == GLFWKey.GLFW_KEY_DELETE) {
-            if (Screen.hasControlDown()) {
+            if (xin.vanilla.banira.internal.client.InputStateManager.instance().isCtrlPressing()) {
                 deleteWords(1);
             } else {
                 deleteChars(1);
@@ -933,16 +955,27 @@ public class InputWidget extends BaseWidget implements ITextWidget {
 
     @Override
     protected boolean onCharTyped(char codePoint, int modifiers) {
-        if (!focused() || !enabled || !editable) {
+        return onTextInput(String.valueOf(codePoint), modifiers);
+    }
+
+    @Override
+    protected boolean onTextInput(String text, int modifiers) {
+        if (!canConsumeInput()) {
             return false;
         }
 
-        if (value.length() >= maxLength && getHighlighted().isEmpty()) {
+        if (value.length() - getHighlighted().length() + text.length() > maxLength) {
             return true;
         }
 
-        insertText(String.valueOf(codePoint));
+        insertText(text);
         return true;
+    }
+
+    public void updatePreedit(PreeditEvent event) {
+        preeditOverlay = event != null && canConsumeInput() && !password
+                ? new IMEPreeditOverlay(event, font, (fontSize > 0 ? (int) Math.ceil(fontSize) : font.lineHeight) + 1)
+                : null;
     }
 
     // endregion 输入处理
@@ -974,21 +1007,21 @@ public class InputWidget extends BaseWidget implements ITextWidget {
         return hint != null && !hint.isEmpty() && value.isEmpty() && !focused();
     }
 
-    private void renderHint(GuiGraphics graphics, PoseStack stack, int textX, int textY, int innerWidth) {
+    private void renderHint(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int textX, int textY, int innerWidth) {
         float actualHintFontSize = hintFontSize > 0 ? hintFontSize : font.lineHeight;
         float hintFontScale = actualHintFontSize / font.lineHeight;
         if (hintFontScale != 1.0f) {
-            stack.pushPose();
-            stack.translate(textX, textY, 0);
-            stack.scale(hintFontScale, hintFontScale, 1.0f);
+            stack.pushMatrix();
+            stack.translate((float) (textX), (float) (textY));
+            stack.scale(hintFontScale, hintFontScale);
             drawHintText(graphics, stack, 0, 0, (int) (innerWidth / hintFontScale));
-            stack.popPose();
+            stack.popMatrix();
         } else {
             drawHintText(graphics, stack, textX, textY, innerWidth);
         }
     }
 
-    private void drawHintText(GuiGraphics graphics, PoseStack stack, int x, int y, int maxWidth) {
+    private void drawHintText(GuiGraphicsExtractor graphics, Matrix3x2fStack stack, int x, int y, int maxWidth) {
         FontDrawArgs args = FontDrawArgs.of(hint.stack(stack).color(hintColor))
                 .x(x).y(y).maxWidth(maxWidth).wrap(false)
                 .position(EnumEllipsisPosition.END).maxLine(1);
@@ -1273,6 +1306,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
             this.lastClickTime = currentTime;
             this.cursorVisible = true;
         } else {
+            preeditOverlay = null;
             this.highlightPos = this.cursorPosition;
             this.shiftPressed = false;
         }
@@ -1441,7 +1475,7 @@ public class InputWidget extends BaseWidget implements ITextWidget {
      * 检查是否可以消费输入
      */
     public boolean canConsumeInput() {
-        return this.visible && this.focused() && this.editable;
+        return this.visible && this.enabled && this.focused() && this.editable;
     }
 
 

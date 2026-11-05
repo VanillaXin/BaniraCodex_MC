@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.gui;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.BaniraComponent;
@@ -160,7 +160,7 @@ public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePa
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         graphics.fill(0, 0, width, height, 0x55000000);
         BaniraColorConfig theme = getEffectiveTheme();
         int cardColor = ColorUtils.applyAlphaToArgb(theme.bgSurface(), 0xFF);
@@ -173,7 +173,7 @@ public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePa
         for (int i = 0; i < lines.size(); i++) {
             int y = contentY + i * font.lineHeight - scroll;
             if (y + font.lineHeight >= contentY && y < contentY + contentHeight) {
-                graphics.drawString(font, lines.get(i), contentX, y, color, false);
+                graphics.text(font, lines.get(i), contentX, y, color, false);
             }
         }
         AbstractGuiUtils.disableScissor();
@@ -181,7 +181,7 @@ public final class ReadOnlyTextScreen extends BaniraScreen implements UiNativePa
         renderWidgets(graphics, partialTicks);
     }
 
-    private void renderScrollbar(GuiGraphics graphics, BaniraColorConfig theme) {
+    private void renderScrollbar(GuiGraphicsExtractor graphics, BaniraColorConfig theme) {
         if (maxScroll <= 0) {
             return;
         }

@@ -127,6 +127,6 @@ public final class NeoForgeBaniraGameEventAdapter {
     }
 
     private static String dimensionId(ResourceKey<Level> dimension) {
-        return dimension != null && dimension.location() != null ? dimension.location().toString() : "";
+        return dimension != null ? dimension.identifier().toString() : "";
     }
 }

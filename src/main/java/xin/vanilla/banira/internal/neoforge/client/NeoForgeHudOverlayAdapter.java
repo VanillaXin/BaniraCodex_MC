@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.neoforge.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.hud.*;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
@@ -18,7 +18,7 @@ public final class NeoForgeHudOverlayAdapter {
     private NeoForgeHudOverlayAdapter() {
     }
 
-    public static boolean dispatchPre(@Nonnull HudOverlayElement element, @Nonnull GuiGraphics graphics) {
+    public static boolean dispatchPre(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor graphics) {
         float partialTick = partialTick();
         BaniraHudRenderContext context = context(graphics, partialTick);
         BaniraHudRenderEvent baniraEvent = new BaniraHudRenderEvent(
@@ -29,12 +29,12 @@ public final class NeoForgeHudOverlayAdapter {
                 true
         );
         BaniraHudEvents.dispatchPre(baniraEvent);
-        BaniraClientEventHub.dispatchRenderOverlayPreNative(element, graphics.pose(), partialTick,
+        BaniraClientEventHub.dispatchRenderOverlayPreNative(element, graphics, partialTick,
                 BaniraClientRuntime.currentScreen() != null);
         return baniraEvent.canceled();
     }
 
-    public static void dispatchPost(@Nonnull HudOverlayElement element, @Nonnull GuiGraphics graphics) {
+    public static void dispatchPost(@Nonnull HudOverlayElement element, @Nonnull GuiGraphicsExtractor graphics) {
         float partialTick = partialTick();
         BaniraHudRenderContext context = context(graphics, partialTick);
         BaniraHudEvents.dispatchPost(new BaniraHudRenderEvent(
@@ -44,15 +44,15 @@ public final class NeoForgeHudOverlayAdapter {
                 bounds(element, context.screenWidth(), context.screenHeight()),
                 false
         ));
-        BaniraClientEventHub.Client.fireRenderOverlayPostNative(element, graphics.pose(), partialTick,
+        BaniraClientEventHub.Client.fireRenderOverlayPostNative(element, graphics, partialTick,
                 BaniraClientRuntime.currentScreen() != null);
     }
 
-    private static BaniraHudRenderContext context(@Nonnull GuiGraphics graphics, float partialTick) {
+    private static BaniraHudRenderContext context(@Nonnull GuiGraphicsExtractor graphics, float partialTick) {
         KeyValue<Integer, Integer> screen = BaniraClientRuntime.guiScaledSize();
         return new BaniraHudRenderContext(
                 new xin.vanilla.banira.api.client.render.BaniraDrawContext(
-                        new NeoForgeBaniraDrawHandle(graphics.pose()), screen.key(), screen.val(), partialTick),
+                        new NeoForgeBaniraDrawHandle(graphics), screen.key(), screen.val(), partialTick),
                 screen.key(),
                 screen.val(),
                 partialTick
@@ -60,7 +60,7 @@ public final class NeoForgeHudOverlayAdapter {
     }
 
     private static float partialTick() {
-        return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
     }
 
     public static HudOverlayElement mapElement(String overlayId) {

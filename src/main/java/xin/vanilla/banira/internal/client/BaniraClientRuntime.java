@@ -1,14 +1,13 @@
 package xin.vanilla.banira.internal.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -31,7 +30,7 @@ public final class BaniraClientRuntime {
     }
 
     public static long windowHandle() {
-        return Minecraft.getInstance().getWindow().getWindow();
+        return Minecraft.getInstance().getWindow().handle();
     }
 
     public static boolean isWindowActive() {
@@ -50,12 +49,8 @@ public final class BaniraClientRuntime {
         return Minecraft.getInstance().getTextureManager();
     }
 
-    public static ItemRenderer itemRenderer() {
-        return Minecraft.getInstance().getItemRenderer();
-    }
-
-    public static ItemColors itemColors() {
-        return Minecraft.getInstance().getItemColors();
+    public static ItemModelResolver itemModelResolver() {
+        return Minecraft.getInstance().getItemModelResolver();
     }
 
     public static String serverIp() {
@@ -151,22 +146,22 @@ public final class BaniraClientRuntime {
             return null;
         }
         return player.connection.getOnlinePlayers().stream()
-                .filter(info -> info.getProfile().getId().equals(uuid))
+                .filter(info -> info.getProfile().id().equals(uuid))
                 .findFirst()
-                .map(info -> info.getProfile().getName())
+                .map(info -> info.getProfile().name())
                 .orElse(null);
     }
 
     @Nullable
-    public static ResourceLocation onlinePlayerSkin(@Nullable UUID uuid) {
+    public static Identifier onlinePlayerSkin(@Nullable UUID uuid) {
         LocalPlayer player = localPlayer();
         if (player == null || player.connection == null || uuid == null) {
             return null;
         }
         return player.connection.getOnlinePlayers().stream()
-                .filter(info -> info.getProfile().getId().equals(uuid))
+                .filter(info -> info.getProfile().id().equals(uuid))
                 .findFirst()
-                .map(info -> info.getSkin().texture())
+                .map(info -> info.getSkin().body().texturePath())
                 .orElse(null);
     }
 

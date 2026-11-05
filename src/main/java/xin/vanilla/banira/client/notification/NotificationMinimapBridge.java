@@ -3,7 +3,7 @@ package xin.vanilla.banira.client.notification;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.util.NotificationManager;
@@ -70,7 +70,7 @@ public final class NotificationMinimapBridge {
     private static synchronized void ensureRegistered() {
         if (registered) return;
         registered = true;
-        MinimapLineRegistry.shared().register(new MinimapLine(ResourceLocation.fromNamespaceAndPath("banira_codex", "unread"),
+        MinimapLineRegistry.shared().register(new MinimapLine(Identifier.fromNamespaceAndPath("banira_codex", "unread"),
                 net.minecraft.network.chat.Component.translatable("word.banira_codex.notification_unread"),
                 NotificationMinimapBridge::notificationText, () -> ClientConfig.get().notificationHud().host(), 100));
     }

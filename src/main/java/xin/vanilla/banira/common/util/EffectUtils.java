@@ -3,14 +3,13 @@ package xin.vanilla.banira.common.util;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.internal.common.ClientRuntimeBridge;
 
@@ -30,7 +29,7 @@ public final class EffectUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final ResourceLocation UNKNOWN_EFFECT = Identifier.id().create("unknown_effect");
+    private static final Identifier UNKNOWN_EFFECT = xin.vanilla.banira.Identifier.id().create("unknown_effect");
 
     /**
      * 所有效果缓存
@@ -43,28 +42,28 @@ public final class EffectUtils {
      * 获取效果的注册ID
      */
     @Nullable
-    public static ResourceLocation getEffectRegistry(MobEffect effect) {
+    public static Identifier getEffectRegistry(MobEffect effect) {
         if (effect == null) return null;
         String id = Banira.platform().registryService().effectKey(effect);
-        return id != null ? ResourceLocation.tryParse(id) : null;
+        return id != null ? Identifier.tryParse(id) : null;
     }
 
     /**
      * 获取效果的注册ID字符串
      */
     public static String getEffectRegistryString(MobEffect effect) {
-        ResourceLocation registryName = getEffectRegistry(effect);
+        Identifier registryName = getEffectRegistry(effect);
         return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
     }
 
     @Nullable
-    public static ResourceLocation getEffectRegistry(Holder<MobEffect> holder) {
+    public static Identifier getEffectRegistry(Holder<MobEffect> holder) {
         if (holder == null) return null;
-        return holder.unwrapKey().map(ResourceKey::location).orElse(null);
+        return holder.unwrapKey().map(ResourceKey::identifier).orElse(null);
     }
 
     public static String getEffectRegistryString(Holder<MobEffect> holder) {
-        ResourceLocation registryName = getEffectRegistry(holder);
+        Identifier registryName = getEffectRegistry(holder);
         return registryName != null ? registryName.toString() : UNKNOWN_EFFECT.toString();
     }
 
@@ -72,7 +71,7 @@ public final class EffectUtils {
      * 获取效果实例的注册ID
      */
     @Nullable
-    public static ResourceLocation getEffectRegistry(MobEffectInstance effectInstance) {
+    public static Identifier getEffectRegistry(MobEffectInstance effectInstance) {
         if (effectInstance == null) return null;
         return getEffectRegistry(effectInstance.getEffect());
     }
@@ -223,12 +222,12 @@ public final class EffectUtils {
     @Nullable
     public static MobEffect getEffectFromRegistry(String effectId) {
         if (StringUtils.isNullOrEmptyEx(effectId)) return null;
-        ResourceLocation location = Identifier.id().parse(effectId);
+        Identifier location = xin.vanilla.banira.Identifier.id().parse(effectId);
         return getEffectFromRegistry(location);
     }
 
     @Nullable
-    public static MobEffect getEffectFromRegistry(ResourceLocation location) {
+    public static MobEffect getEffectFromRegistry(Identifier location) {
         if (location == null) return null;
         try {
             Object effect = Banira.platform().registryService().effect(location.toString());
@@ -273,11 +272,11 @@ public final class EffectUtils {
         try {
             Player player = ClientRuntimeBridge.localPlayer();
             if (player != null) {
-                Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
+                Map<Identifier, MobEffect> byId = new LinkedHashMap<>();
                 for (Holder<MobEffect> holder : player.getActiveEffectsMap().keySet()) {
                     MobEffect e = holder.value();
                     if (e == null) continue;
-                    ResourceLocation rl = getEffectRegistry(holder);
+                    Identifier rl = getEffectRegistry(holder);
                     if (rl == null) rl = UNKNOWN_EFFECT;
                     byId.putIfAbsent(rl, e);
                 }
@@ -292,11 +291,11 @@ public final class EffectUtils {
      * 按注册 id 去重
      */
     private static List<MobEffect> buildUniqueEffectsList() {
-        Map<ResourceLocation, MobEffect> byId = new LinkedHashMap<>();
+        Map<Identifier, MobEffect> byId = new LinkedHashMap<>();
         for (Object value : Banira.platform().registryService().effects()) {
             if (!(value instanceof MobEffect)) continue;
             MobEffect effect = (MobEffect) value;
-            ResourceLocation rl = getEffectRegistry(effect);
+            Identifier rl = getEffectRegistry(effect);
             if (rl == null) rl = UNKNOWN_EFFECT;
             byId.putIfAbsent(rl, effect);
         }
@@ -338,7 +337,7 @@ public final class EffectUtils {
     /**
      * 根据注册ID查找效果
      */
-    public static MobEffect findEffectByRegistry(ResourceLocation location) {
+    public static MobEffect findEffectByRegistry(Identifier location) {
         if (location == null) return null;
         return getEffectFromRegistry(location);
     }

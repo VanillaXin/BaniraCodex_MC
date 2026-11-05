@@ -329,7 +329,7 @@ public class UiDomView extends NativeUiView {
         button.gameElement(null);
         glyph.attribute("class", "ui-close-glyph");
         if (closeGlyph == null) closeGlyph = UiGameElement.sprite(xin.vanilla.banira.client.data.Texture.of(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("apricityui", "apricity/banira_codex/icons/close.png"), 16, 16));
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("apricityui", "apricity/banira_codex/icons/close.png"), 16, 16));
         glyph.gameElement(closeGlyph);
         if (!enabled.getOrDefault(id, true)) {
             button.tooltip("");

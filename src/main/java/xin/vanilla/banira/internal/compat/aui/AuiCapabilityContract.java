@@ -36,7 +36,7 @@ public final class AuiCapabilityContract {
                         new ClassReader(input).accept(owner, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
                     }
                     if (!member.owner.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0
-                            || owner.version > Opcodes.V21) {
+                            || owner.version > Opcodes.V25) {
                         return new Result(false, "Incompatible class " + member.owner);
                     }
                     classes.put(member.owner, owner);
@@ -67,7 +67,7 @@ public final class AuiCapabilityContract {
                         owner = new ClassNode();
                         new ClassReader(input).accept(owner, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
                     }
-                    if (!name.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0 || owner.version > Opcodes.V21)
+                    if (!name.equals(owner.name) || (owner.access & Opcodes.ACC_PUBLIC) == 0 || owner.version > Opcodes.V25)
                         return new Result(false, "Incompatible class " + name);
                     classes.put(name, owner);
                 }

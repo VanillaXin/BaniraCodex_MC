@@ -4,7 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,7 +12,7 @@ import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
-import xin.vanilla.banira.Identifier;
+
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
@@ -261,7 +261,7 @@ public final class CustomQuickActionManager {
 
     static QuickIcon resolveIcon(CustomQuickActionDefinition definition) {
         String value = definition.getIcon() == null ? "" : definition.getIcon();
-        ResourceLocation id = ResourceLocation.tryParse(value);
+        Identifier id = Identifier.tryParse(value);
         try {
             switch (definition.getIconType()) {
                 case EFFECT:
@@ -270,7 +270,7 @@ public final class CustomQuickActionManager {
                 case RESOURCE:
                     return id == null ? QuickIcon.item(Items.PAPER) : QuickIcon.resource(id);
                 case EXTERNAL_FILE:
-                    return QuickIcon.externalFile(Identifier.id(), value);
+                    return QuickIcon.externalFile(xin.vanilla.banira.Identifier.id(), value);
                 case ITEM:
                 default:
                     Item item = id == null ? Items.PAPER : BuiltInRegistries.ITEM.getOptional(id).orElse(Items.PAPER);

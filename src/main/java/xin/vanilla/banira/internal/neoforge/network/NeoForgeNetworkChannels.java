@@ -129,7 +129,7 @@ public final class NeoForgeNetworkChannels {
             if (optionalClient) {
                 registrar = registrar.optional();
             }
-            registrar.playBidirectional(type, codec, handler::accept);
+            registrar.playBidirectional(type, codec, handler::accept, handler::accept);
         }
     }
 

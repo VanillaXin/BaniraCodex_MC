@@ -803,7 +803,6 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
                 pickerInput.text(pickerHint);
                 pickerInput.enabled(!widget.disabled());
                 pickerInput.editable(!widget.pickerReadOnly());
-                pickerInput.editable(true);
 
                 int finalI = i;
                 pickerInput.onTextChanged(text -> {

@@ -91,6 +91,29 @@ public class UiSharedFormPageTest {
     }
 
     @Test
+    public void conditionalFieldsRebindFromTheNewValueAndKeepHiddenDrafts() {
+        var args = args(r -> fail("Unexpected submission"));
+        args.addWidget(new InputFormScreen.Widget().name("extra").title(Text.literal("Extra"))
+                .visibleWhen(r -> "show".equals(r.value("literal"))));
+        var form = new FormUiSession(args);
+        var view = new NativeUiView(new Object());
+        form.bind(view);
+        assertEquals(2, form.visibleFieldCount());
+        assertTrue(form.canSubmit());
+        var row = new NativeUiView(new Object());
+        view.rowProviders.get("fields").bind(row, 0);
+        row.inputDraft("input", "show");
+        assertEquals(3, form.visibleFieldCount());
+        assertFalse(form.canSubmit());
+        form.draft("extra", "retained");
+        form.draft("literal", "hide");
+        assertEquals(2, form.visibleFieldCount());
+        form.draft("literal", "show");
+        assertEquals("retained", form.draft("extra"));
+        assertTrue(form.canSubmit());
+    }
+
+    @Test
     public void headerCloseAndRetiredActionsNeverSubmit() {
         AtomicInteger callbacks = new AtomicInteger(), closes = new AtomicInteger();
         var form = new FormUiSession(args(r -> callbacks.incrementAndGet()));

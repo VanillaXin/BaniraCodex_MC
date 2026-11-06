@@ -49,7 +49,8 @@ public final class ExternalInventoryButtonManager {
     }
 
     public void refreshCurrentScreen() {
-        refreshConfigured(Minecraft.getInstance().screen);
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft != null) refreshConfigured(minecraft.screen);
     }
 
     /**

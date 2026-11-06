@@ -1,5 +1,6 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import net.minecraft.client.Minecraft;
 import org.junit.After;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
@@ -23,6 +24,22 @@ public class ExternalInventoryButtonManagerTest {
     @After
     public void tearDown() {
         manager.clearAdoptedEntries();
+    }
+
+    @Test
+    public void refreshBeforeMinecraftConstructionDefersProviderCollection() {
+        assertNull(Minecraft.getInstance());
+        AtomicBoolean collected = new AtomicBoolean();
+        manager.registerProvider(provider(PROVIDER_ID, () -> {
+            collected.set(true);
+            return Collections.singletonList(action());
+        }));
+
+        manager.refreshCurrentScreen();
+        assertFalse(collected.get());
+
+        manager.refresh(EnumExternalInventoryButtonHost.BANIRA, null);
+        assertTrue(collected.get());
     }
 
     @Test

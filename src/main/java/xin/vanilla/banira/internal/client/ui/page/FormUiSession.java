@@ -23,6 +23,9 @@ public final class FormUiSession implements UiPageSession {
     private final Runnable prepareSubmission;
     private final List<String> drafts = new ArrayList<>();
     private final List<Integer> visibleIndices = new ArrayList<>();
+    private final BitSet conditionalVisible = new BitSet();
+    private final boolean hasConditionalFields;
+    private java.util.function.Predicate<InputFormScreen.Widget> filter = widget -> true;
     private final Map<Integer, List<String>> selections = new LinkedHashMap<>();
     private UiView view;
     private String error = "";
@@ -32,6 +35,7 @@ public final class FormUiSession implements UiPageSession {
     private boolean picking;
     private long operation;
     private long version;
+    private long visibilityVersion;
     private final Map<Integer, String> errors = new LinkedHashMap<>();
     private UiOwnedResources bindings = new UiOwnedResources();
     private final Map<UiView, UiOwnedResources> rowBindings = new LinkedHashMap<>();
@@ -63,16 +67,17 @@ public final class FormUiSession implements UiPageSession {
         this.submissionReady = Objects.requireNonNull(submissionReady, "submissionReady");
         this.prepareSubmission = Objects.requireNonNull(prepareSubmission, "prepareSubmission");
         args.validate();
+        hasConditionalFields = args.getWidgets().stream().anyMatch(widget -> widget.visibleWhen() != null);
         for (int index = 0; index < args.getWidgets().size(); index++) {
             InputFormScreen.Widget widget = args.getWidgets().get(index);
             drafts.add(Objects.requireNonNull(widget.defaultValue(), "defaultValue"));
-            visibleIndices.add(index);
             if (widget.type() == InputFormScreen.WidgetType.DROPDOWN && widget.dropdownMultiSelect()) {
                 List<String> defaults = widget.dropdownDefaultValues();
                 selections.put(index, new ArrayList<>(defaults != null ? defaults : widget.defaultValue().codePoints().allMatch(Character::isWhitespace)
                         ? Collections.emptyList() : Collections.singletonList(widget.defaultValue())));
             }
         }
+        refreshVisibility();
     }
 
     public InputFormScreen.Args args() {
@@ -80,9 +85,39 @@ public final class FormUiSession implements UiPageSession {
     }
 
     public void filter(java.util.function.Predicate<InputFormScreen.Widget> predicate) {
-        visibleIndices.clear();
+        filter = Objects.requireNonNull(predicate, "predicate");
+        refreshVisibility();
+    }
+
+    public boolean hasConditionalFields() {
+        return hasConditionalFields;
+    }
+
+    public boolean fieldVisible(int index) {
+        return conditionalVisible.get(index);
+    }
+
+    public int visibleFieldCount() {
+        return conditionalVisible.cardinality();
+    }
+
+    public long visibilityVersion() {
+        return visibilityVersion;
+    }
+
+    private void refreshVisibility() {
+        InputFormScreen.Results values = hasConditionalFields ? results() : null;
+        List<Integer> visible = new ArrayList<>();
+        conditionalVisible.clear();
         for (int index = 0; index < args.getWidgets().size(); index++)
-            if (predicate.test(args.getWidgets().get(index))) visibleIndices.add(index);
+            if (args.getWidgets().get(index).visibleWhen() == null || args.getWidgets().get(index).visibleWhen().test(values)) {
+                conditionalVisible.set(index);
+                if (filter.test(args.getWidgets().get(index))) visible.add(index);
+            }
+        if (visibleIndices.equals(visible)) return;
+        visibilityVersion++;
+        visibleIndices.clear();
+        visibleIndices.addAll(visible);
         for (UiOwnedResources owned : rowBindings.values()) owned.close();
         rowBindings.clear();
         boundIndices.clear();
@@ -125,6 +160,7 @@ public final class FormUiSession implements UiPageSession {
         if (!Objects.equals(drafts.get(index), text)) {
             drafts.set(index, Objects.requireNonNull(text, "text"));
             version++;
+            if (hasConditionalFields) refreshVisibility();
         }
     }
 
@@ -134,6 +170,7 @@ public final class FormUiSession implements UiPageSession {
         if (!selections.get(index).equals(values)) {
             selections.put(index, new ArrayList<>(values));
             version++;
+            if (hasConditionalFields) refreshVisibility();
         }
     }
 
@@ -225,6 +262,7 @@ public final class FormUiSession implements UiPageSession {
         errors.clear();
         boolean valid = !closed && !submitted;
         for (int index = 0; index < args.getWidgets().size(); index++) {
+            if (!fieldVisible(index)) continue;
             InputFormScreen.Widget widget = args.getWidgets().get(index);
             String text = drafts.get(index);
             if (!widget.allowEmpty() && (selections.containsKey(index) ? selections.get(index).isEmpty() : text.isEmpty())) {
@@ -244,6 +282,7 @@ public final class FormUiSession implements UiPageSession {
         }
         if (!valid) return false;
         for (int index = 0; index < args.getWidgets().size(); index++) {
+            if (!fieldVisible(index)) continue;
             InputFormScreen.Widget widget = args.getWidgets().get(index);
             String validation = widget.validator().apply(result.curIndex(index).curName(widget.name()));
             if (validation != null && !validation.isEmpty()) {
@@ -275,7 +314,7 @@ public final class FormUiSession implements UiPageSession {
     }
 
     public void pick(int index) {
-        if (closed || submitted || picking || args.getWidgets().get(index).disabled()) return;
+        if (closed || submitted || picking || !fieldVisible(index) || args.getWidgets().get(index).disabled()) return;
         InputFormScreen.Widget widget = args.getWidgets().get(index);
         long token = ++operation;
         picking = true;
@@ -406,7 +445,7 @@ public final class FormUiSession implements UiPageSession {
                 if (widget.title() != null) row.text("label", widget.title().toComponent());
                 boolean checkbox = presentation != null && presentation.checkbox(widget);
                 if (!checkbox) row.control("input", control(index));
-                row.enabled("input", !widget.disabled());
+                row.enabled("input", !widget.disabled() && !widget.pickerReadOnly());
                 if (widget.hint() != null) row.text("hint", widget.hint().toComponent());
                 if (widget.tooltip() != null) row.text("tooltip", widget.tooltip().toComponent());
                 if (checkbox) row.value("input", UiValue.bool(Boolean.parseBoolean(drafts.get(index))));
@@ -415,14 +454,14 @@ public final class FormUiSession implements UiPageSession {
                         && widget.type() != InputFormScreen.WidgetType.DROPDOWN) {
                     row.draft("input", drafts.get(index));
                     owned.own(row.onDraft("input", text -> {
-                        if (FormUiSession.this.view == view) {
+                        if (FormUiSession.this.view == view && !widget.pickerReadOnly()) {
                             draft(index, text);
                             updateStatus();
                         }
                     }));
                 } else row.value("input", get(index));
                 owned.own(row.onValue("input", value -> {
-                    if (FormUiSession.this.view == view) {
+                    if (FormUiSession.this.view == view && !widget.pickerReadOnly()) {
                         if (checkbox && value.kind() == UiValue.Kind.BOOLEAN)
                             draft(index, Boolean.toString(value.asBoolean()));
                         else set(index, value);

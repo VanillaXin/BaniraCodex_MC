@@ -16,7 +16,7 @@ dependencies {
         if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('AUI contract must be an existing absolute file')
         auiContract files(artifact)
     } else {
-        auiContract('com.sighs:ApricityUI-fabric-26.1:1.3.0') { version { strictly('1.3.0') } }
+        auiContract('com.sighs:ApricityUI-fabric-26.1:1.3.1') { version { strictly('1.3.1') } }
     }
     // Runtime metadata requires Fabric API >=0.155.3+26.1.2; this is only a compile contract.
     compileOnly files(configurations.auiContract)
@@ -24,7 +24,7 @@ dependencies {
 def verify = tasks.register('verifyAuiContract') {
     doLast {
         def hash = MessageDigest.getInstance('SHA-256').digest(configurations.auiContract.singleFile.bytes).encodeHex().toString()
-        if (!hash.equalsIgnoreCase('D1944F9823C7932FFC6B6D3293FFA011ECD616F7541AE60D3B13FA1742D58E04'))
+        if (!hash.equalsIgnoreCase('B9EE09387962CF154793394D0FE3BD10C6EE35B043E1308739F42C071676C343'))
             throw new GradleException('AUI Fabric 26.1 contract SHA-256 mismatch')
     }
 }

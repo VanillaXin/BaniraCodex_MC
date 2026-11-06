@@ -11,7 +11,7 @@ import java.util.HexFormat;
 import static org.junit.Assert.*;
 
 public class AuiOfficialMavenPinTest {
-    private static final String SHA256 = "D1944F9823C7932FFC6B6D3293FFA011ECD616F7541AE60D3B13FA1742D58E04";
+    private static final String SHA256 = "B9EE09387962CF154793394D0FE3BD10C6EE35B043E1308739F42C071676C343";
 
     private String contract() throws Exception {
         return Files.readString(Path.of("gradle/aui-contract.gradle"), StandardCharsets.UTF_8);
@@ -23,8 +23,8 @@ public class AuiOfficialMavenPinTest {
         assertTrue(script.contains("repositories.exclusiveContent"));
         assertTrue(script.contains("https://maven.sighs.cc/repository/maven-public/"));
         assertTrue(script.contains("includeModule('com.sighs', 'ApricityUI-fabric-26.1')"));
-        assertTrue(script.contains("auiContract('com.sighs:ApricityUI-fabric-26.1:1.3.0')"));
-        assertTrue(script.contains("version { strictly('1.3.0') }"));
+        assertTrue(script.contains("auiContract('com.sighs:ApricityUI-fabric-26.1:1.3.1')"));
+        assertTrue(script.contains("version { strictly('1.3.1') }"));
         assertFalse(script.contains("1.2.9"));
     }
 

@@ -51,6 +51,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     private UiViewState uiState;
     private boolean restoreUiDraft;
     private long uiVersion;
+    private long layoutVisibility;
     private boolean nativeOnly;
     private final List<InputField> inputFields = new ArrayList<>();
     private final Map<Integer, Text> errorTextMap = new HashMap<>();
@@ -114,6 +115,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
 
     @Override
     public void captureUiState(UiViewState state) {
+        if (restoreUiDraft) return;
         for (int index = 0; index < inputFields.size(); index++) {
             InputField field = inputFields.get(index);
             if (field.input() instanceof DropdownSelectWidget && ((DropdownSelectWidget) field.input()).multiSelect()) {
@@ -128,6 +130,12 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         }
         if (state != null && scrollbarWidget != null) state.rowPosition(scrollbarWidget.value() / ITEM_HEIGHT);
         uiVersion = uiSession.version();
+    }
+
+    void rememberPickerHandoff() {
+        if (uiState == null) uiState = new UiViewState();
+        captureUiState(uiState);
+        restoreUiDraft = true;
     }
 
     private void restoreUiDrafts() {
@@ -183,6 +191,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private String defaultValue = "";
         private boolean allowEmpty;
         private boolean disabled;
+        private boolean pickerReadOnly;
+        private java.util.function.Predicate<Results> visibleWhen;
         private WidgetType type = WidgetType.TEXT;
         private String fileFilter = "";
         private List<String> dropdownOptions = new ArrayList<>();
@@ -603,13 +613,10 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
      */
     private int formHeaderAreaTop;
 
-    @Override
-    protected void initWidgets() {
-        if (restoreUiDraft) restoreUiDrafts();
-        inputFields.clear();
+    private int layoutForm() {
         int w = width;
         int h = height;
-        int listHeight = args.getWidgets().size() * ITEM_HEIGHT;
+        int listHeight = uiSession.visibleFieldCount() * ITEM_HEIGHT;
         int headerBlock = args.getHeaderTitle() != null
                 ? HEADER_TOP_PAD + HEADER_TEXT_H + HEADER_BOTTOM_GAP
                 : 0;
@@ -631,6 +638,14 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             listAreaHeight = listHeight;
         }
         formHeaderAreaTop = listTop - headerBlock;
+        return listHeight;
+    }
+
+    @Override
+    protected void initWidgets() {
+        if (restoreUiDraft) restoreUiDrafts();
+        inputFields.clear();
+        int listHeight = layoutForm();
 
         submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
@@ -787,6 +802,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
                         ? Text.transAuto(Banira.MOD_ID, "enter_color_hex") : widget.hint();
                 pickerInput.text(pickerHint);
                 pickerInput.enabled(!widget.disabled());
+                pickerInput.editable(!widget.pickerReadOnly());
                 pickerInput.editable(true);
 
                 int finalI = i;
@@ -806,7 +822,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
                 pickerBtn.text(Text.literal("..."));
                 pickerBtn.enabled(!widget.disabled());
                 pickerBtn.onClick(b -> {
-                    captureUiState(uiState == null ? new UiViewState() : uiState);
+                    if (widget.type() == WidgetType.PICKER) rememberPickerHandoff();
+                    else captureUiState(uiState);
                     uiSession.pick(finalI);
                 });
 
@@ -846,6 +863,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         }
         restoreUiDraft = false;
         uiVersion = uiSession.version();
+        layoutVisibility = uiSession.visibilityVersion();
+        updateInputFieldsPosition();
     }
 
     @Override
@@ -946,6 +965,12 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
      * 使用 buildResultsFromInputs 支持跨字段校验。
      */
     private void validateAndUpdateError(Widget widget, int index, String text, InputWidget inputWidget) {
+        if (uiSession.hasConditionalFields()) {
+            if (inputWidget instanceof DropdownSelectWidget && ((DropdownSelectWidget) inputWidget).multiSelect())
+                uiSession.acceptNative(index, ((DropdownSelectWidget) inputWidget).getSelectedValues());
+            else uiSession.acceptNative(index, text);
+            refreshConditionalLayout();
+        }
         Results r = buildResultsFromInputs(index, text);
         r.curIndex(index).curName(widget.name());
         String error = widget.validator().apply(r);
@@ -963,11 +988,38 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         }
     }
 
+    private void refreshConditionalLayout() {
+        if (scrollbarWidget != null
+                && layoutVisibility != uiSession.visibilityVersion()) {
+            layoutVisibility = uiSession.visibilityVersion();
+            int listHeight = layoutForm();
+            int maxScroll = Math.max(0, listHeight - listAreaHeight);
+            submitButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
+            cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
+            scrollbarWidget.maxValue(maxScroll);
+            scrollbarWidget.visibleSize(listAreaHeight);
+            scrollbarWidget.visible(scrollMode && maxScroll > 0);
+            scrollbarWidget.clearScrollHoverAreas().addScrollHoverArea(new ScreenCoordinate(contentLeft, listTop,
+                    inputW + SCROLLBAR_GAP + SCROLLBAR_WIDTH, listAreaHeight));
+            scrollbarWidget.setValue(Math.min(getScrollOffset(), maxScroll));
+            updateInputFieldsPosition();
+        }
+    }
+
     private void updateInputFieldsPosition() {
         int scrollOffset = scrollMode ? getScrollOffset() : 0;
+        int position = 0;
         for (int i = 0; i < inputFields.size(); i++) {
             InputField field = inputFields.get(i);
-            int itemTop = listTop + ITEM_HEIGHT * i - scrollOffset;
+            boolean shown = uiSession.fieldVisible(i);
+            if (uiSession.hasConditionalFields()) {
+                if (field.titleLabel() != null) field.titleLabel().visible(shown);
+                if (field.input() != null) field.input().visible(shown);
+                if (field.button() != null) field.button().visible(shown);
+                if (field.slider() != null) field.slider().visible(shown);
+            }
+            if (!shown) continue;
+            int itemTop = listTop + ITEM_HEIGHT * position++ - scrollOffset;
             int titleY = itemTop + TITLE_TOP_MARGIN;
             int inputY = titleY + TITLE_HEIGHT + TITLE_INPUT_GAP;
 
@@ -986,6 +1038,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
                 field.button().bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
             }
         }
+        if (focusedWidget != null && !focusedWidget.visible()) unfocusAllExcept(null);
     }
 
     private void handleSubmit() {
@@ -1086,6 +1139,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             }
             uiVersion = uiSession.version();
         }
+        refreshConditionalLayout();
         PoseStack stack = graphics.pose();
         if (args.invisible != null && Boolean.TRUE.equals(args.invisible.get())) {
             onClose();

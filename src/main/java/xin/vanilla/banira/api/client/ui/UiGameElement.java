@@ -8,7 +8,7 @@ import xin.vanilla.banira.common.util.EffectUtils;
 import java.util.Objects;
 
 public final class UiGameElement {
-    public enum Kind {OPTION, EFFECT, DIAGNOSTIC, PRESET, SPRITE}
+    public enum Kind {OPTION, EFFECT, DIAGNOSTIC, PRESET, SPRITE, ARTWORK}
 
     private final Kind kind;
     private final DropdownOption option;
@@ -35,6 +35,10 @@ public final class UiGameElement {
 
     public static UiGameElement sprite(xin.vanilla.banira.client.data.Texture texture) {
         return new UiGameElement(Kind.SPRITE, new DropdownOption("", Objects.requireNonNull(texture), null), null, "", 9, false, EnumSeason.AUTO, -1);
+    }
+
+    public static UiGameElement artwork(DropdownOption image) {
+        return new UiGameElement(Kind.ARTWORK, Objects.requireNonNull(image), null, "", 9, false, EnumSeason.AUTO, -1);
     }
 
     public static UiGameElement effect(MobEffectInstance effect) {

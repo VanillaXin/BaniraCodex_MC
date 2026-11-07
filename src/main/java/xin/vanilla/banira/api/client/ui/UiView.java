@@ -5,6 +5,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.common.data.Component;
 
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 public interface UiView {
     default boolean nativeView() {
@@ -42,6 +43,12 @@ public interface UiView {
     AutoCloseable onDraft(String id, Consumer<String> action);
 
     AutoCloseable onPointer(String id, Consumer<UiPointer> action);
+
+    default AutoCloseable forwardScroll(String sourceId, String targetId, BooleanSupplier enabled) {
+        if (nativeView()) return () -> {
+        };
+        throw new UnsupportedOperationException("Scroll forwarding unavailable");
+    }
 
     void hudPosition(double x, double y);
 

@@ -24,6 +24,14 @@ final class AuiTransientTooltip implements AutoCloseable {
         return owner == element;
     }
 
+    ScreenCoordinate visibleBounds(Document document) {
+        if (owner == null || !root.isVisible || System.nanoTime() - entered < 350_000_000L) return null;
+        Element.DOMRect rect = root.getBoundingClientRect();
+        Position start = document.documentToGuiPosition(new Position(rect.x, rect.y));
+        Position end = document.documentToGuiPosition(new Position(rect.right, rect.bottom));
+        return end.x > start.x && end.y > start.y ? new ScreenCoordinate(start.x, start.y, end.x - start.x, end.y - start.y) : null;
+    }
+
     void update(Element next, String value, Position point, double width, double height) {
         if (next == null || value == null || value.isBlank()) {
             hide();

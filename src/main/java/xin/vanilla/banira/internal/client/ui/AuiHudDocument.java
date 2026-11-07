@@ -14,12 +14,14 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
     private final AuiDocumentAccess access;
     private final HudDomPresentation presentation;
     private final long generation;
+    private final boolean foreground;
     private final Object resourceSnapshot;
     private final ProgressDomPresentation progress;
     private xin.vanilla.banira.api.client.ui.UiHudFrame progressFrame;
 
     private AuiHudDocument(UiHudSpec spec) {
         super(null, null);
+        foreground = SharedHudHosts.POINTER.equals(spec.id());
         shared = spec.shared() ? AuiSharedHudDocuments.acquire() : null;
         document = shared == null ? Document.create(spec.template()) : shared.document().document();
         if (document == null) throw new IllegalStateException("HUD document unavailable");
@@ -96,7 +98,8 @@ public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Re
         presentation.update(frame);
         access.prepare();
         try {
-            Base.drawOverlayDocument(graphics, document);
+            if (foreground) Base.drawOverlayDocument(graphics, document, Base.getFlatOverlayZ());
+            else Base.drawOverlayDocument(graphics, document);
             afterLayout();
             presentation.afterLayout();
             access.render(graphics);

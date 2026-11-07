@@ -31,7 +31,9 @@ public class AuiCapabilityContractTest {
     public void absentAuiFallsBackWithoutLoadingClientClasses() throws Exception {
         assertFalse(compatible(new ClassLoader(null) {
             @Override
-            public InputStream getResourceAsStream(String name) { return null; }
+            public InputStream getResourceAsStream(String name) {
+                return null;
+            }
         }));
     }
 
@@ -68,7 +70,9 @@ public class AuiCapabilityContractTest {
                         ClassWriter writer = new ClassWriter(0);
                         node.accept(writer);
                         return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception e) { throw new AssertionError(e); }
+                    } catch (Exception e) {
+                        throw new AssertionError(e);
+                    }
                 }
             };
             assertFalse(compatible(changed));
@@ -166,6 +170,31 @@ public class AuiCapabilityContractTest {
         }
     }
 
+    @Test
+    public void missingScrollOrVisibilityFieldFallsBack() throws Exception {
+        for (String field : new String[]{"scrollHeight", "isVisible", "scrollDelta"})
+            try (URLClassLoader jar = official()) {
+                assertFalse(field, compatible(new ClassLoader(null) {
+                    @Override
+                    public InputStream getResourceAsStream(String name) {
+                        InputStream stream = jar.getResourceAsStream(name);
+                        String owner = field.equals("scrollDelta") ? "event/MouseEvent" : "init/Element";
+                        if (!name.equals("com/sighs/apricityui/" + owner + ".class")) return stream;
+                        try (InputStream input = stream) {
+                            ClassNode node = new ClassNode();
+                            new ClassReader(input).accept(node, 0);
+                            node.fields.removeIf(value -> value.name.equals(field));
+                            ClassWriter writer = new ClassWriter(0);
+                            node.accept(writer);
+                            return new ByteArrayInputStream(writer.toByteArray());
+                        } catch (Exception failure) {
+                            throw new AssertionError(failure);
+                        }
+                    }
+                }));
+            }
+    }
+
     private URLClassLoader official() throws Exception {
         String path = System.getProperty("banira.aui.contractJar");
         assertNotNull("Pinned official AUI binary must be provided", path);
@@ -190,7 +219,9 @@ public class AuiCapabilityContractTest {
                     ClassWriter writer = new ClassWriter(0);
                     node.accept(writer);
                     return new ByteArrayInputStream(writer.toByteArray());
-                } catch (Exception e) { throw new AssertionError(e); }
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
             }
         };
     }

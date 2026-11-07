@@ -645,7 +645,7 @@ public class UiDomControlsTest {
         Dom first = new Dom();
         first.ids.put("rail", first.new Node("rail"));
         UiDomView view = (UiDomView) first.view();
-        xin.vanilla.banira.api.client.ui.UiPageState state = view.state();
+        UiViewState state = view.state();
         state.rowPosition(7);
         view.rows("fields", provider, 10);
         view.afterLayout();

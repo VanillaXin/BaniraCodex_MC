@@ -40,6 +40,10 @@ public final class AuiDocumentRenderSubmission {
     }
 
     public static void submit(GuiGraphicsExtractor graphics, Document document) {
+        submit(graphics, document, false);
+    }
+
+    public static void submit(GuiGraphicsExtractor graphics, Document document, boolean foreground) {
         if (!registered) throw new IllegalStateException("Manual AUI renderer was not registered");
         Throwable failure = FAILURES.remove(document);
         if (failure != null) throw new IllegalStateException("Manual AUI render failed", failure);
@@ -48,11 +52,11 @@ public final class AuiDocumentRenderSubmission {
                 ignored -> Collections.newSetFromMap(new IdentityHashMap<>()));
         if (!documents.add(document)) return;
         ((GuiGraphicsExtractorAccessor) graphics).banira$getGuiRenderState()
-                .addPicturesInPictureState(new State(document, document.getRefreshGeneration(),
+                .addPicturesInPictureState(new State(document, document.getRefreshGeneration(), foreground,
                         0, 0, graphics.guiWidth(), graphics.guiHeight(), 1f, graphics.peekScissorStack()));
     }
 
-    private record State(Document document, long generation, int x0, int y0, int x1, int y1,
+    private record State(Document document, long generation, boolean foreground, int x0, int y0, int x1, int y1,
                          float scale, ScreenRectangle scissorArea) implements PictureInPictureRenderState {
         @Override
         public ScreenRectangle bounds() {
@@ -88,7 +92,9 @@ public final class AuiDocumentRenderSubmission {
                         0, state.x1 - state.x0, state.y1 - state.y0, 0, -range, range));
                 Mask.resetDepth();
                 try (Document.ContextScope context = Document.withContext(state.document)) {
-                    Base.drawOverlayDocument(new PoseStack(), state.document);
+                    if (state.foreground)
+                        Base.drawOverlayDocument(new PoseStack(), state.document, Base.getFlatOverlayZ());
+                    else Base.drawOverlayDocument(new PoseStack(), state.document);
                     Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
                 } finally {
                     Mask.resetDepth();

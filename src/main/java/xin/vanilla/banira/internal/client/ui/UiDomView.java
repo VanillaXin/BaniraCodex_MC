@@ -26,6 +26,7 @@ public class UiDomView extends NativeUiView {
     private final List<UiDomAccess.Node> ownedNodes = new ArrayList<>();
     private final Set<String> listeners = new HashSet<>();
     private final Map<String, VirtualRows> lists = new LinkedHashMap<>();
+    private final List<Runnable> pendingScrollRoutes = new ArrayList<>();
     private final Map<String, UiKeyCapture> keys = new HashMap<>();
     private Consumer<Throwable> onFailure = failure -> {
         throw new IllegalStateException("UI binding failed", failure);
@@ -130,6 +131,8 @@ public class UiDomView extends NativeUiView {
         for (String id : actionIds()) subscribed(id);
         for (String id : longActionIds()) subscribed(id);
         for (String id : pointerIds()) subscribed(id);
+        for (Runnable route : pendingScrollRoutes) route.run();
+        pendingScrollRoutes.clear();
     }
 
     @Override
@@ -211,7 +214,7 @@ public class UiDomView extends NativeUiView {
         if (rowProviders.containsKey(id)) {
             VirtualRows old = lists.remove(id);
             double independentPosition = old != null && !old.tracksPageScroll
-                    ? old.restored ? old.scroller.scrollTop() / old.rowHeight : old.initialPosition : 0;
+                    ? old.restored ? old.scroller.scrollTop() / old.rowHeight : old.initialPosition : state().listPosition(prefix + id);
             if (old != null) old.close();
             UiDomAccess.Node container = node(id);
             if (container != null) lists.put(id, new VirtualRows(id, container, independentPosition));
@@ -436,6 +439,44 @@ public class UiDomView extends NativeUiView {
         } catch (RuntimeException | LinkageError failure) {
             fail(failure);
         }
+    }
+
+    @Override
+    public AutoCloseable forwardScroll(String sourceId, String targetId, BooleanSupplier enabled) {
+        Objects.requireNonNull(enabled);
+        Objects.requireNonNull(sourceId);
+        Objects.requireNonNull(targetId);
+        if (sourceId.equals(targetId)) throw new IllegalArgumentException("Distinct scroll source and target required");
+        UiOwnedResources route = new UiOwnedResources();
+        resources.own(route);
+        Runnable bind = () -> bindScrollRoute(sourceId, targetId, enabled, route);
+        if (dom == null) pendingScrollRoutes.add(bind);
+        else bind.run();
+        return route;
+    }
+
+    private void bindScrollRoute(String sourceId, String targetId, BooleanSupplier enabled, UiOwnedResources route) {
+        if (route.closed() || !live()) return;
+        UiDomAccess.Node source = node(sourceId), target = node(targetId);
+        if (source == null || target == null || source == target)
+            throw new IllegalArgumentException("Distinct scroll source and target required");
+        route.own(source.on("wheel", event -> {
+            try {
+                if (!live() || route.closed() || modal() || !enabled.getAsBoolean()) return;
+                double delta = event.scrollDelta();
+                if (!Double.isFinite(delta) || delta == 0 || target.clientHeight() <= 0) return;
+                if (target == scrollContent) takeScrollOwnership();
+                for (VirtualRows list : lists.values())
+                    if (list.scroller == target) {
+                        list.restoring = false;
+                        list.restored = true;
+                    }
+                target.scrollBy(delta);
+                event.consume();
+            } catch (RuntimeException | LinkageError failure) {
+                fail(failure);
+            }
+        }));
     }
 
     private void takeScrollOwnership() {
@@ -738,10 +779,11 @@ public class UiDomView extends NativeUiView {
         final UiDomAccess.Node container, scroller, top, bottom;
         final List<UiDomView> rows = new ArrayList<>();
         final UiRowWindow window;
-        final AutoCloseable scrolling;
+        final AutoCloseable scrolling, wheel;
         int first = -1;
         boolean updating;
         boolean restored;
+        boolean restoring;
         boolean focusViewportRestored;
         final double initialPosition;
         final UiRowLayout presentation;
@@ -757,19 +799,25 @@ public class UiDomView extends NativeUiView {
             tracksPageScroll = presentation == null || presentation.tracksPageScroll();
             UiDomAccess.Node content = dom.find(presentation == null ? "content" : presentation.scrollerId());
             scroller = content != null ? content : container;
+            if (content != null) scroller.clipChildren();
             window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
             initialPosition = tracksPageScroll ? state().rowPosition() : independentPosition;
+            restoring = initialPosition > 0;
             top = dom.create("div");
             bottom = dom.create("div");
             container.append(top);
             scrolling = scroller.on("scroll", event -> {
                 if (!live() || modal()) return;
                 try {
-                    restored = true;
+                    if (!restoring) restored = true;
                     update();
                 } catch (RuntimeException | LinkageError failure) {
                     fail(failure);
                 }
+            });
+            wheel = scroller.on("wheel", event -> {
+                restoring = false;
+                restored = true;
             });
             update();
         }
@@ -777,8 +825,16 @@ public class UiDomView extends NativeUiView {
         void afterLayout() {
             if (scroller.clientHeight() <= 0) return;
             if (!restored) {
-                restored = true;
-                scroller.scrollTop(initialPosition * rowHeight);
+                restoring = true;
+                // A viewport can have dimensions before the virtual spacers enter the engine's scroll metrics.
+                if (scroller.scrollHeight() + .5 < window.total() * (double) rowHeight) return;
+                double target = Math.max(0, Math.min(initialPosition * rowHeight,
+                        scroller.scrollHeight() - scroller.clientHeight()));
+                scroller.scrollTop(target);
+                if (Math.abs(scroller.scrollTop() - target) < .5) {
+                    restoring = false;
+                    restored = true;
+                }
                 update(true);
                 return;
             }
@@ -820,6 +876,8 @@ public class UiDomView extends NativeUiView {
                 if (restored && tracksPageScroll) {
                     state().scrollOffset(scroller.scrollTop());
                     state().rowPosition(scroller.scrollTop() / rowHeight);
+                } else if (restored) {
+                    state().listPosition(prefix + id, scroller.scrollTop() / rowHeight);
                 }
                 if (next == first && !force) return;
                 first = next;
@@ -859,7 +917,10 @@ public class UiDomView extends NativeUiView {
 
         @Override
         public void close() {
+            if (restored && !tracksPageScroll)
+                state().listPosition(prefix + id, scroller.scrollTop() / rowHeight);
             try {
+                wheel.close();
                 scrolling.close();
             } catch (Exception failure) {
                 throw new IllegalStateException(failure);

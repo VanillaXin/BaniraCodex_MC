@@ -5,6 +5,7 @@ import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
+import xin.vanilla.banira.api.client.ui.UiValue;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
@@ -91,6 +92,75 @@ public class UiSharedFormPageTest {
         row.inputDraft("input", "3.25");
         assertTrue(form.canSubmit());
         assertTrue(row.texts.get("validation").isEmpty());
+    }
+
+    @Test
+    public void conditionalFieldsRebindFromTheNewValueAndKeepHiddenDrafts() {
+        var args = args(r -> fail("Unexpected submission"));
+        args.addWidget(new InputFormScreen.Widget().name("extra").title(Text.literal("Extra"))
+                .visibleWhen(r -> "show".equals(r.value("literal"))));
+        var form = new FormUiSession(args);
+        var view = new NativeUiView(new Object());
+        form.bind(view);
+        assertEquals(2, form.visibleFieldCount());
+        assertTrue(form.canSubmit());
+        var row = new NativeUiView(new Object());
+        view.rowProviders.get("fields").bind(row, 0);
+        row.inputDraft("input", "show");
+        assertEquals(3, form.visibleFieldCount());
+        assertFalse(form.canSubmit());
+        form.draft("extra", "retained");
+        form.draft("literal", "hide");
+        assertEquals(2, form.visibleFieldCount());
+        form.draft("literal", "show");
+        assertEquals("retained", form.draft("extra"));
+        assertTrue(form.canSubmit());
+    }
+
+    @Test
+    public void readOnlyPickerRejectsTextEventsButAcceptsStructuredResultsAcrossRebind() {
+        var args = args(r -> fail("Unexpected submission"));
+        args.addWidget(new InputFormScreen.Widget().name("summary").title(Text.literal("Summary"))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true).defaultValue("original")
+                .picker((parent, callback) -> parent));
+        var form = new FormUiSession(args);
+        var view = new NativeUiView(new Object());
+        form.bind(view);
+        var row = new NativeUiView(new Object());
+        view.rowProviders.get("fields").bind(row, 2);
+        assertFalse(row.enabled.get("input"));
+        row.inputDraft("input", "disabled edit");
+        row.enabled("input", true);
+        row.inputDraft("input", "stale draft");
+        row.input("input", UiValue.text("stale value"));
+        assertEquals("original", form.draft("summary"));
+        form.draft("summary", "chosen item");
+        var next = new NativeUiView(new Object());
+        form.bind(next);
+        var restored = new NativeUiView(new Object());
+        next.rowProviders.get("fields").bind(restored, 2);
+        assertEquals("chosen item", restored.drafts.get("input"));
+        assertFalse(restored.enabled.get("input"));
+    }
+
+    @Test
+    public void hiddenPickerCannotOpenAndDoesNotBlockSubmission() {
+        AtomicInteger picks = new AtomicInteger(), submissions = new AtomicInteger();
+        var args = args(r -> submissions.incrementAndGet());
+        args.addWidget(new InputFormScreen.Widget().name("hidden").title(Text.literal("Hidden"))
+                .type(InputFormScreen.WidgetType.PICKER).visibleWhen(r -> false)
+                .validator(r -> "Hidden validation must not run")
+                .picker((parent, callback) -> {
+                    picks.incrementAndGet();
+                    return parent;
+                }));
+        var form = new FormUiSession(args);
+        assertFalse(form.fieldVisible(2));
+        form.pick(2);
+        assertEquals(0, picks.get());
+        assertTrue(form.canSubmit());
+        assertTrue(form.submit());
+        assertEquals(1, submissions.get());
     }
 
     @Test

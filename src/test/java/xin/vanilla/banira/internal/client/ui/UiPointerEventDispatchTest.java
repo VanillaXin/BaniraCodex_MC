@@ -17,6 +17,48 @@ public class UiPointerEventDispatchTest {
     }
 
     @Test
+    public void pointerOverlayHasItsOwnForegroundStratum() throws Exception {
+        MethodNode render = source("internal/client/ui/UiPagePointer").methods.stream()
+                .filter(m -> m.name.equals("render")).findFirst().orElseThrow();
+        boolean separated = false, painted = false, finished = false;
+        for (AbstractInsnNode instruction : render.instructions) {
+            if (!(instruction instanceof MethodInsnNode call)) continue;
+            if (call.name.equals("nextStratum")) {
+                if (painted) finished = true;
+                else separated = true;
+            }
+            if (call.owner.endsWith("SharedHudHosts") && call.name.equals("render")) {
+                assertTrue(separated);
+                painted = true;
+            }
+        }
+        assertTrue(painted && finished);
+        assertFalse(render.tryCatchBlocks.isEmpty());
+    }
+
+    @Test
+    public void pointerHudSubmitsTheForegroundPlaneToTheNativePipRenderer() throws Exception {
+        MethodNode render = source("internal/client/ui/AuiHudDocument").methods.stream()
+                .filter(m -> m.name.equals("render")).findFirst().orElseThrow();
+        assertTrue(java.util.Arrays.stream(render.instructions.toArray()).anyMatch(instruction ->
+                instruction instanceof MethodInsnNode call && call.owner.endsWith("AuiDocumentRenderSubmission")
+                        && call.name.equals("submit") && call.desc.endsWith(";Z)V")));
+        MethodNode rasterize = source("internal/compat/aui/AuiDocumentRenderSubmission$Renderer").methods.stream()
+                .filter(m -> m.name.equals("renderToTexture") && (m.access & org.objectweb.asm.Opcodes.ACC_BRIDGE) == 0)
+                .findFirst().orElseThrow();
+        boolean foreground = false, explicitPlane = false;
+        for (AbstractInsnNode instruction : rasterize.instructions) {
+            if (!(instruction instanceof MethodInsnNode call)) continue;
+            if (call.owner.endsWith("/Base") && call.name.equals("getFlatOverlayZ")) foreground = true;
+            if (call.owner.endsWith("/Base") && call.name.equals("drawOverlayDocument") && call.desc.endsWith(";F)V")) {
+                assertTrue(foreground);
+                explicitPlane = true;
+            }
+        }
+        assertTrue(explicitPlane);
+    }
+
+    @Test
     public void cancelledInputIsObservedWithoutReplayingBusinessInput() throws Exception {
         ClassNode events = source("internal/fabric/client/FabricAuiClientHooks");
         for (String method : new String[]{"observeButton", "observeScroll"}) {
@@ -38,8 +80,9 @@ public class UiPointerEventDispatchTest {
         assertEquals(2000, declaration.values.get(declaration.values.indexOf("priority") + 1));
         for (MethodNode method : mixin.methods) {
             if (!method.name.startsWith("banira$observe")) continue;
-            for (AbstractInsnNode instruction : method.instructions) if (instruction instanceof MethodInsnNode call)
-                assertFalse("Observation must not cancel the event", call.name.equals("cancel") || call.name.equals("setReturnValue"));
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call)
+                    assertFalse("Observation must not cancel the event", call.name.equals("cancel") || call.name.equals("setReturnValue"));
         }
     }
 

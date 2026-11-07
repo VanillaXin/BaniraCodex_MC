@@ -128,8 +128,9 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
                 view.access.prepare();
                 super.extractRenderState(graphics, mouseX, mouseY, partialTick);
                 graphics.nextStratum();
-                view.afterLayout();
                 view.access.render(graphics);
+                // Rebinding virtual rows here keeps their HTML and retained icons on the same frame.
+                view.afterLayout();
                 pointer.render(graphics, mouseX, mouseY);
             } finally {
                 graphics.nextStratum();

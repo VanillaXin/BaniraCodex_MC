@@ -47,8 +47,13 @@ final class UiPagePointer implements AutoCloseable {
             lastTheme = colors;
         }
         HudDrawList frame = state.frame(colors, x, y, EnumRenderDepth.MOUSE.depth());
-        auiPainted = SharedHudHosts.render(SharedHudHosts.POINTER, graphics, frame);
-        if (!auiPainted) frame.renderNative(graphics);
+        graphics.nextStratum();
+        try {
+            auiPainted = SharedHudHosts.render(SharedHudHosts.POINTER, graphics, frame);
+            if (!auiPainted) frame.renderNative(graphics);
+        } finally {
+            graphics.nextStratum();
+        }
     }
 
     @Override

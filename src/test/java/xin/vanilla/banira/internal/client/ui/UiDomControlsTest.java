@@ -79,8 +79,9 @@ public class UiDomControlsTest {
             xin.vanilla.banira.common.data.Component component;
             UiGameElement gameElement;
             int writes, start, end;
-            boolean removed, focused;
-            double scroll, height = 100;
+            boolean removed, focused, clipsChildren;
+            double scroll, height = 100, scrollTarget, scrollExtent = Double.POSITIVE_INFINITY;
+            boolean smoothScroll;
             ScreenCoordinate rectangle = new ScreenCoordinate(10, 40, 200, 100);
 
             @SuppressWarnings("unchecked")
@@ -143,10 +144,21 @@ public class UiDomControlsTest {
                             return rectangle;
                         case "scrollTop":
                             if (args == null || args.length == 0) return scroll;
-                            scroll = height == 0 ? 0 : (double) args[0];
+                            scrollTarget = height == 0 ? 0 : (double) args[0];
+                            if (!smoothScroll) scroll = scrollTarget;
                             return null;
                         case "clientHeight":
                             return height;
+                        case "scrollBy":
+                            scrollTarget = Math.max(0, Math.min(scrollExtent - height,
+                                    (smoothScroll ? scrollTarget : scroll) + (double) args[0]));
+                            if (!smoothScroll) scroll = scrollTarget;
+                            return null;
+                        case "scrollHeight":
+                            return scrollExtent;
+                        case "clipChildren":
+                            clipsChildren = true;
+                            return null;
                         case "focused":
                             return focused;
                         case "focus":
@@ -178,6 +190,19 @@ public class UiDomControlsTest {
                 emit(event, 0);
             }
 
+            int wheel(double delta) {
+                int[] consumed = {0};
+                Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType}, (p, m, a) -> {
+                    if (m.getName().equals("consume")) consumed[0]++;
+                    if (m.getReturnType() == double.class) return m.getName().equals("scrollDelta") ? delta : 0d;
+                    if (m.getReturnType() == int.class) return 0;
+                    return null;
+                });
+                for (Consumer<Object> listener : new ArrayList<>(events.getOrDefault("wheel", Collections.emptyList())))
+                    listener.accept(input);
+                return consumed[0];
+            }
+
             void key(String event, int code) {
                 Object input = Proxy.newProxyInstance(eventType.getClassLoader(), new Class<?>[]{eventType}, (p, m, a) -> {
                     if (m.getReturnType() == int.class) return m.getName().equals("keyCode") ? code : -1;
@@ -202,6 +227,54 @@ public class UiDomControlsTest {
             return (NativeUiView) type("internal.client.ui.UiDomView")
                     .getConstructor(Object.class, type("internal.client.ui.UiDomAccess")).newInstance(new Object(), access);
         }
+    }
+
+    @Test
+    public void forwardedWheelAccumulatesSmoothTargetAndClampsWithoutScrollingSource() throws Exception {
+        Dom dom = new Dom();
+        UiDomView view = (UiDomView) dom.view();
+        Dom.Node source = dom.ids.get("header"), target = dom.ids.get("content");
+        target.smoothScroll = true;
+        target.scrollExtent = 400;
+        AutoCloseable route = view.forwardScroll("header", "content", () -> true);
+        assertEquals(1, source.wheel(40));
+        assertEquals(1, source.wheel(40));
+        assertEquals(80, target.scrollTarget, 0);
+        assertEquals(0, source.scroll, 0);
+        source.wheel(500);
+        assertEquals(300, target.scrollTarget, 0);
+        source.wheel(-500);
+        assertEquals(0, target.scrollTarget, 0);
+        assertEquals(0, source.wheel(Double.NaN));
+        Consumer<Object> stale = source.events.get("wheel").get(0);
+        route.close();
+        assertTrue(source.events.get("wheel").isEmpty());
+        Object event = Proxy.newProxyInstance(dom.eventType.getClassLoader(), new Class<?>[]{dom.eventType},
+                (p, m, a) -> {
+                    throw new AssertionError("Closed route inspected input");
+                });
+        stale.accept(event);
+        view.close();
+    }
+
+    @Test
+    public void forwardedWheelCanBeDeferredBlockedAndUnboundBeforeAttachment() throws Exception {
+        Dom dom = new Dom();
+        UiDomView view = new UiDomView(new Object(), null);
+        boolean[] active = {false};
+        view.forwardScroll("header", "content", () -> active[0]);
+        AutoCloseable cancelled = view.forwardScroll("text", "content", () -> true);
+        cancelled.close();
+        view.attach((UiDomAccess) dom.access);
+        Dom.Node source = dom.ids.get("header"), target = dom.ids.get("content");
+        assertEquals(0, source.wheel(40));
+        assertEquals(0, target.scroll, 0);
+        active[0] = true;
+        assertEquals(1, source.wheel(40));
+        assertEquals(40, target.scroll, 0);
+        assertFalse(dom.ids.get("text").events.containsKey("wheel"));
+        view.close();
+        assertEquals(0, source.wheel(40));
     }
 
     @Test
@@ -512,6 +585,107 @@ public class UiDomControlsTest {
             }
         }, 2);
         assertEquals(2, count.value);
+    }
+
+    @Test
+    public void independentRowScrollerClipsRetainedArtwork() throws Exception {
+        Dom dom = new Dom();
+        Dom.Node rail = dom.new Node("rail");
+        dom.ids.put("rail", rail);
+        UiDomView view = new UiDomView(new Object(), (UiDomAccess) dom.access);
+        view.rows("fields", new UiRowLayout() {
+            public int size() {
+                return 1;
+            }
+
+            public String key(int index) {
+                return "pool";
+            }
+
+            public void bind(UiView row, int index) {
+            }
+
+            public int rowHeight() {
+                return 46;
+            }
+
+            public String scrollerId() {
+                return "rail";
+            }
+
+            public boolean tracksPageScroll() {
+                return false;
+            }
+        }, 10);
+        assertTrue(rail.clipsChildren);
+        assertFalse(dom.ids.get("content").clipsChildren);
+        view.close();
+    }
+
+    @Test
+    public void independentListScrollSurvivesClosingAndReopeningItsDocument() throws Exception {
+        UiRowLayout provider = new UiRowLayout() {
+            public int size() {
+                return 40;
+            }
+
+            public String key(int index) {
+                return "pool-" + index;
+            }
+
+            public void bind(UiView row, int index) {
+            }
+
+            public int rowHeight() {
+                return 35;
+            }
+
+            public String scrollerId() {
+                return "rail";
+            }
+
+            public boolean tracksPageScroll() {
+                return false;
+            }
+        };
+        Dom first = new Dom();
+        first.ids.put("rail", first.new Node("rail"));
+        UiDomView view = (UiDomView) first.view();
+        var state = view.state();
+        state.rowPosition(7);
+        view.rows("fields", provider, 10);
+        view.afterLayout();
+        first.ids.get("rail").scroll = 245;
+        first.ids.get("rail").emit("scroll");
+        view.close();
+        assertEquals(7, state.listPosition("fields"), 0);
+        assertEquals(7, state.rowPosition(), 0);
+        Dom second = new Dom();
+        second.ids.put("rail", second.new Node("rail"));
+        second.ids.get("rail").smoothScroll = true;
+        second.ids.get("rail").scrollExtent = 0;
+        UiDomView reopened = (UiDomView) second.view();
+        reopened.restoreState(state);
+        reopened.rows("fields", provider, 10);
+        second.ids.get("rail").emit("scroll");
+        assertEquals(7, state.listPosition("fields"), 0);
+        reopened.afterLayout();
+        assertEquals(0, second.ids.get("rail").scrollTarget, 0);
+        assertEquals(7, state.listPosition("fields"), 0);
+        second.ids.get("rail").scrollExtent = 1400;
+        reopened.afterLayout();
+        assertEquals(245, second.ids.get("rail").scrollTarget, .001);
+        assertEquals(7, state.listPosition("fields"), 0);
+        second.ids.get("rail").scroll = 6;
+        second.ids.get("rail").emit("scroll");
+        reopened.afterLayout();
+        assertEquals(7, state.listPosition("fields"), 0);
+        assertEquals(245, second.ids.get("rail").scrollTarget, .001);
+        second.ids.get("rail").scroll = 245;
+        reopened.afterLayout();
+        assertEquals(245, second.ids.get("rail").scroll, .001);
+        assertEquals(0, state.listPosition("another-list"), 0);
+        reopened.close();
     }
 
     @Test

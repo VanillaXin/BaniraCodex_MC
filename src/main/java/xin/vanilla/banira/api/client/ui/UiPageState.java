@@ -6,6 +6,15 @@ public class UiPageState {
     private String scrollAnchor = "", focusedField = "", selectedId = "";
     private int selectionStart, selectionEnd;
     private double scrollOffset, rowPosition, detailScroll;
+    private final java.util.Map<String, Double> listPositions = new java.util.HashMap<>();
+
+    public double listPosition(String id) {
+        return listPositions.getOrDefault(Objects.requireNonNull(id), 0D);
+    }
+
+    public void listPosition(String id, double value) {
+        listPositions.put(Objects.requireNonNull(id), finite(value));
+    }
 
     public String scrollAnchor() {
         return scrollAnchor;

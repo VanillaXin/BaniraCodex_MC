@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "version": "2.0.0",
+  "baniraVersion": "2.0.0",
+  "baniraNextMajor": "3.0.0",
+  "repositories": {
+    "BaniraCodex": "banira_codex",
+    "AotakeSweep": "aotake_sweep",
+    "Narcissus_Farewell": "narcissus_farewell",
+    "SakuraSignIn_MC": "sakura_sign_in"
+  },
+  "targets": {
+    "forge/16.5": "1.16.5",
+    "forge/18.2": "1.18.2",
+    "forge/19.2": "1.19.2",
+    "forge/20.1": "1.20.1",
+    "forge/21.1": "1.21.1",
+    "neoforge/21.1": "1.21.1",
+    "neoforge/26.1": "26.1",
+    "fabric/16.5": "1.16.5",
+    "fabric/18.2": "1.18.2",
+    "fabric/19.2": "1.19.2",
+    "fabric/20.1": "1.20.1",
+    "fabric/21.1": "1.21.1",
+    "fabric/26.1": "26.1"
+  }
+}

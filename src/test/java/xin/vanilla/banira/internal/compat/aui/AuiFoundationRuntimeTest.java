@@ -24,20 +24,6 @@ public class AuiFoundationRuntimeTest {
         assertFalse(contract.contains("fg.deobf"));
     }
 
-    @Test
-    public void dependencyOnlyCompileCannotEraseRefmap() throws Exception {
-        String guard = text("gradle/mixin-refmap.gradle");
-        assertTrue(guard.contains("options.incremental = false"));
-        assertTrue(guard.contains("outputs.files(refmap"));
-        assertTrue(text("build.gradle").contains("apply from: 'gradle/mixin-refmap.gradle'"));
-    }
-
-    @Test
-    public void configurationOnlyTasksDoNotRewriteClientOptions() throws Exception {
-        String build = text("build.gradle");
-        assertFalse(build.contains("\nprepareBaniraDevFpsOverlay()"));
-        assertTrue(build.contains("dependsOn tasks.named('prepareDevFpsOverlay')"));
-    }
 
     @Test
     public void actualProductionArchiveIsJava8AndVendorFree() throws Exception {

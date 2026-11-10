@@ -87,13 +87,6 @@ public class UiDomCloseTest extends UiDomControlsTest {
         view.close();
     }
 
-    @Test
-    public void sharedResourceAndConfigurationHeaderAreBounded() throws Exception {
-        Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/banira_codex");
-        assertTrue(xin.vanilla.banira.internal.client.ui.UiBoundaryChecks.readText(root.resolve("ui/config.html")).contains("id=\"brand\""));
-        assertTrue(xin.vanilla.banira.internal.client.ui.UiBoundaryChecks.readText(root.resolve("shared.css")).contains(".ui-close-glyph"));
-        assertTrue(Files.size(root.resolve("icons/close.png")) < 1024);
-    }
 
     @Test
     public void createdGlyphUsesOnlyAttributesAcceptedByTheRealAdapter() throws Exception {

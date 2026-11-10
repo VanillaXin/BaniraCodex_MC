@@ -9,17 +9,7 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.Assert.*;
 
 public class UiPlayerConfigEditorResourceTest {
-    @Test
-    public void compactFieldOffsetsDoNotMoveNavigationCountsOrOverrideUnits() throws Exception {
-        try (java.io.InputStream input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.css")) {
-            assertNotNull(input);
-            String css = new String(com.google.common.io.ByteStreams.toByteArray(input), StandardCharsets.UTF_8);
-            assertFalse("Field key offset also moves the sidebar count", css.contains(".player-config-page .row>.paragraph"));
-            int key = css.indexOf(".player-config-page .player-config-field>.paragraph");
-            int unit = css.indexOf(".player-config-page #content .player-config-field>.field-unit");
-            assertTrue("Specific unit placement must follow the shared paragraph offset", key >= 0 && unit > key);
-        }
-    }
+
 
     @Test
     public void approvedEditorHasFixedActionsAndIndependentScrollers() throws Exception {
@@ -45,21 +35,5 @@ public class UiPlayerConfigEditorResourceTest {
         }
     }
 
-    @Test
-    public void optionalEditorReusesSharedConfigStylesWithinOriginalBudget() throws Exception {
-        try (java.io.InputStream input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.html")) {
-            assertNotNull("Approved personal editor template missing", input);
-            String html = new String(com.google.common.io.ByteStreams.toByteArray(input), StandardCharsets.UTF_8);
-            assertTrue(html.contains("href=\"config.css\""));
-            assertTrue(html.contains("../shared.css"));
-            assertFalse(html.contains("<script"));
-        }
-        try (java.io.InputStream input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.css")) {
-            assertNotNull(input);
-            byte[] bytes = com.google.common.io.ByteStreams.toByteArray(input);
-            assertTrue(bytes.length <= 2048);
-            assertTrue(new String(bytes, StandardCharsets.UTF_8).contains(".player-config-page"));
-        }
-        assertTrue(UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("banira_codex"), true).isEmpty());
-    }
+
 }

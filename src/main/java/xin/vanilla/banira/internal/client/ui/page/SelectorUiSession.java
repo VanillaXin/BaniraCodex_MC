@@ -249,6 +249,7 @@ public final class SelectorUiSession implements UiPageSession {
                 item = next;
             };
         } else if (kind == Kind.ITEM && operation.equals("nbt")) {
+            widget.completion(xin.vanilla.banira.internal.compat.nbtac.NbtAutocomplete.item(ItemUtils.getItemRegistryString(item)));
             widget.title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt")).defaultValue(ItemUtils.serializeItemStackTag(item)).validator(input -> {
                 try {
                     if (ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.value()).hasTag())

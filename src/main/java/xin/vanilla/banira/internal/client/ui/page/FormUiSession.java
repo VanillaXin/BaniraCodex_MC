@@ -160,7 +160,8 @@ public final class FormUiSession implements UiPageSession {
                 options.addAll(DropdownSelectWidget.enumOptions(widget.dropdownEnumClass()));
             else for (String value : widget.dropdownOptions()) options.add(new DropdownOption(value));
         }
-        return new UiControlSpec(kind, widget.maxLength(), widget.regex(), widget.dropdownMultiSelect(), options, widget.dropdownInputMode());
+        return new UiControlSpec(kind, widget.maxLength(), widget.regex(), widget.dropdownMultiSelect(), options, widget.dropdownInputMode(),
+                kind == UiControlSpec.Kind.TEXT ? widget.completion() : null);
     }
 
     public UiValue get(String name) {

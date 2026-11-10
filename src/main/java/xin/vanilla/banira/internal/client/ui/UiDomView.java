@@ -27,6 +27,7 @@ public class UiDomView extends NativeUiView {
     private final Set<String> listeners = new HashSet<>();
     private final Map<String, VirtualRows> lists = new LinkedHashMap<>();
     private final Map<String, UiKeyCapture> keys = new HashMap<>();
+    private final Map<String, UiCompletionPopup> completions = new LinkedHashMap<>();
     private Consumer<Throwable> onFailure = failure -> {
         throw new IllegalStateException("UI binding failed", failure);
     };
@@ -401,6 +402,7 @@ public class UiDomView extends NativeUiView {
     private void reuse(String nextPrefix) {
         for (Map.Entry<String, UiDomAccess.Node> entry : nodes.entrySet())
             captureSelection(entry.getKey(), entry.getValue());
+        clearCompletions();
         super.close();
         resources = new UiOwnedResources();
         presses.clear();
@@ -453,6 +455,7 @@ public class UiDomView extends NativeUiView {
         for (UiDomView pressed : new ArrayList<>(pressedViews)) pressed.updatePresses();
         if (!live()) return;
         for (VirtualRows list : lists.values()) list.afterLayout();
+        updateCompletions();
         if (popup != null) popup.afterLayout();
         if (detailContent != null && detailContent.clientHeight() > 0 && restoredDetail != state().detailScroll()) {
             detailContent.scrollTop(state().detailScroll());
@@ -476,6 +479,14 @@ public class UiDomView extends NativeUiView {
         UiControlSpec control = controls.get(id);
         UiValue typed = values.get(id);
         if (control == null && typed == null) return;
+        if (control != null && control.completion() != null && !completions.containsKey(id)) {
+            completions.put(id, new UiCompletionPopup(dom, node, control.completion(), control.maxLength(), text -> {
+                if (live() && enabled.getOrDefault(id, true)) {
+                    inputDraft(id, text);
+                    captureSelection(id, node);
+                }
+            }));
+        }
         listen(id + ":input", node, "input", event -> {
             if (!enabled.getOrDefault(id, true)) return;
             captureSelection(id, node);
@@ -603,6 +614,10 @@ public class UiDomView extends NativeUiView {
 
     public boolean dismissOverlay() {
         boolean existed = modal();
+        for (UiCompletionPopup completion : completions.values()) existed |= completion.dismiss();
+        for (VirtualRows list : lists.values())
+            for (UiDomView row : list.rows)
+                for (UiCompletionPopup completion : row.completions.values()) existed |= completion.dismiss();
         root.coloring = false;
         root.colorToken++;
         AutoCloseable previousColor = root.color;
@@ -613,6 +628,16 @@ public class UiDomView extends NativeUiView {
         root.popup = null;
         previous.close();
         return true;
+    }
+
+    private void updateCompletions() {
+        for (UiCompletionPopup completion : completions.values()) completion.update();
+        for (VirtualRows list : lists.values()) for (UiDomView row : list.rows) row.updateCompletions();
+    }
+
+    private void clearCompletions() {
+        for (UiCompletionPopup completion : completions.values()) completion.close();
+        completions.clear();
     }
 
     @Override
@@ -710,6 +735,7 @@ public class UiDomView extends NativeUiView {
 
     @Override
     public void close() {
+        clearCompletions();
         for (BaniraPressGestureState press : presses.values()) press.release();
         presses.clear();
         suppressClicks.clear();

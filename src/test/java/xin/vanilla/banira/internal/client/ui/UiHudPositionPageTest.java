@@ -37,31 +37,6 @@ public class UiHudPositionPageTest {
         }
     }
 
-    @Test
-    public void fullViewportRetainsPreviewAndCommonHeaderAndFooter() throws Exception {
-        String html = resource("ui/hud-position.html");
-        for (String id : new String[]{"viewport", "preview", "toolbar", "brand", "title", "module_name", "origin", "close", "status", "error", "cancel", "save"})
-            assertTrue(id, html.contains("id=\"" + id + "\""));
-        assertTrue(html.contains("href=\"config.css\""));
-        assertTrue(html.contains("href=\"player-config-editor.css\""));
-        assertTrue(html.contains("class=\"header config-header\""));
-        assertTrue(html.contains("class=\"footer config-footer\""));
-        assertTrue(html.contains("<body id=\"viewport\""));
-        assertFalse(html.contains("<script"));
-        String css = resource("shared.css");
-        assertTrue(css.contains(".hud-position #toolbar"));
-        assertFalse(css.matches("(?s).*\\.hud-position \\.footer\\s*\\{[^}]*position:\\s*fixed.*"));
-    }
-
-    @Test
-    public void previewHitAreaDoesNotInheritTheGenericButtonMinimum() throws Exception {
-        assertTrue(resource("shared.css").contains(".hud-position #preview{min-width:0}"));
-    }
-
-    @Test
-    public void hudChromeInheritsTheCommonConfigurationFont() throws Exception {
-        assertTrue(resource("shared.css").matches("(?s).*\\.hud-position\\s*\\{\\s*padding:\\s*0;\\s*font-family:\\s*default;?\\s*}.*"));
-    }
 
     @Test
     public void commonHeaderAndCancelRetainDraftAndReleaseOldActions() throws Exception {

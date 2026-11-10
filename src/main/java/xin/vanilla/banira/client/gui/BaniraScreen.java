@@ -212,11 +212,11 @@ public abstract class BaniraScreen extends Screen {
     private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
 
     /**
-     * 根组件渲染快照。根列表变化时才重建，避免每帧复制 widgets。
+     * 根控件变化时才重建渲染快照，避免每帧复制列表。
      */
-    private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
+    private List<IWidget> renderWidgetSnapshot = Collections.emptyList();
     private boolean renderWidgetSnapshotDirty = true;
-    private boolean renderingWidgets = false;
+    private boolean renderingWidgets;
 
     /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
@@ -369,7 +369,9 @@ public abstract class BaniraScreen extends Screen {
         return true;
     }
 
-    /** Context clipping for tooltips deferred until after scissor rendering. */
+    /**
+     * Context clipping for tooltips deferred until after scissor rendering.
+     */
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         return true;
     }
@@ -713,12 +715,14 @@ public abstract class BaniraScreen extends Screen {
     }
 
     private void rebuildRenderWidgetSnapshotIfNeeded() {
-        if (!renderWidgetSnapshotDirty) {
-            return;
-        }
-        renderWidgetSnapshot.clear();
-        renderWidgetSnapshot.addAll(widgets);
+        if (!renderWidgetSnapshotDirty) return;
+        renderWidgetSnapshot = Collections.unmodifiableList(new ArrayList<>(widgets));
         renderWidgetSnapshotDirty = false;
+    }
+
+    protected final List<IWidget> widgetsForRendering() {
+        rebuildRenderWidgetSnapshotIfNeeded();
+        return renderWidgetSnapshot;
     }
 
     @Nullable
@@ -786,13 +790,10 @@ public abstract class BaniraScreen extends Screen {
         }
     }
 
-    /**
-     * 渲染中不能修改 renderWidgetSnapshot 本体，否则 foreach 会触发 ConcurrentModificationException。
-     */
     private void markRenderWidgetSnapshotDirty(boolean clearWhenIdle) {
         renderWidgetSnapshotDirty = true;
         if (clearWhenIdle && !renderingWidgets) {
-            renderWidgetSnapshot.clear();
+            renderWidgetSnapshot = Collections.emptyList();
         }
     }
 

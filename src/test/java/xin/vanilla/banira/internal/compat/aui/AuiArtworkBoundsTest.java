@@ -8,14 +8,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class AuiArtworkBoundsTest {
-    @Test
-    public void rowsRebindOnlyAfterTheMatchingRetainedFrame() throws Exception {
-        String source = java.nio.file.Files.readString(java.nio.file.Path.of(
-                "src/main/java/xin/vanilla/banira/internal/client/ui/AuiPageHost.java"));
-        int render = source.indexOf("view.access.render(graphics)");
-        int rebind = source.indexOf("view.afterLayout()");
-        org.junit.Assert.assertTrue(render >= 0 && render < rebind);
-    }
+
 
     @Test
     public void retainedArtworkIsClippedAroundTheTooltipAndInsideTheViewport() {

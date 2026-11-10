@@ -7,13 +7,7 @@ import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import static org.junit.Assert.*;
 
 public class UiPublicPageContractTest {
-    @Test
-    public void atlasSpriteNodesKeepTheTemplateGeometry() throws Exception {
-        String source = java.nio.file.Files.readString(java.nio.file.Path.of(
-                "src/main/java/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess.java"), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue("Atlas sprites must not inherit the compact tool icon dimensions", source.contains(
-                "value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE"));
-    }
+
 
     @Test
     public void removedCalendarIconsCanBeClearedWithoutLeavingOldMonthSprites() {

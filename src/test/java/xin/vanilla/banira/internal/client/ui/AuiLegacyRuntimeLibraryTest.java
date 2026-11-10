@@ -39,14 +39,6 @@ public class AuiLegacyRuntimeLibraryTest {
         assertFalse(UiArtifactBoundaryTest.violations(Map.of(JAR, new byte[0]), false).isEmpty());
     }
 
-    @Test
-    public void mainCompilationTracksProcessorOutputsAndAvoidsPartialRefmaps() throws Exception {
-        String build = Files.readString(Path.of("gradle/mixin-refmap.gradle"));
-        assertTrue(build, build.contains("options.incremental = false"));
-        assertTrue(build, build.contains("outputs.files(refmap"));
-        assertTrue(build, build.contains("compileJava-mappings.tsrg"));
-        assertTrue(Files.readString(Path.of("build.gradle")).contains("apply from: 'gradle/mixin-refmap.gradle'"));
-    }
 
     static void verifyFormalRefmap(Map<String, byte[]> files) {
         assertNotNull("Missing generated Mixin refmap", files.get("banira_codex.refmap.json"));

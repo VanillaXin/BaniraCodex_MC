@@ -52,6 +52,10 @@ public interface UiDomAccess {
             return Double.NaN;
         }
 
+        default double scrollDelta() {
+            return 0;
+        }
+
         void consume();
     }
 
@@ -87,6 +91,17 @@ public interface UiDomAccess {
         void scrollTop(double value);
 
         double clientHeight();
+
+        default double scrollHeight() {
+            return Double.POSITIVE_INFINITY;
+        }
+
+        default void scrollBy(double pixels) {
+            scrollTop(Math.max(0, Math.min(scrollTop() + pixels, scrollHeight() - clientHeight())));
+        }
+
+        default void clipChildren() {
+        }
 
         boolean focused();
 

@@ -132,8 +132,9 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
                 super.render(graphics, mouseX, mouseY, partialTick);
                 graphics.flush();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
-                view.afterLayout();
                 view.access.render(graphics);
+                // Rebinding after retained rendering keeps icons and HTML on the same frame.
+                view.afterLayout();
                 pointer.render(graphics, mouseX, mouseY);
             } finally {
                 try {

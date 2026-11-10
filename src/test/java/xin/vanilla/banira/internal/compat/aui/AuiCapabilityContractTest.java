@@ -33,7 +33,7 @@ public class AuiCapabilityContractTest {
                             if (input == null) throw new ClassNotFoundException(name);
                             java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
                             byte[] buffer = new byte[4096];
-                            for (int count; (count = input.read(buffer)) != -1;) bytes.write(buffer, 0, count);
+                            for (int count; (count = input.read(buffer)) != -1; ) bytes.write(buffer, 0, count);
                             byte[] code = bytes.toByteArray();
                             type = defineClass(name, code, 0, code.length);
                         } catch (java.io.IOException failure) {
@@ -52,7 +52,8 @@ public class AuiCapabilityContractTest {
 
     @Test
     public void absentEngineDoesNotResolveMinecraftClientTypes() throws Exception {
-        assertIsolatedFallback(new ClassLoader(null) {});
+        assertIsolatedFallback(new ClassLoader(null) {
+        });
     }
 
     @Test
@@ -87,7 +88,7 @@ public class AuiCapabilityContractTest {
                 {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
                 {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"},
                 {"event/KeyEvent", "keyCode", "I"}, {"event/KeyEvent", "modifiers", "I"},
-                {"event/MouseEvent", "button", "I"}}) {
+                {"event/MouseEvent", "button", "I"}, {"event/MouseEvent", "scrollDelta", "D"}}) {
             owner(nodes, "com/sighs/apricityui/" + field[0]).fields.add(
                     new FieldNode(Opcodes.ACC_PUBLIC, field[1], field[2], null, null));
         }
@@ -133,12 +134,14 @@ public class AuiCapabilityContractTest {
     @Test
     public void absentEngineFallsBackWithoutInitializingClient() {
         assertFalse(AuiCapabilityContract.inspect(null).compatible());
-        assertFalse(AuiCapabilityContract.inspect(new ClassLoader(null) {}).compatible());
+        assertFalse(AuiCapabilityContract.inspect(new ClassLoader(null) {
+        }).compatible());
     }
 
     @Test
     public void declarationShapeCanBeInspectedWithoutLoadingClasses() {
-        assertTrue(AuiCapabilityContract.inspect(fixture(nodes -> {}, false)).compatible());
+        assertTrue(AuiCapabilityContract.inspect(fixture(nodes -> {
+        }, false)).compatible());
     }
 
     @Test
@@ -176,8 +179,18 @@ public class AuiCapabilityContractTest {
     }
 
     @Test
+    public void missingScrollOrVisibilityFieldFallsBack() {
+        for (String field : new String[]{"scrollHeight", "isVisible", "scrollDelta"}) {
+            String owner = field.equals("scrollDelta") ? "event/MouseEvent" : "init/Element";
+            assertFalse(field, AuiCapabilityContract.inspect(fixture(nodes ->
+                    nodes.get("com/sighs/apricityui/" + owner).fields.removeIf(value -> value.name.equals(field)), false)).compatible());
+        }
+    }
+
+    @Test
     public void compileDeclarationsAreAlwaysRejectedAtRuntime() throws Exception {
-        ClassLoader stub = fixture(nodes -> {}, true);
+        ClassLoader stub = fixture(nodes -> {
+        }, true);
         AuiCapabilityContract.Result result = AuiCapabilityContract.inspect(stub);
         assertFalse(result.compatible());
         assertTrue(result.mismatch().contains("Compile-only"));

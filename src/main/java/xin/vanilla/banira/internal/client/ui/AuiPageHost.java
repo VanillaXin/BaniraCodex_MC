@@ -124,8 +124,9 @@ public final class AuiPageHost extends ApricityScreen implements UiPointerFeedba
             }
             if (!view.prepareFrame()) return;
             super.render(graphics, mouseX, mouseY, partialTick);
-            view.afterLayout();
             view.access.render(graphics);
+            // Keep retained icons and HTML bound to the same virtual rows for this frame.
+            view.afterLayout();
             pointer.render(graphics, mouseX, mouseY);
         } catch (RuntimeException | LinkageError failure) {
             failed = true;

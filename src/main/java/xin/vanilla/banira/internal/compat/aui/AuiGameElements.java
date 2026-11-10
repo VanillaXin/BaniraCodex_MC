@@ -37,6 +37,25 @@ public final class AuiGameElements {
         return iconBounds(slot, 16, slot.width() >= 20 && slot.height() >= 20 ? 2 : 0);
     }
 
+    // Minecraft icons paint after the DOM, so leave the opaque HTML tooltip area untouched.
+    static List<ScreenCoordinate> uncovered(ScreenCoordinate bounds, ScreenCoordinate clip, ScreenCoordinate tooltip) {
+        if (tooltip == null) return Collections.singletonList(clip);
+        double left = Math.max(bounds.x(), clip.x()), top = Math.max(bounds.y(), clip.y());
+        double right = Math.min(bounds.x() + bounds.width(), clip.x() + clip.width());
+        double bottom = Math.min(bounds.y() + bounds.height(), clip.y() + clip.height());
+        if (right <= left || bottom <= top) return Collections.emptyList();
+        double tl = Math.max(left, Math.floor(tooltip.x())), tt = Math.max(top, Math.floor(tooltip.y()));
+        double tr = Math.min(right, Math.ceil(tooltip.x() + tooltip.width()));
+        double tb = Math.min(bottom, Math.ceil(tooltip.y() + tooltip.height()));
+        if (tr <= tl || tb <= tt) return Collections.singletonList(clip);
+        List<ScreenCoordinate> visible = new java.util.ArrayList<>(4);
+        if (tt > top) visible.add(new ScreenCoordinate(left, top, right - left, tt - top));
+        if (tb < bottom) visible.add(new ScreenCoordinate(left, tb, right - left, bottom - tb));
+        if (tl > left) visible.add(new ScreenCoordinate(left, tt, tl - left, tb - tt));
+        if (tr < right) visible.add(new ScreenCoordinate(tr, tt, right - tr, tb - tt));
+        return visible;
+    }
+
     public static void renderElement(PoseStack graphics, xin.vanilla.banira.api.client.ui.UiGameElement element,
                                      ScreenCoordinate bounds, ScreenCoordinate clip, xin.vanilla.banira.client.data.BaniraColorConfig theme) {
         if (element == null || bounds.width() <= 0 || bounds.height() <= 0 || bounds.x() >= clip.x() + clip.width()
@@ -57,6 +76,18 @@ public final class AuiGameElements {
                 case OPTION:
                     renderOption(graphics, element.option(), bounds, null);
                     break;
+                case ARTWORK:
+                    if (element.option().hasTexture()) {
+                        Texture texture = element.option().texture()[0];
+                        ScreenCoordinate fitted = artworkBounds(bounds, texture.uWidth(), texture.vHeight());
+                        if (fitted.widthInt() > 0 && fitted.heightInt() > 0)
+                            ImageWidget.blitBlend(graphics, texture, fitted.xInt(), fitted.yInt(), fitted.widthInt(), fitted.heightInt());
+                    } else if (element.option().hasIcon()) {
+                        ScreenCoordinate icon = iconBounds(bounds, Math.max(16, (int) (Math.min(bounds.width(), bounds.height()) * .72)), 1);
+                        if (icon.widthInt() > 0)
+                            ItemWidget.renderGuiItemScaled(Minecraft.getInstance(), element.option().icon(), icon.xInt(), icon.yInt(), icon.widthInt());
+                    }
+                    break;
                 case EFFECT:
                     renderEffect(graphics, element.effect(), compactIcon(bounds));
                     break;
@@ -74,6 +105,12 @@ public final class AuiGameElements {
             if (depth) RenderSystem.enableDepthTest();
             else RenderSystem.disableDepthTest();
         }
+    }
+
+    static ScreenCoordinate artworkBounds(ScreenCoordinate slot, int width, int height) {
+        double scale = width > 0 && height > 0 ? Math.min(slot.width() / width, slot.height() / height) : 0;
+        int w = Math.max(0, (int) Math.floor(width * scale)), h = Math.max(0, (int) Math.floor(height * scale));
+        return new ScreenCoordinate(slot.x() + (slot.width() - w) / 2, slot.y() + (slot.height() - h) / 2, w, h);
     }
 
     public static final class TextLayout {

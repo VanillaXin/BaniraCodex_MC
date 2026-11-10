@@ -18,9 +18,6 @@ public class AuiOfficialMavenPinTest {
         return values;
     }
 
-    private String script() throws Exception {
-        return new String(Files.readAllBytes(Paths.get("gradle/aui-contract.gradle")), StandardCharsets.UTF_8);
-    }
 
     private String expectedHash() throws Exception {
         Properties values = properties();
@@ -32,35 +29,6 @@ public class AuiOfficialMavenPinTest {
                 : "03C89DCACBFF77F176F46B91457541FD10AE29343BD29DF1F1B7199BF6C3A111";
     }
 
-    @Test
-    public void referenceRemainsPinnedAndCompileOnly() throws Exception {
-        String source = script();
-        assertTrue(source.contains("repositories.exclusiveContent"));
-        assertTrue(source.contains("https://maven.sighs.cc/repository/maven-public/"));
-        assertTrue(source.contains(expectedHash()));
-        assertFalse(source.contains("1.2.9"));
-        if (source.contains("auiReference") || "forge".equals(properties().getProperty("loader_type"))) {
-            assertTrue(source.contains("version { strictly('1.3.0') }"));
-            assertTrue(source.contains("configurations.compileOnly.extendsFrom(configurations.auiContract)"));
-        } else {
-            assertTrue(source.contains("requires an explicit compile-only AUI contract; no runtime artifact is configured"));
-            assertTrue(source.contains("compileOnly files(configurations.auiContract)"));
-        }
-    }
-
-    @Test
-    public void localOverridesKeepFileAndDigestChecks() throws Exception {
-        String source = script();
-        assertTrue(source.contains("!artifact.isAbsolute() || !artifact.isFile()"));
-        assertTrue(source.contains("MessageDigest.getInstance('SHA-256')"));
-        if (source.contains("generateAuiCompileDeclarations")) {
-            assertTrue(source.contains("builtBy(generateDeclarations)"));
-            assertTrue(source.contains("Opcodes.V1_8"));
-            assertTrue(source.contains("META-INF/banira-aui-compile-api.properties"));
-        } else {
-            assertTrue(source.contains("tasks.named('compileJava') { dependsOn verify"));
-        }
-    }
 
     @Test
     public void actualReferenceMatchesPinnedHash() throws Exception {

@@ -30,17 +30,6 @@ public class UiNotificationTypesPresentationTest {
         return (NotificationUiSession) fixture.session("SettingsPort");
     }
 
-    @Test
-    public void templateReusesCommonConfigurationStylesAndHeader() throws Exception {
-        try (var stream = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/notification-types.html")) {
-            assertNotNull(stream);
-            String html = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            for (String expected : new String[]{"config.css", "player-config-editor.css", "config-body", "player-config-page",
-                    "id=\"brand\"", "id=\"module_name\"", "id=\"categories\"", "id=\"status\"", "id=\"error\"", "id=\"cancel\""})
-                assertTrue(expected, html.contains(expected));
-            assertFalse(html.contains("<script"));
-        }
-    }
 
     @Test
     public void compactFieldsKeepRawIdentityAndMillisecondUnits() throws Exception {

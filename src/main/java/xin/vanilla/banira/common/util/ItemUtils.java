@@ -42,6 +42,7 @@ public final class ItemUtils {
      * 所有物品缓存
      */
     private static volatile List<ItemStack> allItemsCache = Collections.emptyList();
+    private static List<CreativeModeTab> allItemsTabs = Collections.emptyList();
 
     /**
      * 物品堆信息缓存
@@ -511,8 +512,9 @@ public final class ItemUtils {
     /**
      * 清除物品缓存
      */
-    public static void clearCache() {
+    public static synchronized void clearCache() {
         allItemsCache = Collections.emptyList();
+        allItemsTabs = Collections.emptyList();
         itemStackInfoCache.clear();
         tooltipCache.clear();
         modNameCache.clear();
@@ -522,13 +524,15 @@ public final class ItemUtils {
     /**
      * 获取所有物品的列表
      */
-    public static List<ItemStack> getAllItems() {
-        if (allItemsCache.isEmpty()) {
-            synchronized (ItemUtils.class) {
-                if (allItemsCache.isEmpty()) {
-                    allItemsCache = buildAllItemsList();
-                }
-            }
+    public static synchronized List<ItemStack> getAllItems() {
+        List<CreativeModeTab> tabs = Arrays.asList(CreativeModeTab.TABS.clone());
+        boolean changed = tabs.size() != allItemsTabs.size();
+        for (int index = 0; !changed && index < tabs.size(); index++) {
+            changed = tabs.get(index) != allItemsTabs.get(index);
+        }
+        if (allItemsCache.isEmpty() || changed) {
+            allItemsCache = buildAllItemsList(tabs);
+            allItemsTabs = tabs;
         }
         return new ArrayList<>(allItemsCache);
     }
@@ -536,7 +540,7 @@ public final class ItemUtils {
     /**
      * 构建所有物品列表
      */
-    private static List<ItemStack> buildAllItemsList() {
+    private static List<ItemStack> buildAllItemsList(List<CreativeModeTab> tabs) {
         List<ItemStack> items = new ArrayList<>();
         Set<Item> addedItems = new HashSet<>();
 
@@ -544,53 +548,21 @@ public final class ItemUtils {
         addedItems.add(Items.AIR);
 
         try {
-            // 首先从创造模式搜索标签中获取所有物品变体
-            try {
-                CreativeModeTab searchTab = CreativeModeTab.TAB_SEARCH;
-                if (searchTab != null) {
-                    NonNullList<ItemStack> creativeItems = NonNullList.create();
-                    searchTab.fillItemList(creativeItems);
-
-                    if (CollectionUtils.isNotNullOrEmpty(creativeItems)) {
-                        for (ItemStack stack : creativeItems) {
-                            if (stack != null && !stack.isEmpty()) {
-                                items.add(stack.copy());
-                                addedItems.add(stack.getItem());
-                            }
+            // Preserve tag variants; the final serialized-key pass removes exact duplicates.
+            for (CreativeModeTab tab : tabs) {
+                if (tab == null) continue;
+                try {
+                    NonNullList<ItemStack> stacks = NonNullList.create();
+                    tab.fillItemList(stacks);
+                    for (ItemStack stack : stacks) {
+                        if (stack != null && !stack.isEmpty()) {
+                            items.add(stack.copy());
+                            addedItems.add(stack.getItem());
                         }
                     }
+                } catch (RuntimeException unavailable) {
+                    LOGGER.debug("Failed to get creative item variants: {}", tab.getDisplayName().getString(), unavailable);
                 }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get items from creative search tab", e);
-            }
-
-            // 然后添加创造模式物品栏中其他物品组的物品
-            try {
-                for (CreativeModeTab group : CreativeModeTab.TABS) {
-                    if (group == null || group == CreativeModeTab.TAB_SEARCH) continue;
-                    try {
-                        NonNullList<ItemStack> groupItems = NonNullList.create();
-                        group.fillItemList(groupItems);
-                        if (CollectionUtils.isNotNullOrEmpty(groupItems)) {
-                            for (ItemStack stack : groupItems) {
-                                if (stack != null && !stack.isEmpty()) {
-                                    // 检查是否已存在相同的物品，不比较NBT
-                                    boolean exists = items.stream().anyMatch(existing ->
-                                            areItemsEqual(existing, stack));
-                                    if (!exists) {
-                                        items.add(stack.copy());
-                                        addedItems.add(stack.getItem());
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("Failed to get items from item group: {}",
-                                group.getDisplayName().getString(), e);
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get items from item groups", e);
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠

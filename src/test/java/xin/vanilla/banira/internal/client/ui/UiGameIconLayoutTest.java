@@ -156,21 +156,10 @@ public class UiGameIconLayoutTest {
 
     @Test
     public void accessibleControlMetadataPassesTheActualAttributeGuard() throws Exception {
-        var type = new org.objectweb.asm.tree.ClassNode();
-        try (var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
-            assertNotNull(input);
-            new org.objectweb.asm.ClassReader(input).accept(type, 0);
-        }
-        var method = type.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow();
-        var strings = new java.util.HashSet<String>();
-        for (var instruction : method.instructions)
-            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode
-                    && ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst instanceof String) {
-                strings.add((String) ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst);
-            }
-        assertTrue("Named icon buttons must not trigger native fallback", strings.contains("aria-label"));
-        assertTrue("Selected menu rows need an explicit state", strings.contains("aria-selected"));
-        assertTrue("The attribute boundary must remain closed", strings.contains("Unsupported UI attribute"));
+        UiDomControlsTest.assertActualAttributeGuard();
+        assertTrue("Named icon buttons must not trigger native fallback", UiDomAccess.supportsAttribute("aria-label"));
+        assertTrue("Selected menu rows need an explicit state", UiDomAccess.supportsAttribute("aria-selected"));
+        assertFalse("The attribute boundary must remain closed", UiDomAccess.supportsAttribute("onclick"));
     }
 
     @Test

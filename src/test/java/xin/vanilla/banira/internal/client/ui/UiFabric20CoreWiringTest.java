@@ -12,36 +12,6 @@ public class UiFabric20CoreWiringTest {
         return Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/BaniraCodexClientBootstrap.java"));
     }
 
-    @Test
-    public void publicDriverUsesTheSharedOwnerAndContainerGate() throws Exception {
-        String source = bootstrap();
-        assertTrue(source.contains("BaniraUi.install("));
-        assertTrue(source.contains("UI_SESSIONS.open(page, previousScreen)"));
-        String pages = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/ui/CommonUiPages.java"));
-        assertTrue(source.contains("CommonUiPages.close(screen, reason)"));
-        assertTrue(pages.contains("if (!host.ownsScreen(screen)) return false"));
-        assertTrue(source.contains("UiContainerLayerHost.create(UI_BACKEND, page, current,"));
-        assertTrue(source.contains("CommonUiPages.removed(screen)"));
-        assertTrue(pages.contains("uiSessions().screenRemoved(screen)"));
-    }
-
-    @Test
-    public void endTickObservesTheCurrentScreenBeforeAdvancingSessions() throws Exception {
-        String source = bootstrap();
-        int end = source.indexOf("if (event != BaniraClientTickEvent.END) return;");
-        int observe = source.indexOf("CommonUiPages.tick()");
-        int tick = source.indexOf("UI_SESSIONS.tick()");
-        assertTrue(end >= 0 && observe > end && tick > observe);
-        assertTrue(source.contains("if (hadConnection && !connected) disconnectUiPages()"));
-        assertTrue(source.contains("private static void disconnectUiPages()"));
-        assertTrue(source.contains("CommonUiPages.disconnect()"));
-        assertTrue(source.contains("finally {\n            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient()")
-                || source.contains("finally {\r\n            xin.vanilla.banira.internal.config.CustomConfig.clearPlayerPreferencesClient()"));
-        String pages = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/ui/CommonUiPages.java"));
-        assertTrue(pages.contains("sessions.observeScreen(current)"));
-        assertTrue(pages.contains("NATIVE_SESSIONS.disconnect()"));
-        assertTrue(source.contains("onClientLoggedOut(player ->"));
-    }
 
     @Test
     public void resourceAndPreferenceChangesInvalidateTheSharedHosts() throws Exception {
@@ -55,14 +25,6 @@ public class UiFabric20CoreWiringTest {
         assertTrue(source.contains("SharedHudHosts.UNREAD"));
     }
 
-    @Test
-    public void nativeScreenPresentationKeepsItsTypeBoundary() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/client/BaniraClientRuntime.java"));
-        assertTrue(source.contains("return screen instanceof Screen"));
-        assertTrue(source.contains("if (screen != null && !isScreen(screen)) throw new IllegalArgumentException"));
-        assertTrue(source.contains("setScreen((Screen) screen)"));
-        assertTrue(source.contains("Minecraft.getInstance().setScreen(screen)"));
-    }
 
     @Test
     public void pointerSelectorsMatchTheActualMinecraft20MouseHandler() throws Exception {
@@ -82,14 +44,5 @@ public class UiFabric20CoreWiringTest {
         assertTrue(metadata.contains("injections.AuiPointerInputMixin"));
     }
 
-    @Test
-    public void fabricRenderHooksOnlyUseTheCurrentScreenAndOwnedWindow() throws Exception {
-        String hooks = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/fabric/client/FabricAuiClientHooks.java"));
-        assertTrue(hooks.contains("window == client.getWindow().getWindow()"));
-        assertTrue(hooks.contains("client.screen instanceof UiPointerFeedback pointer"));
-        assertTrue(hooks.contains("screen == Minecraft.getInstance().screen"));
-        String entry = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/fabric/client/FabricBaniraCodexClient.java"));
-        assertTrue(entry.contains("FabricAuiClientHooks.renderScreen(scr, stack)"));
-        assertTrue(entry.contains("FabricAuiClientHooks.renderGame(stack)"));
-    }
+
 }

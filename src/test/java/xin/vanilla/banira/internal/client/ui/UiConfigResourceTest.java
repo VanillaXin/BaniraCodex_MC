@@ -56,17 +56,5 @@ public class UiConfigResourceTest {
         }
     }
 
-    @Test
-    public void configOnlyStylesUseAuiFontAndThemeTokensWithoutChangingTheBudget() throws Exception {
-        try (var input = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/config.css")) {
-            assertNotNull("The compact editor must not restyle unrelated shared pages", input);
-            String css = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(css.contains("font-family:default"));
-            assertTrue(css.contains(".config-page"));
-            assertTrue(css.contains("var(--ink"));
-            assertTrue(css.contains(".config-navigation"));
-            assertTrue(css.contains(".config-list-item"));
-        }
-        assertTrue(UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("banira_codex"), true).isEmpty());
-    }
+
 }

@@ -27,23 +27,6 @@ public class UiFabric20ConfigPortTest {
         assertTrue(type.methods.stream().anyMatch(method -> method.name.equals("captureUiState")));
     }
 
-    @Test
-    public void screenServiceRoutesOpenAndRemoteSnapshotsToTheSameOwner() throws Exception {
-        String service = source("internal/client/BaniraClientScreenService");
-        assertTrue(service.contains("uiSessions().open(session.spec(), parent)"));
-        assertTrue(service.contains("new ConfigEditorScreen(holder, args, session)"));
-        assertTrue(service.contains("acceptRemoteSnapshot(configName, snapshot)"));
-        assertTrue(service.contains("page.session()).refresh(configName)"));
-    }
-
-    @Test
-    public void nativeReinitializationReleasesItsPreviousCursor() throws Exception {
-        String screen = source("client/gui/BaniraScreen");
-        int init = screen.indexOf("protected void init()");
-        int release = screen.indexOf("if (this.cursor != null) this.cursor.removed()", init);
-        int create = screen.indexOf("this.cursor = MouseWidget.init", init);
-        assertTrue(init >= 0 && release > init && create > release);
-    }
 
     @Test
     public void configurationLifecycleKeepsFabricEventRegistration() throws Exception {

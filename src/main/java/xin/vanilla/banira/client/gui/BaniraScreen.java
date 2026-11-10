@@ -216,7 +216,7 @@ public abstract class BaniraScreen extends Screen {
     /**
      * 根控件变化时才重建渲染快照，避免每帧复制列表。
      */
-    private final List<IWidget> renderWidgetSnapshot = new ArrayList<>();
+    private List<IWidget> renderWidgetSnapshot = Collections.emptyList();
     private boolean renderWidgetSnapshotDirty = true;
     private boolean renderingWidgets;
 
@@ -362,7 +362,9 @@ public abstract class BaniraScreen extends Screen {
         return true;
     }
 
-    /** Context clipping for tooltips deferred until after scissor rendering. */
+    /**
+     * Context clipping for tooltips deferred until after scissor rendering.
+     */
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         return true;
     }
@@ -684,9 +686,13 @@ public abstract class BaniraScreen extends Screen {
 
     private void rebuildRenderWidgetSnapshotIfNeeded() {
         if (!renderWidgetSnapshotDirty) return;
-        renderWidgetSnapshot.clear();
-        renderWidgetSnapshot.addAll(widgets);
+        renderWidgetSnapshot = Collections.unmodifiableList(new ArrayList<>(widgets));
         renderWidgetSnapshotDirty = false;
+    }
+
+    protected final List<IWidget> widgetsForRendering() {
+        rebuildRenderWidgetSnapshotIfNeeded();
+        return renderWidgetSnapshot;
     }
 
     @Nullable
@@ -757,7 +763,7 @@ public abstract class BaniraScreen extends Screen {
     private void markRenderWidgetSnapshotDirty(boolean clearWhenIdle) {
         renderWidgetSnapshotDirty = true;
         if (clearWhenIdle && !renderingWidgets) {
-            renderWidgetSnapshot.clear();
+            renderWidgetSnapshot = Collections.emptyList();
         }
     }
 

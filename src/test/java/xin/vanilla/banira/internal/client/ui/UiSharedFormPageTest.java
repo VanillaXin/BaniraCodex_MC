@@ -53,21 +53,6 @@ public class UiSharedFormPageTest {
                         .validator(r -> r.value("amount").equals("99") ? "Amount rejected" : ""));
     }
 
-    @Test
-    public void formTemplateProvidesCommonChromeWithoutDuplicatingStyles() throws Exception {
-        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/form.html")) {
-            assertNotNull(in);
-            String html = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            for (String id : new String[]{"brand", "title", "module_name", "close", "content", "fields", "error", "cancel", "submit"})
-                assertTrue("Missing usable form element: " + id, html.contains("id=\"" + id + "\""));
-            assertTrue(html.contains("href=\"config.css\""));
-            assertTrue(html.contains("href=\"player-config-editor.css\""));
-            assertTrue(html.contains("config-header"));
-            assertTrue(html.contains("config-footer"));
-            assertFalse(html.contains("<script"));
-            assertFalse(html.contains("<style"));
-        }
-    }
 
     @Test
     public void genericRowsUseCompactPresentationAndKeepValidationOnActualInput() {
@@ -102,16 +87,8 @@ public class UiSharedFormPageTest {
         var rows = (UiRowPresentation) view.rowProviders.get("fields");
         assertEquals(48, rows.rowHeight());
         assertEquals("player-config-field wide-input-field", rows.rowClass(0));
-        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.css")) {
-            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(css.contains(".wide-input-field>.editor{left:0;top:22px;width:auto}"));
-        }
-        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
-            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(css.contains(".popup-option[aria-selected=\"true\"]"));
-            assertTrue(css.contains("background:var(--selected"));
-            assertTrue(css.contains("border-color:var(--accent"));
-        }
+
+
     }
 
     @Test

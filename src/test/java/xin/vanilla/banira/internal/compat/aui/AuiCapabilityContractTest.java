@@ -110,13 +110,14 @@ public class AuiCapabilityContractTest {
 
     @Test
     public void missingScrollOrVisibilityFieldFallsBack() throws Exception {
-        for (String field : new String[]{"scrollHeight", "isVisible"})
+        for (String field : new String[]{"scrollHeight", "isVisible", "scrollDelta"})
             try (URLClassLoader jar = official()) {
                 assertFalse(field, compatible(new ClassLoader(null) {
                     @Override
                     public InputStream getResourceAsStream(String name) {
                         InputStream stream = jar.getResourceAsStream(name);
-                        if (!name.equals("com/sighs/apricityui/init/Element.class")) return stream;
+                        String owner = field.equals("scrollDelta") ? "event/MouseEvent" : "init/Element";
+                        if (!name.equals("com/sighs/apricityui/" + owner + ".class")) return stream;
                         try (InputStream input = stream) {
                             ClassNode node = new ClassNode();
                             new ClassReader(input).accept(node, 0);

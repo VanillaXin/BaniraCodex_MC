@@ -115,6 +115,31 @@ public class UiSharedFormPageTest {
     }
 
     @Test
+    public void conditionalFieldsKeepDraftsAndOnlyValidateTheActiveInput() {
+        var form = new FormUiSession(args(r -> assertEquals("2.50", r.value("amount")))
+                .addWidget(new InputFormScreen.Widget().name("dependent").title(Text.literal("Dependent"))
+                        .visibleWhen(r -> r.value("literal").equals("show"))));
+        var view = new NativeUiView(new Object());
+        form.bind(view);
+        assertEquals(2, form.visibleFieldCount());
+        assertEquals(2, view.rowProviders.get("fields").size());
+        assertTrue(form.canSubmit());
+        form.acceptNative(0, "show");
+        assertEquals(3, view.rowProviders.get("fields").size());
+        assertFalse(form.canSubmit());
+        form.draft("dependent", "retained");
+        assertTrue(form.canSubmit());
+        form.set("literal", xin.vanilla.banira.api.client.ui.UiValue.text("hide"));
+        assertEquals(2, view.rowProviders.get("fields").size());
+        form.set("literal", xin.vanilla.banira.api.client.ui.UiValue.text("show"));
+        assertEquals("retained", form.draft("dependent"));
+        form.filter(widget -> !widget.name().equals("amount"));
+        assertEquals(2, view.rowProviders.get("fields").size());
+        form.draft("amount", "99");
+        assertFalse("Search filtering still validates real form values", form.canSubmit());
+    }
+
+    @Test
     public void headerCloseAndRetiredActionsNeverSubmit() {
         AtomicInteger callbacks = new AtomicInteger(), closes = new AtomicInteger();
         var form = new FormUiSession(args(r -> callbacks.incrementAndGet()));

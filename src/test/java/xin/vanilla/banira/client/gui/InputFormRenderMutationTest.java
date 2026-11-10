@@ -63,6 +63,9 @@ public class InputFormRenderMutationTest {
         set(form, "widgetMap", new HashMap<>());
         set(form, "renderWidgetSnapshot", new ArrayList<>());
         set(form, "renderWidgetSnapshotDirty", true);
+        Field inputs = InputFormScreen.class.getDeclaredField("inputFields");
+        inputs.setAccessible(true);
+        inputs.set(form, new ArrayList<>());
         return form;
     }
 

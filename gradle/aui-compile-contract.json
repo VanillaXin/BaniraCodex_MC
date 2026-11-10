@@ -175,6 +175,11 @@
       "methods": [],
       "fields": [
         {
+          "name": "scrollDelta",
+          "desc": "D",
+          "access": 1
+        },
+        {
           "name": "button",
           "desc": "I",
           "access": 1
@@ -602,6 +607,16 @@
         {
           "name": "drawOverlayDocument",
           "desc": "(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/sighs/apricityui/init/Document;)V",
+          "access": 9
+        },
+        {
+          "name": "drawOverlayDocument",
+          "desc": "(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/sighs/apricityui/init/Document;F)V",
+          "access": 9
+        },
+        {
+          "name": "getFlatOverlayZ",
+          "desc": "()F",
           "access": 9
         }
       ],

@@ -38,7 +38,7 @@ public final class AuiCompileApiTool {
             {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
             {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
             {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
-            {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}};
+            {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}, {"event/MouseEvent", "scrollDelta", "D"}};
 
     private AuiCompileApiTool() {
     }

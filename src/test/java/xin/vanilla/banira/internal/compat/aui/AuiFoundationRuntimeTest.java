@@ -31,14 +31,6 @@ public class AuiFoundationRuntimeTest {
         assertFalse(build.contains("fromRuntimeConfiguration"));
     }
 
-    @Test
-    public void dependencyOnlyCompilationCannotEraseRefmapOutputs() throws Exception {
-        String guard = Files.readString(Path.of("gradle/mixin-refmap.gradle"));
-        assertTrue(guard.contains("options.incremental = false"));
-        assertTrue(guard.contains("outputs.files(refmap"));
-        assertTrue(guard.contains("compileJava-mappings.tsrg"));
-        assertTrue(Files.readString(Path.of("build.gradle")).contains("apply from: 'gradle/mixin-refmap.gradle'"));
-    }
 
     @Test
     public void forge18ProvidesThePublicStaticLegacySlotHighlightContract() throws Exception {

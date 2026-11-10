@@ -193,6 +193,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private boolean disabled;
         private boolean pickerReadOnly;
         private java.util.function.Predicate<Results> visibleWhen;
+        private boolean wideInput;
         private WidgetType type = WidgetType.TEXT;
         private String fileFilter = "";
         private List<String> dropdownOptions = new ArrayList<>();
@@ -214,6 +215,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private Function<Results, String> validator = s -> "";
         private Consumer<Inputs> changed;
         private BiFunction<Screen, Consumer<String>, Screen> picker;
+        private xin.vanilla.banira.api.client.ui.UiTextCompletionProvider completion;
 
         public Widget title(Text title) {
             this.title = title;
@@ -695,7 +697,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD
                     || widget.type() == WidgetType.KEY_CHORD) {
                 InputWidget inputWidget = widget.type() == WidgetType.KEY_CHORD
-                        ? new KeyCaptureInputWidget(this) : new InputWidget(this);
+                        ? new KeyCaptureInputWidget(this) : widget.type() == WidgetType.TEXT && widget.completion() != null
+                        ? new CompletionInputWidget(this, widget.completion()) : new InputWidget(this);
                 inputWidget.id("input_" + i);
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
@@ -1068,7 +1071,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
 
         List<IWidget> deferred = null;
         List<IWidget> deferredTooltipDepth = null;
-        for (IWidget widget : widgets()) {
+        for (IWidget widget : widgetsForRendering()) {
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget instanceof BaseWidget baseWidget && baseWidget.renderDepth() == EnumRenderDepth.TOOLTIP) {
                 if (deferredTooltipDepth == null) deferredTooltipDepth = new ArrayList<>();

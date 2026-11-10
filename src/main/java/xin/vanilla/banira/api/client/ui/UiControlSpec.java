@@ -17,6 +17,7 @@ public final class UiControlSpec {
     private final boolean multiple;
     private final List<DropdownOption> options;
     private final DropdownInputMode inputMode;
+    private final UiTextCompletionProvider completion;
 
     public UiControlSpec(Kind kind, int maxLength, String regex, boolean multiple) {
         this(kind, maxLength, regex, multiple, Collections.emptyList(), DropdownInputMode.SELECTION_ONLY);
@@ -24,6 +25,11 @@ public final class UiControlSpec {
 
     public UiControlSpec(Kind kind, int maxLength, String regex, boolean multiple,
                          List<DropdownOption> options, DropdownInputMode inputMode) {
+        this(kind, maxLength, regex, multiple, options, inputMode, null);
+    }
+
+    public UiControlSpec(Kind kind, int maxLength, String regex, boolean multiple,
+                         List<DropdownOption> options, DropdownInputMode inputMode, UiTextCompletionProvider completion) {
         this.kind = Objects.requireNonNull(kind, "kind");
         if (maxLength < 0) throw new IllegalArgumentException("Negative input length");
         if (multiple && kind != Kind.SELECT) throw new IllegalArgumentException("Only selections can be multiple");
@@ -32,6 +38,9 @@ public final class UiControlSpec {
         this.multiple = multiple;
         this.options = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(options, "options")));
         this.inputMode = Objects.requireNonNull(inputMode, "inputMode");
+        if (completion != null && kind != Kind.TEXT)
+            throw new IllegalArgumentException("Only text inputs support completion");
+        this.completion = completion;
     }
 
     public Kind kind() {
@@ -56,5 +65,9 @@ public final class UiControlSpec {
 
     public DropdownInputMode inputMode() {
         return inputMode;
+    }
+
+    public UiTextCompletionProvider completion() {
+        return completion;
     }
 }

@@ -199,7 +199,8 @@ public final class FormUiSession implements UiPageSession {
                 options.addAll(DropdownSelectWidget.enumOptions(widget.dropdownEnumClass()));
             else for (String value : widget.dropdownOptions()) options.add(new DropdownOption(value));
         }
-        return new UiControlSpec(kind, widget.maxLength(), widget.regex(), widget.dropdownMultiSelect(), options, widget.dropdownInputMode());
+        return new UiControlSpec(kind, widget.maxLength(), widget.regex(), widget.dropdownMultiSelect(), options, widget.dropdownInputMode(),
+                kind == UiControlSpec.Kind.TEXT ? widget.completion() : null);
     }
 
     public UiValue get(String name) {
@@ -373,13 +374,13 @@ public final class FormUiSession implements UiPageSession {
         updateStatus();
     }
 
-    private static final class CommonFieldPresentation implements FieldPresentation {
+    private final class CommonFieldPresentation implements FieldPresentation {
         public int rowHeight() {
-            return 28;
+            return args.getWidgets().stream().anyMatch(InputFormScreen.Widget::wideInput) ? 48 : 28;
         }
 
         public String rowClass(int index) {
-            return "player-config-field";
+            return args.getWidgets().get(index).wideInput() ? "player-config-field wide-input-field" : "player-config-field";
         }
 
         public void bind(UiView row, int index, InputFormScreen.Widget widget) {

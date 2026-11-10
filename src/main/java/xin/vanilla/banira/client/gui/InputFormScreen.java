@@ -28,6 +28,7 @@ import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -226,7 +227,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private boolean disabled;
         private boolean pickerReadOnly;
         private java.util.function.Predicate<Results> visibleWhen;
-
+        private boolean wideInput;
         private WidgetType type = WidgetType.TEXT;
 
         private String fileFilter = "";
@@ -258,6 +259,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private Consumer<Inputs> changed;
 
         private BiFunction<Screen, Consumer<String>, Screen> picker;
+        private xin.vanilla.banira.api.client.ui.UiTextCompletionProvider completion;
 
         public Widget title(Text title) {
             this.title = title;
@@ -765,8 +767,12 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             titleLabel.textWrap(false);
             inputField.titleLabel(titleLabel);
             addWidget(titleLabel);
-            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD || widget.type() == WidgetType.KEY_CHORD) {
-                InputWidget inputWidget = widget.type() == WidgetType.KEY_CHORD ? new KeyCaptureInputWidget(this) : new InputWidget(this);
+
+            if (widget.type() == WidgetType.TEXT || widget.type() == WidgetType.PASSWORD
+                    || widget.type() == WidgetType.KEY_CHORD) {
+                InputWidget inputWidget = widget.type() == WidgetType.KEY_CHORD
+                        ? new KeyCaptureInputWidget(this) : widget.type() == WidgetType.TEXT && widget.completion() != null
+                        ? new CompletionInputWidget(this, widget.completion()) : new InputWidget(this);
                 inputWidget.id("input_" + i);
                 inputWidget.bounds(new ScreenCoordinate(contentLeft, inputY, inputW, INPUT_H));
                 inputWidget.value(currentValue);
@@ -1123,12 +1129,10 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         }
         List<IWidget> deferred = null;
         List<IWidget> deferredTooltipDepth = null;
-        for (IWidget widget : widgets()) {
-            if (widget.parent() != null || !widget.visible())
-                continue;
+        for (IWidget widget : widgetsForRendering()) {
+            if (widget.parent() != null || !widget.visible()) continue;
             if (widget instanceof BaseWidget && ((BaseWidget) widget).renderDepth() == EnumRenderDepth.TOOLTIP) {
-                if (deferredTooltipDepth == null)
-                    deferredTooltipDepth = new ArrayList<>();
+                if (deferredTooltipDepth == null) deferredTooltipDepth = new ArrayList<>();
                 deferredTooltipDepth.add(widget);
                 continue;
             }

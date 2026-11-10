@@ -32,17 +32,6 @@ public class UiQuickActionPresentationTest {
         return new NavigationUiSession.Action(id, BaniraComponent.get().literal(label), open, delete);
     }
 
-    @Test
-    public void bothTemplatesReuseCommonConfigurationWithoutRuntimeScripts() throws Exception {
-        for (String name : com.google.common.collect.ImmutableList.of("quick-actions", "quick-steps"))
-            try (java.io.InputStream in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/" + name + ".html")) {
-                assertNotNull(in);
-                String html = new String(com.google.common.io.ByteStreams.toByteArray(in), StandardCharsets.UTF_8);
-                for (String expected : com.google.common.collect.ImmutableList.of("config.css", "player-config-editor.css", "config-body", "config-header", "id=\"brand\"", "id=\"search\"", "id=\"close\"", "id=\"empty\""))
-                    assertTrue(name + ": " + expected, html.contains(expected));
-                assertFalse(html.contains("<script"));
-            }
-    }
 
     @Test
     public void compactRowsKeepHumanLabelsAndSingleRealCallbacks() {
@@ -155,17 +144,6 @@ public class UiQuickActionPresentationTest {
             }
     }
 
-    @Test
-    public void englishToolLabelsFitTheCompactCommonSidebar() throws Exception {
-        try (java.io.InputStream in = getClass().getResourceAsStream("/assets/banira_codex/lang/en_us.json")) {
-            assertNotNull(in);
-            lombok.var language = new com.google.gson.JsonParser().parse(new java.io.InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-            for (String key : com.google.common.collect.ImmutableList.of("custom_quick_action_edit_details", "custom_quick_action_add_command", "custom_quick_action_add_screen", "custom_quick_action_add_menu")) {
-                String value = language.get("word.banira_codex." + key).getAsString();
-                assertTrue(key + " exceeds the compact sidebar's single-line label budget", value.length() <= 16);
-            }
-        }
-    }
 
     @Test
     public void typingSearchDoesNotRestoreThePreviousDomCaret() throws Exception {

@@ -13,6 +13,25 @@ import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.type;
 
 public class UiDomControlsTest {
+    static void assertActualAttributeGuard() throws Exception {
+        var node = new org.objectweb.asm.tree.ClassNode();
+        try (var stream = UiDomControlsTest.class.getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
+            assertNotNull(stream);
+            new org.objectweb.asm.ClassReader(stream).accept(node, 0);
+        }
+        var method = node.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow();
+        boolean delegates = false, rejectsUnknown = false;
+        for (var instruction : method.instructions) {
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
+                    && call.owner.equals("xin/vanilla/banira/internal/client/ui/UiDomAccess") && call.name.equals("supportsAttribute"))
+                delegates = true;
+            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode literal
+                    && "Unsupported UI attribute".equals(literal.cst)) rejectsUnknown = true;
+        }
+        assertTrue("The real adapter must use the tested attribute predicate", delegates);
+        assertTrue("The real adapter must reject unknown attributes", rejectsUnknown);
+    }
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         try {
@@ -39,6 +58,7 @@ public class UiDomControlsTest {
         int colorCloses;
         boolean failingTooltips;
         boolean rejectUnsupportedId;
+        boolean rejectUnsupportedAttributes = true;
 
         Dom() throws Exception {
             Class<?> api = type("internal.client.ui.UiDomAccess");
@@ -116,6 +136,10 @@ public class UiDomControlsTest {
                             writes++;
                             return null;
                         case "attribute":
+                            boolean textureSource = args[0].equals("src") && tag.equals("texture")
+                                    && net.minecraft.resources.ResourceLocation.tryParse((String) args[1]) != null;
+                            if (rejectUnsupportedAttributes && !UiDomAccess.supportsAttribute((String) args[0]) && !textureSource)
+                                throw new IllegalArgumentException("Unsupported UI attribute: " + args[0]);
                             if (rejectUnsupportedId && args[0].equals("id"))
                                 throw new IllegalArgumentException("Unsupported UI attribute");
                             attributes.put((String) args[0], (String) args[1]);

@@ -53,6 +53,7 @@ public final class SelectorUiSession implements UiPageSession {
     private UiOwnedResources bindings = new UiOwnedResources();
     private final Map<UiView, UiOwnedResources> rowBindings = new IdentityHashMap<>();
     private final Map<String, FormUiSession> editors = new HashMap<>();
+    private final Map<String, ItemStack> itemChoices = new HashMap<>();
 
     public SelectorUiSession(ItemSelectScreen.Args args) {
         args.validate();
@@ -170,13 +171,22 @@ public final class SelectorUiSession implements UiPageSession {
     }
 
     public String selectedKey() {
-        return kind == Kind.ITEM ? ItemUtils.serializeItemStack(item()) : kind == Kind.EFFECT ? EffectUtils.getEffectRegistryString(effect) : Objects.toString(advancement, "");
+        return kind == Kind.ITEM ? ItemUtils.getItemStackCacheKey(item()) : kind == Kind.EFFECT ? EffectUtils.getEffectRegistryString(effect) : Objects.toString(advancement, "");
+    }
+
+    public void selectItem(ItemStack value) {
+        if (kind != Kind.ITEM || closed || submitted || submitting) return;
+        item = copyItem(value);
+        item.setCount(1);
+        version++;
+        updateSelection();
     }
 
     public void select(String id) {
         if (closed || submitted || submitting) return;
         if (kind == Kind.ITEM) {
-            item = copyItem(ItemUtils.deserializeItemStack(id));
+            ItemStack choice = itemChoices.get(id);
+            item = copyItem(choice == null ? ItemUtils.deserializeItemStack(id) : choice);
             item.setCount(1);
         } else if (kind == Kind.EFFECT) {
             MobEffect value = EffectUtils.getEffectFromRegistry(id);
@@ -251,6 +261,8 @@ public final class SelectorUiSession implements UiPageSession {
                 item = next;
             };
         } else if (kind == Kind.ITEM && operation.equals("nbt")) {
+            widget.wideInput(true);
+            widget.completion(xin.vanilla.banira.internal.compat.nbtac.NbtAutocomplete.item(ItemUtils.getItemRegistryString(item)));
             widget.title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt")).defaultValue(ItemUtils.serializeItemStackTag(item)).validator(input -> {
                 try {
                     var data = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.value()).get(DataComponents.CUSTOM_DATA);
@@ -261,8 +273,11 @@ public final class SelectorUiSession implements UiPageSession {
                 return failure("enter_item_nbt_error", input.value());
             });
             apply = input -> {
-                ItemStack next = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.firstValue());
-                next.setCount(item.getCount());
+                ItemStack parsed = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.firstValue());
+                ItemStack next = item();
+                var data = parsed.get(DataComponents.CUSTOM_DATA);
+                if (data == null) next.remove(DataComponents.CUSTOM_DATA);
+                else next.set(DataComponents.CUSTOM_DATA, data);
                 item = next;
             };
         } else if (kind == Kind.EFFECT && operation.equals("effect")) {
@@ -397,9 +412,11 @@ public final class SelectorUiSession implements UiPageSession {
         final String id, title, tooltip;
         final UiGameElement icon;
         String key;
+        String displayId;
 
         Row(String id, String title, String tooltip, UiGameElement icon) {
             this.id = id;
+            this.displayId = id;
             this.title = title;
             this.tooltip = tooltip;
             this.icon = icon;
@@ -409,11 +426,16 @@ public final class SelectorUiSession implements UiPageSession {
     private List<Row> results() {
         List<Row> result = new ArrayList<>();
         if (kind == Kind.ITEM) {
+            itemChoices.clear();
             Collection<ItemStack> items = mode && Minecraft.getInstance() != null && Minecraft.getInstance().player != null
                     ? ItemUtils.searchPlayerItems(Minecraft.getInstance().player, query) : ItemUtils.searchItems(query);
             for (ItemStack stack : items) {
-                String id = ItemUtils.serializeItemStack(stack), title = ItemUtils.getItemHoverNameString(stack);
-                result.add(new Row(id, title, title + "\n" + id, UiGameElement.option(new DropdownOption(id, stack.copy(), null))));
+                String id = ItemUtils.getItemStackCacheKey(stack), title = ItemUtils.getItemHoverNameString(stack);
+                String displayId = ItemUtils.getItemRegistryString(stack);
+                itemChoices.put(id, stack.copy());
+                Row row = new Row(id, title, title + "\n" + displayId, UiGameElement.option(new DropdownOption(id, stack.copy(), null)));
+                row.displayId = displayId;
+                result.add(row);
             }
         } else if (kind == Kind.EFFECT) {
             Collection<MobEffect> effects = mode ? EffectUtils.getPlayerEffects() : EffectUtils.searchEffects(query);
@@ -474,7 +496,7 @@ public final class SelectorUiSession implements UiPageSession {
                 row.text("open", BaniraComponent.get().literal(value.title));
                 row.tooltip("open", BaniraComponent.get().literal(value.tooltip));
                 row.gameElement("icon", value.icon);
-                row.text("label", BaniraComponent.get().literal(value.id));
+                row.text("label", BaniraComponent.get().literal(value.displayId));
                 owned.own(row.onAction("open", () -> {
                     if (view == root) select(value.id);
                 }));
@@ -486,7 +508,7 @@ public final class SelectorUiSession implements UiPageSession {
     private void updateSelection() {
         if (view == null || closed) return;
         if (view instanceof NativeUiView) ((NativeUiView) view).state().selectedId(selectedKey());
-        String description = selectedKey() + (kind == Kind.ITEM ? " \u00d7" + item.getCount()
+        String description = (kind == Kind.ITEM ? ItemUtils.getItemRegistryString(item) : selectedKey()) + (kind == Kind.ITEM ? " \u00d7" + item.getCount()
                 : kind == Kind.EFFECT ? " " + NumberUtils.intToRoman(effect.getAmplifier() + 1) + " " + EffectDurationModel.clockText(effect.getDuration()) : "");
         view.text("selection", BaniraComponent.get().literal(description));
         view.tooltip("selection", BaniraComponent.get().literal(description));

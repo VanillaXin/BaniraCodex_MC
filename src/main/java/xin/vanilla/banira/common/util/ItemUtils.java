@@ -41,6 +41,7 @@ public final class ItemUtils {
      * 所有物品缓存
      */
     private static volatile List<ItemStack> allItemsCache = Collections.emptyList();
+    private static List<Collection<ItemStack>> allItemsSources = Collections.emptyList();
 
     /**
      * 物品堆信息缓存
@@ -511,8 +512,9 @@ public final class ItemUtils {
     /**
      * 清除物品缓存
      */
-    public static void clearCache() {
+    public static synchronized void clearCache() {
         allItemsCache = Collections.emptyList();
+        allItemsSources = Collections.emptyList();
         itemStackInfoCache.clear();
         tooltipCache.clear();
         modNameCache.clear();
@@ -522,21 +524,51 @@ public final class ItemUtils {
     /**
      * 获取所有物品的列表
      */
-    public static List<ItemStack> getAllItems() {
-        if (allItemsCache.isEmpty()) {
-            synchronized (ItemUtils.class) {
-                if (allItemsCache.isEmpty()) {
-                    allItemsCache = buildAllItemsList();
-                }
+    public static synchronized List<ItemStack> getAllItems() {
+        Player player = ClientRuntimeBridge.localPlayer();
+        if (player != null) {
+            try {
+                CreativeModeTabs.tryRebuildTabContents(player.level().enabledFeatures(), player.canUseGameMasterBlocks(), player.level().registryAccess());
+            } catch (RuntimeException | LinkageError unavailable) {
+                LOGGER.warn("Failed to refresh creative item variants", unavailable);
             }
         }
+        List<Collection<ItemStack>> sources = creativeItemSources();
+        boolean changed = sources.size() != allItemsSources.size();
+        for (int index = 0; !changed && index < sources.size(); index++) {
+            changed = sources.get(index) != allItemsSources.get(index);
+        }
+        if (allItemsCache.isEmpty() || changed) {
+            allItemsCache = buildAllItemsList(sources);
+            allItemsSources = sources;
+        }
         return new ArrayList<>(allItemsCache);
+    }
+
+    private static List<Collection<ItemStack>> creativeItemSources() {
+        List<Collection<ItemStack>> sources = new ArrayList<>();
+        try {
+            CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
+            CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
+            for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                if (tab == null || tab == hotbarTab) continue;
+                try {
+                    Collection<ItemStack> stacks = tab == searchTab ? tab.getSearchTabDisplayItems() : tab.getDisplayItems();
+                    if (stacks != null) sources.add(stacks);
+                } catch (RuntimeException unavailable) {
+                    LOGGER.debug("Failed to get creative item variants: {}", tab.getDisplayName().getString(), unavailable);
+                }
+            }
+        } catch (RuntimeException unavailable) {
+            LOGGER.warn("Failed to get items from creative tabs", unavailable);
+        }
+        return sources;
     }
 
     /**
      * 构建所有物品列表
      */
-    private static List<ItemStack> buildAllItemsList() {
+    private static List<ItemStack> buildAllItemsList(List<Collection<ItemStack>> sources) {
         List<ItemStack> items = new ArrayList<>();
         Set<Item> addedItems = new HashSet<>();
 
@@ -544,30 +576,14 @@ public final class ItemUtils {
         addedItems.add(Items.AIR);
 
         try {
-            // 从创造模式标签收集可展示变体
-            try {
-                CreativeModeTab hotbarTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.HOTBAR);
-                CreativeModeTab searchTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CreativeModeTabs.SEARCH);
-                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
-                    if (tab == null || tab == hotbarTab) continue;
-                    try {
-                        Collection<ItemStack> tabItems = tab == searchTab
-                                ? tab.getSearchTabDisplayItems() : tab.getDisplayItems();
-                        if (CollectionUtils.isNotNullOrEmpty(tabItems)) {
-                            for (ItemStack stack : tabItems) {
-                                if (stack != null && !stack.isEmpty()
-                                        && items.stream().noneMatch(existing -> areItemsEqual(existing, stack))) {
-                                    items.add(stack.copy());
-                                    addedItems.add(stack.getItem());
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("Failed to get items from creative tab: {}", tab.getDisplayName().getString(), e);
+            // Preserve tag variants; the final serialized-key pass removes exact duplicates.
+            for (Collection<ItemStack> stacks : sources) {
+                for (ItemStack stack : stacks) {
+                    if (stack != null && !stack.isEmpty()) {
+                        items.add(stack.copy());
+                        addedItems.add(stack.getItem());
                     }
                 }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get items from creative tabs", e);
             }
 
             // 最后确保所有注册的物品至少有一个默认堆叠

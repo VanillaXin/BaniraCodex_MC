@@ -97,7 +97,6 @@ final class UiCompletionPopup implements AutoCloseable {
                 UiDomAccess.Node button = dom.create("button");
                 button.attribute("class", "popup-option");
                 button.attribute("style", "height:22px;min-height:22px;flex-shrink:0");
-                button.attribute("tabindex", "-1");
                 button.text(options.get(index).text());
                 button.tooltip(options.get(index).tooltip());
                 int selected = index;

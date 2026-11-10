@@ -1018,7 +1018,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
 
         List<IWidget> deferred = null;
         List<IWidget> deferredTooltipDepth = null;
-        for (IWidget widget : widgets()) {
+        for (IWidget widget : widgetsForRendering()) {
             if (widget.parent() != null || !widget.visible()) continue;
             if (widget instanceof BaseWidget baseWidget && baseWidget.renderDepth() == EnumRenderDepth.TOOLTIP) {
                 if (deferredTooltipDepth == null) deferredTooltipDepth = new ArrayList<>();

@@ -12,6 +12,42 @@ import static org.junit.Assert.*;
 
 public class UiCompletionPopupTest {
     @Test
+    public void strictDomKeepsTextureAndInputAttributeBoundariesSeparate() throws Exception {
+        UiDomControlsTest.assertActualAttributeGuard();
+        UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
+        UiDomAccess.Node input = (UiDomAccess.Node) dom.ids.get("text").proxy;
+        assertThrows(IllegalArgumentException.class, () -> input.attribute("tabindex", "-1"));
+        assertThrows(IllegalArgumentException.class, () -> input.attribute("src", "minecraft:textures/item/apple.png"));
+        UiDomAccess.Node texture = (UiDomAccess.Node) dom.new Node("texture").proxy;
+        texture.attribute("src", "minecraft:textures/item/apple.png");
+        assertThrows(IllegalArgumentException.class, () -> texture.attribute("src", "not a resource location"));
+    }
+
+    @Test
+    public void completionUsesOnlyAttributesAcceptedByTheRealAuiAdapter() throws Exception {
+        UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
+        dom.rejectUnsupportedAttributes = true;
+        var input = dom.ids.get("text");
+        input.value = "{Da}";
+        input.start = input.end = 3;
+        input.focused = true;
+        AtomicLong clock = new AtomicLong();
+        TextCompletionState state = new TextCompletionState((text, cursor) -> CompletableFuture.completedFuture(
+                Collections.singletonList(new UiTextCompletion(1, 3, "Damage:", "int"))), clock::get);
+        UiCompletionPopup popup = new UiCompletionPopup((UiDomAccess) dom.access, (UiDomAccess.Node) input.proxy, state, 1000,
+                text -> {
+                });
+        try {
+            popup.update();
+            clock.set(120);
+            popup.update();
+            assertTrue(dom.created.stream().anyMatch(node -> node.text.equals("Damage:")));
+        } finally {
+            popup.close();
+        }
+    }
+
+    @Test
     public void mouseCompletionPreservesSuffixAndClosesPopup() throws Exception {
         UiDomControlsTest.Dom dom = new UiDomControlsTest.Dom();
         dom.ids.get("body").rectangle = new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 800, 600);

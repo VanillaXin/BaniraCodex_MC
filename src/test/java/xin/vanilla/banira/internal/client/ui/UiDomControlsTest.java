@@ -13,6 +13,27 @@ import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.type;
 
 public class UiDomControlsTest {
+    static void assertActualAttributeGuard() throws Exception {
+        lombok.var node = new org.objectweb.asm.tree.ClassNode();
+        try (lombok.var stream = UiDomControlsTest.class.getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
+            assertNotNull(stream);
+            new org.objectweb.asm.ClassReader(stream).accept(node, 0);
+        }
+        lombok.var method = node.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
+        boolean delegates = false, rejectsUnknown = false;
+        for (lombok.var instruction : method.instructions) {
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode
+                    && ((org.objectweb.asm.tree.MethodInsnNode) instruction).owner.equals("xin/vanilla/banira/internal/client/ui/UiDomAccess")
+                    && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("supportsAttribute"))
+                delegates = true;
+            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode
+                    && "Unsupported UI attribute".equals(((org.objectweb.asm.tree.LdcInsnNode) instruction).cst))
+                rejectsUnknown = true;
+        }
+        assertTrue("The real adapter must use the tested attribute predicate", delegates);
+        assertTrue("The real adapter must reject unknown attributes", rejectsUnknown);
+    }
+
     @org.junit.BeforeClass
     public static void bootstrap() {
         net.minecraft.server.Bootstrap.bootStrap();
@@ -33,6 +54,7 @@ public class UiDomControlsTest {
         int colorCloses;
         boolean failingTooltips;
         boolean rejectUnsupportedId;
+        boolean rejectUnsupportedAttributes = true;
 
         Dom() throws Exception {
             Class<?> api = type("internal.client.ui.UiDomAccess");
@@ -110,6 +132,10 @@ public class UiDomControlsTest {
                             writes++;
                             return null;
                         case "attribute":
+                            boolean textureSource = args[0].equals("src") && tag.equals("texture")
+                                    && net.minecraft.resources.ResourceLocation.tryParse((String) args[1]) != null;
+                            if (rejectUnsupportedAttributes && !UiDomAccess.supportsAttribute((String) args[0]) && !textureSource)
+                                throw new IllegalArgumentException("Unsupported UI attribute: " + args[0]);
                             if (rejectUnsupportedId && args[0].equals("id"))
                                 throw new IllegalArgumentException("Unsupported UI attribute");
                             attributes.put((String) args[0], (String) args[1]);

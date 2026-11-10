@@ -201,6 +201,13 @@ public abstract class BaniraScreen extends Screen {
     private final List<Consumer<PoseStack>> deferredTooltipRenders = new ArrayList<>();
 
     /**
+     * 根控件变化时才重建渲染快照，避免每帧复制列表。
+     */
+    private List<IWidget> renderWidgetSnapshot = Collections.emptyList();
+    private boolean renderWidgetSnapshotDirty = true;
+    private boolean renderingWidgets;
+
+    /**
      * 注册延迟 tooltip 绘制，将在本帧 render 末尾调用（scissor 已关闭后）
      */
     public void addDeferredTooltipRender(Consumer<PoseStack> render) {
@@ -336,7 +343,9 @@ public abstract class BaniraScreen extends Screen {
         return true;
     }
 
-    /** Context clipping for tooltips deferred until after scissor rendering. */
+    /**
+     * Context clipping for tooltips deferred until after scissor rendering.
+     */
     public boolean shouldWidgetReceiveTooltip(IWidget widget, double mouseX, double mouseY) {
         return true;
     }
@@ -651,15 +660,31 @@ public abstract class BaniraScreen extends Screen {
     }
 
     protected void renderWidgets(PoseStack stack, float partialTicks) {
-        List<IWidget> snapshot = new ArrayList<>(widgets);
-        for (IWidget widget : snapshot) {
-            if (widget.visible() && widget.parent() == null) {
-                if (widget.enabled() && widget.needsUpdate()) {
-                    widget.update();
+        rebuildRenderWidgetSnapshotIfNeeded();
+        renderingWidgets = true;
+        try {
+            for (IWidget widget : renderWidgetSnapshot) {
+                if (widget.visible() && widget.parent() == null) {
+                    if (widget.enabled() && widget.needsUpdate()) {
+                        widget.update();
+                    }
+                    widget.render(stack, partialTicks);
                 }
-                widget.render(stack, partialTicks);
             }
+        } finally {
+            renderingWidgets = false;
         }
+    }
+
+    private void rebuildRenderWidgetSnapshotIfNeeded() {
+        if (!renderWidgetSnapshotDirty) return;
+        renderWidgetSnapshot = Collections.unmodifiableList(new ArrayList<>(widgets));
+        renderWidgetSnapshotDirty = false;
+    }
+
+    protected final List<IWidget> widgetsForRendering() {
+        rebuildRenderWidgetSnapshotIfNeeded();
+        return renderWidgetSnapshot;
     }
 
     @Nullable
@@ -681,15 +706,17 @@ public abstract class BaniraScreen extends Screen {
             if (widget.id() != null) {
                 widgetMap.put(widget.id(), widget);
             }
+            markRenderWidgetSnapshotDirty(false);
         }
     }
 
     protected void removeWidget(IWidget widget) {
         if (widget != null) {
-            widgets.remove(widget);
-            if (widget.id() != null) {
+            boolean removed = widgets.remove(widget);
+            if (removed && widget.id() != null) {
                 widgetMap.remove(widget.id());
             }
+            if (removed) markRenderWidgetSnapshotDirty(true);
         }
     }
 
@@ -715,10 +742,18 @@ public abstract class BaniraScreen extends Screen {
             }
         }
         widgets.clear();
+        markRenderWidgetSnapshotDirty(true);
         widgetMap.clear();
         focusedWidget = null;
         synchronized (focusableWidgets) {
             focusableWidgets.clear();
+        }
+    }
+
+    private void markRenderWidgetSnapshotDirty(boolean clearWhenIdle) {
+        renderWidgetSnapshotDirty = true;
+        if (clearWhenIdle && !renderingWidgets) {
+            renderWidgetSnapshot = Collections.emptyList();
         }
     }
 

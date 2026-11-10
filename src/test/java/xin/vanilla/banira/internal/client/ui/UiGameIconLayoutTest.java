@@ -3,8 +3,10 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Test;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.internal.compat.aui.AuiGameElements;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 public class UiGameIconLayoutTest {
@@ -53,13 +55,14 @@ public class UiGameIconLayoutTest {
             assertNotNull(input);
             new org.objectweb.asm.ClassReader(input).accept(type, 0);
         }
-        for (String name : new String[] { "renderElement", "renderOption", "renderText" }) {
+        for (String name : new String[]{"renderElement", "renderOption", "renderText"}) {
             lombok.var method = type.methods.stream().filter(value -> value.name.equals(name)).findFirst().orElseThrow(java.util.NoSuchElementException::new);
             lombok.var calls = new java.util.ArrayList<String>();
-            for (lombok.var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                calls.add(call.owner + "." + call.name);
-            }
+            for (lombok.var instruction : method.instructions)
+                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                    lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                    calls.add(call.owner + "." + call.name);
+                }
             int clip = calls.indexOf("xin/vanilla/banira/internal/compat/aui/LegacyUiGraphics.pushScissor");
             int disable = calls.indexOf("com/mojang/blaze3d/systems/RenderSystem.disableDepthTest");
             assertTrue(name + " must disable depth after the scissor flush", clip >= 0 && disable > clip);
@@ -69,15 +72,16 @@ public class UiGameIconLayoutTest {
             assertFalse(name + " must restore state on failure", method.tryCatchBlocks.isEmpty());
             if (name.equals("renderText")) {
                 boolean clipped = false;
-                for (lombok.var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-                    lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-                    if (call.name.equals("pushScissor"))
-                        clipped = true;
-                    if (clipped && call.owner.equals("xin/vanilla/banira/internal/compat/aui/LegacyUiGraphics") && (call.name.equals("flush") || call.name.equals("popScissor"))) {
-                        int position = method.instructions.indexOf(call);
-                        assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails", method.tryCatchBlocks.stream().anyMatch(block -> block.type == null && method.instructions.indexOf(block.start) <= position && position < method.instructions.indexOf(block.end)));
+                for (lombok.var instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                        lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                        if (call.name.equals("pushScissor"))
+                            clipped = true;
+                        if (clipped && call.owner.equals("xin/vanilla/banira/internal/compat/aui/LegacyUiGraphics") && (call.name.equals("flush") || call.name.equals("popScissor"))) {
+                            int position = method.instructions.indexOf(call);
+                            assertTrue("Text cleanup must restore remaining state even if " + call.name + " fails", method.tryCatchBlocks.stream().anyMatch(block -> block.type == null && method.instructions.indexOf(block.start) <= position && position < method.instructions.indexOf(block.end)));
+                        }
                     }
-                }
             }
         }
     }
@@ -91,12 +95,13 @@ public class UiGameIconLayoutTest {
         }
         lombok.var method = type.methods.stream().filter(value -> value.name.equals("renderOption")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
         boolean model = false;
-        for (lombok.var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
-            lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
-            assertNotEquals("A block's particle texture is not its inventory icon", "renderGuiItemFlatBlit", call.name);
-            if (call.owner.equals("xin/vanilla/banira/client/gui/widget/ItemWidget") && call.name.equals("renderGuiItemScaled"))
-                model = true;
-        }
+        for (lombok.var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode) {
+                lombok.var call = (org.objectweb.asm.tree.MethodInsnNode) instruction;
+                assertNotEquals("A block's particle texture is not its inventory icon", "renderGuiItemFlatBlit", call.name);
+                if (call.owner.equals("xin/vanilla/banira/client/gui/widget/ItemWidget") && call.name.equals("renderGuiItemScaled"))
+                    model = true;
+            }
         assertTrue(model);
         lombok.var bridge = new org.objectweb.asm.tree.ClassNode();
         try (lombok.var input = getClass().getResourceAsStream("/xin/vanilla/banira/client/gui/widget/ItemWidget.class")) {
@@ -117,39 +122,33 @@ public class UiGameIconLayoutTest {
         lombok.var index = type.methods.stream().filter(value -> value.name.equals("linkParents")).findFirst().orElse(null);
         assertNotNull("Static containers need the same parent chain as appended nodes", index);
         boolean parent = false;
-        for (lombok.var instruction : index.instructions) if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
-            lombok.var field = (org.objectweb.asm.tree.FieldInsnNode) instruction;
-            if (field.getOpcode() == org.objectweb.asm.Opcodes.PUTFIELD && field.name.equals("parent"))
-                parent = true;
-        }
+        for (lombok.var instruction : index.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
+                lombok.var field = (org.objectweb.asm.tree.FieldInsnNode) instruction;
+                if (field.getOpcode() == org.objectweb.asm.Opcodes.PUTFIELD && field.name.equals("parent"))
+                    parent = true;
+            }
         assertTrue(parent);
         lombok.var constructor = type.methods.stream().filter(value -> value.name.equals("<init>") && value.desc.contains("BooleanSupplier") && value.desc.contains("/Element;")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
         boolean initialized = false;
-        for (lombok.var instruction : constructor.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("linkParents"))
-            initialized = true;
+        for (lombok.var instruction : constructor.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("linkParents"))
+                initialized = true;
         assertTrue("Parent indexing must run on the loaded HTML tree", initialized);
         lombok.var original = type.methods.stream().filter(value -> value.name.equals("<init>") && value.desc.contains("BooleanSupplier") && !value.desc.contains("/Element;")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
         boolean delegated = false;
-        for (lombok.var instruction : original.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("<init>") && ((org.objectweb.asm.tree.MethodInsnNode) instruction).owner.equals(type.name) && ((org.objectweb.asm.tree.MethodInsnNode) instruction).desc.equals(constructor.desc))
-            delegated = true;
+        for (lombok.var instruction : original.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("<init>") && ((org.objectweb.asm.tree.MethodInsnNode) instruction).owner.equals(type.name) && ((org.objectweb.asm.tree.MethodInsnNode) instruction).desc.equals(constructor.desc))
+                delegated = true;
         assertTrue("The legacy owner constructor must retain indexed-parent initialization", delegated);
     }
 
     @Test
     public void accessibleControlMetadataPassesTheActualAttributeGuard() throws Exception {
-        lombok.var type = new org.objectweb.asm.tree.ClassNode();
-        try (lombok.var input = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
-            assertNotNull(input);
-            new org.objectweb.asm.ClassReader(input).accept(type, 0);
-        }
-        lombok.var method = type.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
-        lombok.var strings = new java.util.HashSet<String>();
-        for (lombok.var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode && ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst instanceof String) {
-            strings.add((String) ((org.objectweb.asm.tree.LdcInsnNode) instruction).cst);
-        }
-        assertTrue("Named icon buttons must not trigger native fallback", strings.contains("aria-label"));
-        assertTrue("Selected menu rows need an explicit state", strings.contains("aria-selected"));
-        assertTrue("The attribute boundary must remain closed", strings.contains("Unsupported UI attribute"));
+        UiDomControlsTest.assertActualAttributeGuard();
+        assertTrue("Named icon buttons must not trigger native fallback", UiDomAccess.supportsAttribute("aria-label"));
+        assertTrue("Selected menu rows need an explicit state", UiDomAccess.supportsAttribute("aria-selected"));
+        assertFalse("The attribute boundary must remain closed", UiDomAccess.supportsAttribute("onclick"));
     }
 
     @Test
@@ -161,8 +160,9 @@ public class UiGameIconLayoutTest {
         }
         lombok.var method = type.methods.stream().filter(value -> value.name.equals("gameElement")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
         boolean scoped = false;
-        for (lombok.var instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode && ((org.objectweb.asm.tree.FieldInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.GETFIELD && ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("created"))
-            scoped = true;
+        for (lombok.var instruction : method.instructions)
+            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode && ((org.objectweb.asm.tree.FieldInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.GETFIELD && ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("created"))
+                scoped = true;
         assertTrue("Static toolbar icons must use their 22px template boxes", scoped);
     }
 }

@@ -125,7 +125,7 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
         this.uiSession.attachNative(this);
         previousScreen(args.parentScreen());
         this.selectedItem = uiSession.item();
-        this.selectedItemId = ItemUtils.serializeItemStack(this.selectedItem);
+        this.selectedItemId = uiSession.selectedKey();
         BaniraScreen.inheritThemeAndSeason(this, args.parentScreen(), args.theme(), args.season());
     }
 
@@ -168,7 +168,7 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
 
     private void restoreUiSelection() {
         selectedItem = uiSession.item();
-        selectedItemId = ItemUtils.serializeItemStack(selectedItem);
+        selectedItemId = uiSession.selectedKey();
         uiVersion = uiSession.version();
     }
 
@@ -526,8 +526,8 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
             if (iw == null) continue;
             if (index >= 0 && index < itemList.size()) {
                 ItemStack itemStack = itemList.get(index);
-                String itemId = ItemUtils.serializeItemStack(itemStack);
-                iw.itemId(itemId);
+                String itemId = ItemUtils.getItemStackCacheKey(itemStack);
+                iw.itemStack(itemStack.copy());
                 iw.visible(true);
                 buttonWidget.property("itemId", itemId);
                 buttonWidget.visible(true);
@@ -586,10 +586,11 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
     private boolean handleItemInternal(String itemId) {
         this.selectedItemId = itemId;
         if (StringUtils.isNotNullOrEmpty(this.selectedItemId)) {
-            ItemStack itemStack = ItemUtils.deserializeItemStack(selectedItemId);
-            itemStack.setCount(1);
-            uiSession.select(itemId);
+            ItemStack itemStack = itemList.stream().filter(value -> ItemUtils.getItemStackCacheKey(value).equals(itemId))
+                    .findFirst().orElseGet(() -> ItemUtils.deserializeItemStack(itemId));
+            uiSession.selectItem(itemStack);
             this.selectedItem = uiSession.item();
+            this.selectedItemId = uiSession.selectedKey();
             LOGGER.debug("Select item: {}", ItemUtils.getItemRegistryString(itemStack));
             return true;
         }

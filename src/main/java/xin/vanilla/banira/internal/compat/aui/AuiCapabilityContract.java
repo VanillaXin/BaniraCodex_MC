@@ -66,7 +66,7 @@ public final class AuiCapabilityContract {
                     {"init/Element$DOMRect", "x", "D"}, {"init/Element$DOMRect", "y", "D"},
                     {"init/Element$DOMRect", "right", "D"}, {"init/Element$DOMRect", "bottom", "D"},
                     {"layout/Position", "x", "D"}, {"layout/Position", "y", "D"}, {"event/KeyEvent", "keyCode", "I"},
-                    {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}}) {
+                    {"event/KeyEvent", "modifiers", "I"}, {"event/MouseEvent", "button", "I"}, {"event/MouseEvent", "scrollDelta", "D"}}) {
                 String name = ROOT + field[0];
                 ClassNode owner = classes.get(name);
                 if (owner == null) {
@@ -178,6 +178,9 @@ public final class AuiCapabilityContract {
         add(result, "layout/Size", "height", "()D");
         result.add(new Member(ROOT + "render/Base", "drawOverlayDocument",
                 "(" + org.objectweb.asm.Type.getDescriptor(com.mojang.blaze3d.vertex.PoseStack.class) + DOCUMENT + ")V", true));
+        result.add(new Member(ROOT + "render/Base", "drawOverlayDocument",
+                "(" + org.objectweb.asm.Type.getDescriptor(com.mojang.blaze3d.vertex.PoseStack.class) + DOCUMENT + "F)V", true));
+        result.add(new Member(ROOT + "render/Base", "getFlatOverlayZ", "()F", true));
         return Collections.unmodifiableList(result);
     }
 

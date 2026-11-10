@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -143,6 +144,48 @@ public class ItemVariantCatalogTest {
                 .parentScreen(new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.empty()) {
                 }).defaultItem(initial).onDataReceived1(value -> {
                 }));
+    }
+
+    @Test
+    public void nestedBundleComponentsHaveDistinctStableSelectionKeys() throws Exception {
+        ItemStack first = new ItemStack(Items.BUNDLE);
+        first.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(PotionContents.createItemStack(Items.POTION, Potions.HEALING))));
+        ItemStack second = new ItemStack(Items.BUNDLE);
+        second.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(List.of(PotionContents.createItemStack(Items.POTION, Potions.STRONG_HEALING))));
+        assertEquals(first.getComponentsPatch().toString(), second.getComponentsPatch().toString());
+        String firstKey = ItemUtils.getItemStackCacheKey(first);
+        String secondKey = ItemUtils.getItemStackCacheKey(second);
+        assertNotEquals(firstKey, secondKey);
+        assertEquals(firstKey, ItemUtils.getItemStackCacheKey(first.copyWithCount(4)));
+        contents.set(tab, List.of(first, second));
+        var session = selector(ItemStack.EMPTY);
+        session.bind(new NativeUiView(new Object()));
+        session.select(secondKey);
+        assertTrue(ItemStack.isSameItemSameComponents(second, session.item()));
+        session.select(firstKey);
+        assertTrue(ItemStack.isSameItemSameComponents(first, session.item()));
+        ItemUtils.clearCache();
+        assertNotEquals(firstKey, ItemUtils.getItemStackCacheKey(first));
+    }
+
+    private record OpaqueValue(int value) {
+        @Override
+        public String toString() {
+            return "opaque";
+        }
+    }
+
+    @Test
+    public void cacheKeysUseComponentValuesRatherThanTheirDisplayStrings() {
+        var type = net.minecraft.core.component.DataComponentType.<OpaqueValue>builder()
+                .persistent(com.mojang.serialization.Codec.INT.xmap(OpaqueValue::new, OpaqueValue::value)).build();
+        ItemStack first = new ItemStack(Items.DIAMOND);
+        ItemStack second = first.copy();
+        first.set(type, new OpaqueValue(1));
+        second.set(type, new OpaqueValue(2));
+        assertEquals(first.getComponentsPatch().toString(), second.getComponentsPatch().toString());
+        assertNotEquals(ItemUtils.getItemStackCacheKey(first), ItemUtils.getItemStackCacheKey(second));
+        assertEquals(ItemUtils.getItemStackCacheKey(first), ItemUtils.getItemStackCacheKey(first.copy()));
     }
 
     @Test

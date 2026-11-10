@@ -122,6 +122,12 @@ public class UiSelectorParityTest {
         assertTrue(count.submit());
         assertEquals(23, ((ItemStack) call(s, "item")).getCount());
         FormUiSession nbt = editor(s, "nbt");
+        assertTrue(nbt.args().getWidgets().get(0).wideInput());
+        var nbtView = new NativeUiView(new Object());
+        nbt.bind(nbtView);
+        var nbtRows = (UiRowPresentation) nbtView.rowProviders.get("fields");
+        assertEquals(48, nbtRows.rowHeight());
+        assertEquals("player-config-field wide-input-field", nbtRows.rowClass(0));
         draft(nbt, "{broken");
         assertFalse(nbt.submit());
         draft(nbt, "{Damage:4}");

@@ -9,12 +9,9 @@ import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class UiSelectKeyboardTest {
     @BeforeClass
@@ -139,16 +136,8 @@ public class UiSelectKeyboardTest {
 
     @Test
     public void actualAdapterAllowsTheActiveOptionAttributeWithoutOpeningTheAttributeBoundary() throws Exception {
-        var node = new org.objectweb.asm.tree.ClassNode();
-        try (var stream = getClass().getResourceAsStream("/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess$AuiNode.class")) {
-            new org.objectweb.asm.ClassReader(stream).accept(node, 0);
-        }
-        var method = node.methods.stream().filter(value -> value.name.equals("attribute")).findFirst().orElseThrow();
-        Set<String> literals = new HashSet<>();
-        for (var instruction : method.instructions)
-            if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode constant && constant.cst instanceof String)
-                literals.add((String) constant.cst);
-        assertTrue("The actual adapter must accept the active option attribute", literals.contains("aria-current"));
-        assertTrue("Unknown attributes must still be rejected", literals.contains("Unsupported UI attribute"));
+        UiDomControlsTest.assertActualAttributeGuard();
+        assertTrue("The actual adapter must accept the active option attribute", UiDomAccess.supportsAttribute("aria-current"));
+        assertFalse("Unknown attributes must still be rejected", UiDomAccess.supportsAttribute("tabindex"));
     }
 }

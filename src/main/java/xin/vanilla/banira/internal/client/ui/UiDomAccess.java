@@ -8,6 +8,11 @@ import xin.vanilla.banira.common.data.Component;
 import java.util.function.Consumer;
 
 public interface UiDomAccess {
+    static boolean supportsAttribute(String name) {
+        return java.util.Arrays.asList("class", "style", "type", "maxlength", "readonly", "disabled", "placeholder",
+                "aria-invalid", "aria-label", "aria-selected", "aria-current").contains(name);
+    }
+
     default void theme(BaniraColorConfig theme) {
     }
 

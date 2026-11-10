@@ -97,10 +97,8 @@ public class UiDomCloseTest extends UiDomControlsTest {
 
     @Test
     public void createdGlyphUsesOnlyAttributesAcceptedByTheRealAdapter() throws Exception {
-        String adapter = Files.readString(Path.of("src/main/java/xin/vanilla/banira/internal/compat/aui/AuiDocumentAccess.java"));
-        var whitelist = java.util.regex.Pattern.compile("Arrays.asList\\(([^)]*)\\)\\.contains\\(name\\)").matcher(adapter);
-        assertTrue("Actual adapter whitelist missing", whitelist.find());
-        assertFalse("The adapter contract forbids dynamic IDs", whitelist.group(1).contains("\"id\""));
+        UiDomControlsTest.assertActualAttributeGuard();
+        assertFalse("The adapter contract forbids dynamic IDs", UiDomAccess.supportsAttribute("id"));
         Dom dom = new Dom();
         dom.rejectUnsupportedId = true;
         Dom.Node close = dom.new Node("button");

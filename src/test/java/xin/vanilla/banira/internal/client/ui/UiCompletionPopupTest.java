@@ -65,11 +65,17 @@ public class UiCompletionPopupTest {
         clock.set(120);
         popup.update();
         var button = dom.created.stream().filter(n -> n.text.equals("Damage:")).findFirst().orElseThrow();
+        // AUI changes focus before dispatching mousedown to the candidate.
+        input.focused = false;
+        input.emit("blur");
         button.emit("mousedown", 0);
         assertEquals("{Damage:,display:{}}", input.value);
         assertEquals(input.value, draft.get());
         assertEquals(8, input.end);
+        assertTrue(input.focused);
         assertTrue(button.removed);
+        button.emit("mousedown", 0);
+        assertEquals("{Damage:,display:{}}", draft.get());
         popup.close();
     }
 
@@ -114,6 +120,15 @@ public class UiCompletionPopupTest {
         popup.update();
         clock.set(120);
         popup.update();
+        var first = dom.created.stream().filter(n -> n.text.equals("Damage:")).findFirst().orElseThrow();
+        var second = dom.created.stream().filter(n -> n.text.equals("display:")).findFirst().orElseThrow();
+        assertEquals("true", first.attributes.get("aria-selected"));
+        assertEquals("false", second.attributes.get("aria-selected"));
+        key(input, 264);
+        assertEquals("false", first.attributes.get("aria-selected"));
+        assertEquals("true", second.attributes.get("aria-selected"));
+        key(input, 265);
+        assertEquals("true", first.attributes.get("aria-selected"));
         key(input, 264);
         key(input, 258);
         assertEquals("{display:}", input.value);
@@ -143,6 +158,63 @@ public class UiCompletionPopupTest {
         for (int index = 0; index < 20; index++) popup.update();
         assertEquals(writes, dom.created.stream().mapToInt(node -> node.writes).sum());
         popup.close();
+    }
+
+    @Test
+    public void outsideBlurDisposesVisibleRowsOnTheNextLayout() throws Exception {
+        var dom = new UiDomControlsTest.Dom();
+        var input = dom.ids.get("text");
+        input.value = "{D}";
+        input.start = input.end = 2;
+        input.focused = true;
+        AtomicLong clock = new AtomicLong();
+        var state = new TextCompletionState((text, cursor) -> CompletableFuture.completedFuture(
+                Collections.singletonList(new UiTextCompletion(1, 2, "Damage:", "int"))), clock::get);
+        try (var popup = new UiCompletionPopup((UiDomAccess) dom.access, (UiDomAccess.Node) input.proxy, state, 1000,
+                text -> fail("Outside click must not complete"))) {
+            popup.update();
+            clock.set(120);
+            popup.update();
+            var button = dom.created.stream().filter(n -> n.text.equals("Damage:")).findFirst().orElseThrow();
+            input.focused = false;
+            input.emit("blur");
+            popup.update();
+            assertTrue(button.removed);
+            button.emit("mousedown", 0);
+            assertEquals("{D}", input.value);
+            assertFalse(input.focused);
+            assertTrue(state.options().isEmpty());
+        }
+    }
+
+    @Test
+    public void staleDraftAndNonPrimaryMouseCannotApplyACandidate() throws Exception {
+        var dom = new UiDomControlsTest.Dom();
+        var input = dom.ids.get("text");
+        input.value = "{D}";
+        input.start = input.end = 2;
+        input.focused = true;
+        AtomicLong clock = new AtomicLong();
+        var state = new TextCompletionState((text, cursor) -> CompletableFuture.completedFuture(
+                Collections.singletonList(new UiTextCompletion(1, 2, "Damage:", "int"))), clock::get);
+        try (var popup = new UiCompletionPopup((UiDomAccess) dom.access, (UiDomAccess.Node) input.proxy, state, 1000,
+                text -> fail("Stale or secondary click must not complete"))) {
+            popup.update();
+            clock.set(120);
+            popup.update();
+            var button = dom.created.stream().filter(n -> n.text.equals("Damage:")).findFirst().orElseThrow();
+            button.emit("mousedown", 1);
+            assertFalse(button.removed);
+            assertEquals("{D}", input.value);
+            input.value = "{Da}";
+            input.start = input.end = 3;
+            input.focused = false;
+            input.emit("blur");
+            button.emit("mousedown", 0);
+            assertEquals("{Da}", input.value);
+            assertFalse(input.focused);
+            assertTrue(button.removed);
+        }
     }
 
     @Test

@@ -183,6 +183,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
         private String defaultValue = "";
         private boolean allowEmpty;
         private boolean disabled;
+        private boolean wideInput;
         private WidgetType type = WidgetType.TEXT;
         private String fileFilter = "";
         private List<String> dropdownOptions = new ArrayList<>();

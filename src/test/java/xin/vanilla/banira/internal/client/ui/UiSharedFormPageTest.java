@@ -91,6 +91,30 @@ public class UiSharedFormPageTest {
     }
 
     @Test
+    public void wideFieldsDoNotDependOnAnOptionalCompletionProvider() throws Exception {
+        var args = new InputFormScreen.Args().setTitle(Text.literal("NBT")).setParentScreen(new Screen(net.minecraft.network.chat.Component.empty()) {
+                }).setCallback(result -> fail("Layout must not submit"))
+                .addWidget(new InputFormScreen.Widget().title(Text.literal("NBT")).wideInput(true));
+        assertNull(args.getWidgets().get(0).completion());
+        var form = new FormUiSession(args);
+        var view = new NativeUiView(new Object());
+        form.bind(view);
+        var rows = (UiRowPresentation) view.rowProviders.get("fields");
+        assertEquals(48, rows.rowHeight());
+        assertEquals("player-config-field wide-input-field", rows.rowClass(0));
+        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/player-config-editor.css")) {
+            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(css.contains(".wide-input-field>.editor{left:0;top:22px;width:auto}"));
+        }
+        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/shared.css")) {
+            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(css.contains(".popup-option[aria-selected=\"true\"]"));
+            assertTrue(css.contains("background:var(--selected"));
+            assertTrue(css.contains("border-color:var(--accent"));
+        }
+    }
+
+    @Test
     public void headerCloseAndRetiredActionsNeverSubmit() {
         AtomicInteger callbacks = new AtomicInteger(), closes = new AtomicInteger();
         var form = new FormUiSession(args(r -> callbacks.incrementAndGet()));

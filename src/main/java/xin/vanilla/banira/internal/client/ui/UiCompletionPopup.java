@@ -50,11 +50,12 @@ final class UiCompletionPopup implements AutoCloseable {
                 dismiss();
             }
         }));
-        resources.own(input.on("blur", ignored -> dismiss()));
     }
 
     void update() {
         if (resources.closed()) return;
+        // AUI blurs before candidate mousedown; defer outside-blur cleanup until
+        // layout, after the mouse dispatch has had a chance to apply completion.
         state.update(input.value(), input.selectionEnd(), input.selectionStart(), dom.current() && input.focused());
         render();
     }
@@ -67,10 +68,12 @@ final class UiCompletionPopup implements AutoCloseable {
     }
 
     private void choose(int index) {
+        if (resources.closed() || !dom.current()) return;
         UiTextCompletion selected = state.choose(index, input.value(), input.selectionEnd());
         if (selected != null) {
             String text = selected.apply(input.value());
             if (text.length() <= maxLength) {
+                input.focus();
                 input.value(text);
                 input.selection(selected.cursor(), selected.cursor());
                 changed.accept(text);
@@ -112,8 +115,10 @@ final class UiCompletionPopup implements AutoCloseable {
         }
         if (active != state.selected()) {
             active = state.selected();
-            for (int index = 0; index < buttons.size(); index++)
+            for (int index = 0; index < buttons.size(); index++) {
                 buttons.get(index).attribute("aria-current", Boolean.toString(index == active));
+                buttons.get(index).attribute("aria-selected", Boolean.toString(index == active));
+            }
             double top = active * 22d, offset = panel.scrollTop(), height = panel.clientHeight() - 8;
             if (top < offset) panel.scrollTop(top);
             else if (height > 0 && top + 22 > offset + height) panel.scrollTop(top + 22 - height);

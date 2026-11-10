@@ -6,6 +6,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -32,6 +33,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -48,6 +50,8 @@ public final class ItemUtils {
      */
     private static volatile List<ItemStack> allItemsCache = Collections.emptyList();
     private static List<Collection<ItemStack>> allItemsSources = Collections.emptyList();
+    private static final Map<DataComponentPatch, Long> componentCacheKeys = new ConcurrentHashMap<>();
+    private static final AtomicLong nextComponentCacheKey = new AtomicLong();
 
     /**
      * 物品堆信息缓存
@@ -372,8 +376,10 @@ public final class ItemUtils {
         try {
             ResourceLocation itemId = getItemRegistry(itemStack);
             if (itemId == null) return "";
-            if (itemStack.getComponentsPatch().isEmpty()) return itemId.toString();
-            return itemId + itemStack.getComponentsPatch().toString();
+            DataComponentPatch patch = itemStack.getComponentsPatch();
+            if (patch.isEmpty()) return itemId.toString();
+            // Component display strings can omit nested stack data; use full value equality.
+            return itemId + "#components:" + componentCacheKeys.computeIfAbsent(patch, ignored -> nextComponentCacheKey.incrementAndGet());
         } catch (Exception e) {
             LOGGER.debug("Failed to generate cache key for item stack", e);
             return "";
@@ -513,6 +519,7 @@ public final class ItemUtils {
     public static synchronized void clearCache() {
         allItemsCache = Collections.emptyList();
         allItemsSources = Collections.emptyList();
+        componentCacheKeys.clear();
         itemStackInfoCache.clear();
         tooltipCache.clear();
         modNameCache.clear();

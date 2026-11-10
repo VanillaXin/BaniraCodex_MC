@@ -242,6 +242,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
 
     public void render(GuiGraphics graphics) {
         if (!current() || ColorPicker.isOpen()) return;
+        ScreenCoordinate tooltip = tooltips.visibleBounds(document);
         if (preview && popupLayers == 0 && theme != null) {
             Minecraft mc = Minecraft.getInstance();
             NotificationUnreadHud.draw(graphics, NotificationHudState.position(hudX, mc.getWindow().getGuiScaledWidth(), NotificationUnreadHud.WIDTH),
@@ -261,11 +262,15 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             if (popupLayers > 0 && !node.inPopup) continue;
             ScreenCoordinate bounds = node.bounds();
             ScreenCoordinate leading = new ScreenCoordinate(bounds.x() + 2, bounds.y(), Math.min(22, bounds.width() - 2), bounds.height());
-            AuiGameElements.renderOption(graphics, node.icon, leading, node.clip == null ? null : node.clip.bounds());
+            ScreenCoordinate clip = node.clip == null ? body.bounds() : node.clip.bounds();
+            for (ScreenCoordinate region : AuiGameElements.uncovered(leading, clip, tooltip))
+                AuiGameElements.renderOption(graphics, node.icon, leading, region);
         }
         if (popupLayers == 0) for (AuiNode node : gameElements) {
             if (!paintable(node)) continue;
-            AuiGameElements.renderElement(graphics, node.gameElement, node.bounds(), node.clip == null ? contentBounds() : node.clip.bounds(), theme);
+            ScreenCoordinate bounds = node.bounds(), clip = node.clip == null ? contentBounds() : node.clip.bounds();
+            for (ScreenCoordinate region : AuiGameElements.uncovered(bounds, clip, tooltip))
+                AuiGameElements.renderElement(graphics, node.gameElement, bounds, region, theme);
         }
     }
 
@@ -431,6 +436,11 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
 
         @Override
+        public void clipChildren() {
+            clips = true;
+        }
+
+        @Override
         public void text(String text) {
             element.setInnerText(text);
         }
@@ -565,6 +575,17 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
         }
 
         @Override
+        public double scrollHeight() {
+            return element.scrollHeight;
+        }
+
+        @Override
+        public void scrollBy(double pixels) {
+            double maximum = Math.max(0, element.scrollHeight - element.getClientHeight());
+            element.setScrollTop(Math.max(0, Math.min(maximum, element.getTargetScrollTop() + pixels)));
+        }
+
+        @Override
         public boolean focused() {
             return document.getFocusedElement() == element;
         }
@@ -648,6 +669,7 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
             clip = ancestor != null ? ancestor : value.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC ? wrap(content) : body;
             if (created && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.DIAGNOSTIC
                     && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE
+                    && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.ARTWORK
                     && value.kind() != xin.vanilla.banira.api.client.ui.UiGameElement.Kind.PRESET)
                 attribute("style", "width:24px;height:24px;flex-shrink:0");
         }
@@ -681,6 +703,12 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
                     @Override
                     public double y() {
                         return InputStateManager.getGuiCursorPos().val();
+                    }
+
+                    @Override
+                    public double scrollDelta() {
+                        return event instanceof com.sighs.apricityui.event.MouseEvent
+                                ? ((com.sighs.apricityui.event.MouseEvent) event).scrollDelta : 0;
                     }
 
                     @Override

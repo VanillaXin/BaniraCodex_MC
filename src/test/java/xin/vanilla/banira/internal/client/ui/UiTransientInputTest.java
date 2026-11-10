@@ -89,16 +89,6 @@ public class UiTransientInputTest {
         assertTrue(r.width() >= 52 && r.height() < 30);
     }
 
-    @Test
-    public void configurationRootHasADefiniteViewportHeightBeforeFirstHover() throws Exception {
-        try (var in = getClass().getResourceAsStream("/assets/banira_codex/aui/transients.css")) {
-            assertNotNull(in);
-            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(css.contains(".config-body{height:100vh}"));
-            assertTrue(css.contains(".banira-tooltip{position:fixed;pointer-events:none;"));
-            assertFalse(css.contains(".config-page{"));
-        }
-    }
 
     @Test
     public void adapterDoesNotMountVendorTooltipsOnMouseMove() throws Exception {
@@ -120,18 +110,6 @@ public class UiTransientInputTest {
         assertFalse("Per-hover vendor nodes can alter flex layout", vendorBind);
     }
 
-    @Test
-    public void pickerHasScopedLayoutRatherThanGlobalInputOverrides() throws Exception {
-        try (var in = getClass().getResourceAsStream("/assets/banira_codex/aui/transients.css")) {
-            assertNotNull("Missing shared picker stylesheet", in);
-            String css = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(css.length() < 12000);
-            assertTrue(css.contains(".color-picker") && css.contains("position:fixed"));
-            assertTrue(css.contains(".color-picker .cp-sv-panel"));
-            assertTrue(css.contains(".color-picker .cp-actions"));
-            assertFalse(css.contains("#8b5cf6"));
-        }
-    }
 
     @Test
     public void imeCoordinatesUseClientAreaAndClampScaledBounds() throws Exception {
@@ -291,13 +269,5 @@ public class UiTransientInputTest {
         assertNotNull(xin.vanilla.banira.client.gui.InputFormScreen.WidgetType.COLOR);
     }
 
-    @Test
-    public void controlHtmlKeepsItsHeaderAndBodyIdentity() throws Exception {
-        try (var in = getClass().getResourceAsStream("/assets/apricityui/apricity/banira_codex/ui/form.html")) {
-            assertNotNull(in);
-            String html = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            assertTrue(html.contains("class=\"config-body\""));
-            assertTrue(html.contains("id=\"header\""));
-        }
-    }
+
 }

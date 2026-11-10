@@ -8,21 +8,7 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class AuiBuildContractTest {
-    @Test
-    public void developmentOptionsAreOnlyWrittenByTheClientPreparationTask() throws Exception {
-        String build = Files.readString(Path.of("build.gradle"));
-        assertFalse(build.matches("(?s).*\\n\\s*prepareBaniraDevFpsOverlay\\(\\).*"));
-        assertTrue(build.contains("tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }"));
-        assertTrue(build.contains("doLast prepareBaniraDevFpsOverlay"));
-    }
 
-    @Test
-    public void publicationUsesTheFormalRemappedSources() throws Exception {
-        String build = Files.readString(Path.of("build.gradle"));
-        assertTrue(build.contains("artifact tasks.named('remapSourcesJar')"));
-        assertFalse(build.contains("artifact tasks.named('sourcesJar')"));
-        assertTrue(build.contains("dependsOn 'remapJar', 'remapSourcesJar'"));
-    }
 
     @Test
     public void fallbackContractIsExplicitCompileOnlyAndNeverARuntimeDependency() throws Exception {

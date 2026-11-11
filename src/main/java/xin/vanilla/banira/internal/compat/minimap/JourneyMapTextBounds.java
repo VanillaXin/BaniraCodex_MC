@@ -12,7 +12,8 @@ public final class JourneyMapTextBounds {
 
     public static double scale(String text, double requested) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || text == null || text.isEmpty() || UIManager.INSTANCE.getMiniMap() == null) return requested;
+        if (mc.level == null || text == null || text.isEmpty() || UIManager.INSTANCE.getMiniMap() == null)
+            return requested;
         boolean minimap = false;
         for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
             if (frame.getClassName().startsWith("journeymap.client.ui.minimap.")) {

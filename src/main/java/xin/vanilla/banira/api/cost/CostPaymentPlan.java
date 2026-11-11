@@ -1,6 +1,9 @@
 package xin.vanilla.banira.api.cost;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public final class CostPaymentPlan {
     private final int units;
@@ -44,25 +47,51 @@ public final class CostPaymentPlan {
     }
 
     public static CostPaymentPlan failed(CostFailure failure) {
-        if (!Objects.requireNonNull(failure, "failure").isFailure()) throw new IllegalArgumentException("Failure required");
+        if (!Objects.requireNonNull(failure, "failure").isFailure())
+            throw new IllegalArgumentException("Failure required");
         return new CostPaymentPlan(0, Collections.emptyList(), Collections.emptyList(), failure, false);
     }
 
-    public int units() { return units; }
-    public List<ResourceCost> requirements() { return requirements; }
-    public List<ResourceSnapshot> snapshots() { return snapshots; }
-    public CostFailure failure() { return failure; }
-    public boolean isSuccess() { return !failure.isFailure(); }
-    public boolean isCommitted() { return committed; }
-    public CostFailure recoveryFailure() { return recoveryFailure; }
-    public boolean hasConfirmedSnapshots() { return confirmedSnapshots; }
+    public int units() {
+        return units;
+    }
+
+    public List<ResourceCost> requirements() {
+        return requirements;
+    }
+
+    public List<ResourceSnapshot> snapshots() {
+        return snapshots;
+    }
+
+    public CostFailure failure() {
+        return failure;
+    }
+
+    public boolean isSuccess() {
+        return !failure.isFailure();
+    }
+
+    public boolean isCommitted() {
+        return committed;
+    }
+
+    public CostFailure recoveryFailure() {
+        return recoveryFailure;
+    }
+
+    public boolean hasConfirmedSnapshots() {
+        return confirmedSnapshots;
+    }
 
     public CostPaymentPlan withSnapshots(List<ResourceSnapshot> actual) {
-        if (!isSuccess() || actual.size() != snapshots.size()) throw new IllegalArgumentException("Receipt shape changed");
+        if (!isSuccess() || actual.size() != snapshots.size())
+            throw new IllegalArgumentException("Receipt shape changed");
         for (int i = 0; i < actual.size(); i++) {
             ResourceSnapshot before = snapshots.get(i), after = Objects.requireNonNull(actual.get(i), "snapshot");
             if (!before.resourceId().equals(after.resourceId()) || !before.before().equals(after.before())
-                    || before.reversible() != after.reversible()) throw new IllegalArgumentException("Receipt identity changed");
+                    || before.reversible() != after.reversible())
+                throw new IllegalArgumentException("Receipt identity changed");
         }
         return new CostPaymentPlan(units, requirements, actual, failure, committed, recoveryFailure, committed);
     }
@@ -71,6 +100,7 @@ public final class CostPaymentPlan {
         if (!committed) throw new IllegalStateException("Payment is not committed");
         return new CostPaymentPlan(units, requirements, snapshots, failure, true, CostFailure.UNCERTAIN, false);
     }
+
     public CostPaymentPlan paid() {
         if (!isSuccess() || committed) throw new IllegalStateException("Payment is not pending");
         return new CostPaymentPlan(units, requirements, snapshots, failure, true);
@@ -86,9 +116,21 @@ public final class CostPaymentPlan {
             this.after = Objects.requireNonNull(after, "after");
             this.reversible = reversible;
         }
-        public String resourceId() { return resourceId; }
-        public String before() { return before; }
-        public String after() { return after; }
-        public boolean reversible() { return reversible; }
+
+        public String resourceId() {
+            return resourceId;
+        }
+
+        public String before() {
+            return before;
+        }
+
+        public String after() {
+            return after;
+        }
+
+        public boolean reversible() {
+            return reversible;
+        }
     }
 }

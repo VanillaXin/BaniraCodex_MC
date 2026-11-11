@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.minimap;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.ChatFormatting;
 import org.junit.Test;
 
 import java.lang.reflect.Method;

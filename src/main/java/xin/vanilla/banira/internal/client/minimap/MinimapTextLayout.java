@@ -3,8 +3,8 @@ package xin.vanilla.banira.internal.client.minimap;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.ArrayList;
 import java.util.List;

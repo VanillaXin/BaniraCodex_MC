@@ -6,9 +6,9 @@ import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
 import xin.vanilla.banira.client.util.DialogUtils;
+import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.internal.client.ui.UiOwnedResources;
 import xin.vanilla.banira.internal.client.ui.UiRowPresentation;
 

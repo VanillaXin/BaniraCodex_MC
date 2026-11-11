@@ -1,5 +1,6 @@
 package xin.vanilla.banira.internal.compat.aui;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.sighs.apricityui.element.AbstractText;
 import com.sighs.apricityui.event.KeyEvent;
 import com.sighs.apricityui.init.Document;
@@ -8,16 +9,15 @@ import com.sighs.apricityui.layout.Position;
 import com.sighs.apricityui.ui.ColorPicker;
 import com.sighs.apricityui.ui.Tooltip;
 import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.notification.NotificationHudState;
 import xin.vanilla.banira.client.notification.NotificationStyleInteractionHelper;
 import xin.vanilla.banira.client.notification.NotificationUnreadHud;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.ColorUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.internal.client.ui.UiColorBridge;
 import xin.vanilla.banira.internal.client.ui.UiDomAccess;
 

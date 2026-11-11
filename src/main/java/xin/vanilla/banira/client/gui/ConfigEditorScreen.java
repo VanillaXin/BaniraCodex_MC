@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;

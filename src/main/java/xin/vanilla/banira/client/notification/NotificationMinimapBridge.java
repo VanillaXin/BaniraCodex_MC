@@ -4,15 +4,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
-import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
+import xin.vanilla.banira.internal.config.ClientConfig;
 
 import java.util.Collections;
 import java.util.List;

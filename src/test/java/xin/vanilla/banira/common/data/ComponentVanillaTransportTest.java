@@ -1,7 +1,8 @@
 package xin.vanilla.banira.common.data;
 
-import com.google.gson.*;
-import net.minecraft.network.chat.TextComponent;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.network.chat.TranslatableComponent;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
@@ -262,7 +263,8 @@ public class ComponentVanillaTransportTest {
                 if (object.has(field)) result.addAll(keys(object.get(field)));
             if (object.has("hoverEvent")) {
                 JsonObject hover = object.getAsJsonObject("hoverEvent");
-                if (hover.has("contents") && "show_text".equals(hover.get("action").getAsString())) result.addAll(keys(hover.get("contents")));
+                if (hover.has("contents") && "show_text".equals(hover.get("action").getAsString()))
+                    result.addAll(keys(hover.get("contents")));
             }
         }
         return result;

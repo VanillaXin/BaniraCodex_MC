@@ -25,16 +25,20 @@ public class UiFirstPaintPreparationTest {
     public void firstPaintSettlesRealizedRowsBeforeDrawingTheDocument() throws Exception {
         var host = code("");
         List<String> order = new ArrayList<>();
-        for (var method : host.methods) if (method.name.equals("render"))
-            for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call
-                    && (call.name.equals("prepareFrame") || call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")))
-                order.add(call.name);
+        for (var method : host.methods)
+            if (method.name.equals("render"))
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call
+                            && (call.name.equals("prepareFrame") || call.owner.equals("com/sighs/apricityui/screen/ApricityScreen")))
+                        order.add(call.name);
         assertEquals(List.of("prepareFrame", "render"), order);
         var prepare = code("$DocumentView").methods.stream().filter(method -> method.name.equals("prepareFrame")).findFirst();
         assertTrue("First-frame layout preparation is missing", prepare.isPresent());
         List<String> passes = new ArrayList<>();
-        for (var instruction : prepare.get().instructions) if (instruction instanceof MethodInsnNode call
-                    && List.of("prepare", "layoutReady", "afterLayout", "commitLayout").contains(call.name)) passes.add(call.name);
+        for (var instruction : prepare.get().instructions)
+            if (instruction instanceof MethodInsnNode call
+                    && List.of("prepare", "layoutReady", "afterLayout", "commitLayout").contains(call.name))
+                passes.add(call.name);
         assertEquals(List.of("prepare", "layoutReady", "afterLayout", "prepare", "commitLayout"), passes);
         assertEquals("Preparation must be able to defer an unfinished initial layout", "()Z", prepare.get().desc);
     }
@@ -42,9 +46,12 @@ public class UiFirstPaintPreparationTest {
     @Test
     public void aFrameStillPaintsTheVendorDocumentOnlyOnce() throws Exception {
         int paints = 0;
-        for (var method : code("").methods) if (method.name.equals("render"))
-            for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call
-                    && call.owner.equals("com/sighs/apricityui/screen/ApricityScreen") && call.name.equals("render")) paints++;
+        for (var method : code("").methods)
+            if (method.name.equals("render"))
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call
+                            && call.owner.equals("com/sighs/apricityui/screen/ApricityScreen") && call.name.equals("render"))
+                        paints++;
         assertEquals(1, paints);
     }
 }

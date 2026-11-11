@@ -84,12 +84,14 @@ public class LegacyJourneyMapIntegrationTest {
     public void nativeScreenPolicyPreventsHiddenSlotSuppliersClaimingTheHost() throws Exception {
         ClassNode node = read("/xin/vanilla/banira/internal/compat/minimap/LegacyJourneyMapNotifications.class");
         boolean guarded = false;
-        for (MethodNode method : node.methods) if (method.name.equals("canUseMap"))
-            for (AbstractInsnNode instruction : method.instructions) if (instruction instanceof MethodInsnNode) {
-                MethodInsnNode call = (MethodInsnNode) instruction;
-                guarded |= call.owner.equals("xin/vanilla/banira/internal/client/minimap/MinimapLineLayout")
-                        && call.name.equals("allowsLegacyJourneyScreen");
-            }
+        for (MethodNode method : node.methods)
+            if (method.name.equals("canUseMap"))
+                for (AbstractInsnNode instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode) {
+                        MethodInsnNode call = (MethodInsnNode) instruction;
+                        guarded |= call.owner.equals("xin/vanilla/banira/internal/client/minimap/MinimapLineLayout")
+                                && call.name.equals("allowsLegacyJourneyScreen");
+                    }
         assertTrue("Slot reads must follow native JourneyMap5 rendering visibility", guarded);
     }
 

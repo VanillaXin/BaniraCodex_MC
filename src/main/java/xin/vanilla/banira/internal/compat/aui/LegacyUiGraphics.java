@@ -4,7 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
-/** Buffer and clipping operations for the PoseStack GUI renderer. */
+/**
+ * Buffer and clipping operations for the PoseStack GUI renderer.
+ */
 public final class LegacyUiGraphics {
     private LegacyUiGraphics() {
     }

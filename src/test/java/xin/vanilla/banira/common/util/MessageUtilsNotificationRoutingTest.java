@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.protocol.Packet;

@@ -5,7 +5,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class NativeTextHitTest {
     private static final Style FIRST = Style.EMPTY.withColor(0x123456);

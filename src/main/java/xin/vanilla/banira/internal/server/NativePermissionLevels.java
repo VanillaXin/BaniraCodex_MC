@@ -1,10 +1,6 @@
 package xin.vanilla.banira.internal.server;
 
-import net.minecraft.server.permissions.LevelBasedPermissionSet;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
-import net.minecraft.server.permissions.PermissionSet;
-import net.minecraft.server.permissions.Permissions;
+import net.minecraft.server.permissions.*;
 
 public final class NativePermissionLevels {
     private NativePermissionLevels() {

@@ -1,9 +1,5 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
-
-import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -17,14 +13,15 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.TextureUtils;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.IIdentifier;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -220,8 +217,6 @@ public class QuickIcon {
                     item(new ItemStack(Items.PAPER)).render(graphics, mc, x, y, size);
                     return;
                 }
-
-
 
 
                 ImageWidget.blit(stack, resourceTexture, x, y, size, size);

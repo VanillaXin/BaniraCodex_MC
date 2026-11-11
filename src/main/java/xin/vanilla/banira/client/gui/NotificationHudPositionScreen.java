@@ -1,10 +1,8 @@
 package xin.vanilla.banira.client.gui;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
-import org.joml.Matrix3x2fStack;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
@@ -16,6 +14,7 @@ import xin.vanilla.banira.client.notification.NotificationUnreadHud;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.internal.client.ui.CommonUiPages;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 

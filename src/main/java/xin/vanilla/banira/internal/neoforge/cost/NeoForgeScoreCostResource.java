@@ -1,9 +1,15 @@
 package xin.vanilla.banira.internal.neoforge.cost;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.scores.*;
-import xin.vanilla.banira.api.cost.*;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ReadOnlyScoreInfo;
+import net.minecraft.world.scores.Scoreboard;
+import xin.vanilla.banira.api.cost.CostFailure;
+import xin.vanilla.banira.api.cost.CostResourceAccess;
+import xin.vanilla.banira.api.cost.ResourceCost;
 
 import java.util.*;
 

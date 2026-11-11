@@ -16,11 +16,7 @@ import net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEven
 import org.joml.Matrix4f;
 import xin.vanilla.banira.internal.mixin.accessors.GuiGraphicsExtractorAccessor;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 
 /**
  * Manual documents remain owner-controlled, but rasterization runs in the native PIP pass.

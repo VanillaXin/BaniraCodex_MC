@@ -61,9 +61,16 @@ public class UiRendererPortTest {
         Object nativePage = new Object();
         AtomicInteger factories = new AtomicInteger(), binds = new AtomicInteger(), closes = new AtomicInteger();
         UiPageSpec page = new UiPageSpec("banira_codex:renderer-test", "banira_codex/ui/form.html", new UiPageSession() {
-            public void bind(UiView view) { binds.incrementAndGet(); }
-            public void detach(UiDetachReason reason) { }
-            public void close(UiCloseReason reason) { closes.incrementAndGet(); }
+            public void bind(UiView view) {
+                binds.incrementAndGet();
+            }
+
+            public void detach(UiDetachReason reason) {
+            }
+
+            public void close(UiCloseReason reason) {
+                closes.incrementAndGet();
+            }
         }, previous -> {
             factories.incrementAndGet();
             return nativePage;
@@ -88,11 +95,12 @@ public class UiRendererPortTest {
                 new ClassReader(input).accept(node, 0);
             }
             int factories = 0;
-            for (var method : node.methods) for (var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/Identifier")) {
-                    assertNotEquals("Private constructors are not a supported 1.21 API", "<init>", call.name);
-                    if (call.name.equals("fromNamespaceAndPath")) factories++;
-                }
+            for (var method : node.methods)
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/Identifier")) {
+                        assertNotEquals("Private constructors are not a supported 1.21 API", "<init>", call.name);
+                        if (call.name.equals("fromNamespaceAndPath")) factories++;
+                    }
             assertEquals(type, 1, factories);
         }
     }

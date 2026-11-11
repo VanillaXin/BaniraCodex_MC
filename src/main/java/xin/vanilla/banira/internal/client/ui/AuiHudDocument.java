@@ -2,10 +2,10 @@ package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.loader.ClientLoader;
-import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
+import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
 import xin.vanilla.banira.internal.compat.aui.AuiSharedHudDocuments;
 
 public final class AuiHudDocument extends UiDomView implements SharedHudHosts.Renderer, AuiHudHost.ManualRenderer {

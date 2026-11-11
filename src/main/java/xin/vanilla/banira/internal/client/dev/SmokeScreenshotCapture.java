@@ -10,7 +10,9 @@ import java.util.ArrayList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
-/** Screenshots requested during extraction must wait for the completed GUI frame. */
+/**
+ * Screenshots requested during extraction must wait for the completed GUI frame.
+ */
 public final class SmokeScreenshotCapture {
     private static final Queue<Request> REQUESTS = new ArrayDeque<>();
     private static final ArrayList<CompletableFuture<Void>> PENDING = new ArrayList<>();
@@ -27,7 +29,7 @@ public final class SmokeScreenshotCapture {
 
     public static boolean ready() {
         boolean ready = true;
-        for (var iterator = PENDING.iterator(); iterator.hasNext();) {
+        for (var iterator = PENDING.iterator(); iterator.hasNext(); ) {
             var future = iterator.next();
             if (!future.isDone()) ready = false;
             else {

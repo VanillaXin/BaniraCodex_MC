@@ -12,12 +12,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class JourneyMapSupplierIsolationTest {
     private MinimapLine line(String name, java.util.function.Supplier<EnumNotificationHudHost> host) {
         return new MinimapLine(Identifier.fromNamespaceAndPath("isolation", name), Component.literal(name), () -> Component.literal(name), host, 200);
     }
+
     private List<String> slots(MinimapLine broken, MinimapLine healthy) throws Exception {
         Class<?> plugin = Class.forName("xin.vanilla.banira.internal.neoforge.compat.minimap.JourneyMapNotificationPlugin");
         Method method = plugin.getDeclaredMethod("appendDisplaySlots", List.class, Consumer.class);
@@ -26,17 +27,27 @@ public class JourneyMapSupplierIsolationTest {
         method.invoke(null, Arrays.asList(broken, healthy), (Consumer<String>) result::add);
         return result;
     }
-    @Test public void throwingHostDoesNotSuppressFollowingCountdownSlot() throws Exception {
-        MinimapLine bad = line("broken", () -> {throw new IllegalStateException("supplier failure");});
+
+    @Test
+    public void throwingHostDoesNotSuppressFollowingCountdownSlot() throws Exception {
+        MinimapLine bad = line("broken", () -> {
+            throw new IllegalStateException("supplier failure");
+        });
         MinimapLine healthy = line("countdown", () -> EnumNotificationHudHost.AUTO);
         assertEquals(Arrays.asList("countdown"), slots(bad, healthy));
     }
-    @Test public void linkageFailureDoesNotSuppressFollowingCountdownSlot() throws Exception {
-        MinimapLine bad = line("broken", () -> {throw new NoClassDefFoundError("optional module");});
+
+    @Test
+    public void linkageFailureDoesNotSuppressFollowingCountdownSlot() throws Exception {
+        MinimapLine bad = line("broken", () -> {
+            throw new NoClassDefFoundError("optional module");
+        });
         MinimapLine healthy = line("countdown", () -> EnumNotificationHudHost.JOURNEYMAP);
         assertEquals(Arrays.asList("countdown"), slots(bad, healthy));
     }
-    @Test public void inactivePreferenceStillDoesNotAllocateNativeSlot() throws Exception {
+
+    @Test
+    public void inactivePreferenceStillDoesNotAllocateNativeSlot() throws Exception {
         assertEquals(Arrays.asList("countdown"), slots(line("other", () -> EnumNotificationHudHost.XAERO),
                 line("countdown", () -> EnumNotificationHudHost.JOURNEYMAP)));
     }

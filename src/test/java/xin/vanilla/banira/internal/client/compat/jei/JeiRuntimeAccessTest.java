@@ -7,8 +7,6 @@ import org.junit.Test;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.lang.reflect.Method;
-import java.util.Optional;
 
 import static org.junit.Assert.*;
 

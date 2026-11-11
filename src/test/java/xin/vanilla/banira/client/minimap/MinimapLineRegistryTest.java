@@ -1,14 +1,10 @@
 package xin.vanilla.banira.client.minimap;
 
-import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.*;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
 import java.io.InputStream;
@@ -145,7 +141,9 @@ public class MinimapLineRegistryTest {
     @Test
     public void brokenObserverDoesNotBlockOtherObserversOrRows() throws Exception {
         Object registry = registry();
-        call(registry, "onRegistration", (Consumer<Object>) row -> { throw new IllegalStateException("fixture"); });
+        call(registry, "onRegistration", (Consumer<Object>) row -> {
+            throw new IllegalStateException("fixture");
+        });
         List<Object> observed = new ArrayList<>();
         call(registry, "onRegistration", (Consumer<Object>) observed::add);
         call(registry, "register", line("a", 1, "a"));
@@ -158,7 +156,9 @@ public class MinimapLineRegistryTest {
     public void brokenAndNullTextSuppliersDoNotBlockHealthyRows() throws Exception {
         Object registry = registry();
         call(registry, "register", line("broken", 1, XAERO,
-                () -> { throw new IllegalStateException("fixture"); }));
+                () -> {
+                    throw new IllegalStateException("fixture");
+                }));
         call(registry, "register", line("null", 2, XAERO, () -> null));
         call(registry, "register", line("healthy", 3, "ok"));
         call(registry, "seen", XAERO, 0L);
@@ -186,7 +186,9 @@ public class MinimapLineRegistryTest {
     public void requestedIdsDetectVisibilityWithoutClaimingHiddenMap() throws Exception {
         Object registry = registry();
         AtomicReference<String> text = new AtomicReference<>("00:10");
-        call(registry, "register", line("bad", 0, XAERO, () -> { throw new IllegalStateException("fixture"); }));
+        call(registry, "register", line("bad", 0, XAERO, () -> {
+            throw new IllegalStateException("fixture");
+        }));
         call(registry, "register", line("a", 1, XAERO, () -> net.minecraft.network.chat.Component.literal(text.get())));
         call(registry, "register", line("elsewhere", 2, EnumNotificationHudHost.JOURNEYMAP,
                 () -> net.minecraft.network.chat.Component.literal("elsewhere")));
@@ -279,12 +281,13 @@ public class MinimapLineRegistryTest {
                 assertNotNull(input);
                 ClassNode node = new ClassNode();
                 new ClassReader(input).accept(node, 0);
-                for (MethodNode method : node.methods) for (AbstractInsnNode instruction : method.instructions) {
-                    String owner = instruction instanceof MethodInsnNode ? ((MethodInsnNode) instruction).owner
-                            : instruction instanceof TypeInsnNode ? ((TypeInsnNode) instruction).desc : "";
-                    assertFalse(owner, owner.startsWith("xaero/") || owner.startsWith("journeymap/")
-                            || owner.startsWith("dev/ftb/") || owner.startsWith("net/minecraft/client/"));
-                }
+                for (MethodNode method : node.methods)
+                    for (AbstractInsnNode instruction : method.instructions) {
+                        String owner = instruction instanceof MethodInsnNode ? ((MethodInsnNode) instruction).owner
+                                : instruction instanceof TypeInsnNode ? ((TypeInsnNode) instruction).desc : "";
+                        assertFalse(owner, owner.startsWith("xaero/") || owner.startsWith("journeymap/")
+                                || owner.startsWith("dev/ftb/") || owner.startsWith("net/minecraft/client/"));
+                    }
             }
         }
     }

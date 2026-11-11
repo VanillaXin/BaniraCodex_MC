@@ -91,7 +91,10 @@ final class NotificationRegionSmoke {
                 require(arrivals.get(2).lastRenderTime() == 0, "queued bubble rendered before admission");
                 require(mc.screen == null && mc.isWindowActive(), "HUD screenshot requires active gameplay: screen="
                         + (mc.screen == null ? "none" : mc.screen.getClass().getSimpleName()) + " active=" + mc.isWindowActive());
-                if (!screenshot("notification-regions-hud.png")) { tick--; return false; }
+                if (!screenshot("notification-regions-hud.png")) {
+                    tick--;
+                    return false;
+                }
                 for (Notification n : visible) if (n.position() == EnumPosition.TOP_LEFT) n.dismiss();
                 cfg.notificationRegions().topLeft().visibleLimit(2);
                 int stagger = cfg.notificationBurstStaggerMs();
@@ -127,7 +130,10 @@ final class NotificationRegionSmoke {
                 require(mc.screen == editor, "mouse back discarded unsaved HUD position");
                 break;
             case 65:
-                if (!screenshot("notification-hud-position.png")) { tick--; return false; }
+                if (!screenshot("notification-hud-position.png")) {
+                    tick--;
+                    return false;
+                }
                 ButtonWidget save = (ButtonWidget) editor.getWidget("save");
                 editor.mouseClicked(save.bounds().x() + 5, save.bounds().y() + 5, 0);
                 editor.mouseReleased(save.bounds().x() + 5, save.bounds().y() + 5, 0);

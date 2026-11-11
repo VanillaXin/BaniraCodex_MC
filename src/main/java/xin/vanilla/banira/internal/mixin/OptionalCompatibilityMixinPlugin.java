@@ -29,8 +29,8 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
             new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
             return mixinClassName.contains(".compat.jei.") ? matchesJei(mixinClassName, node)
                     && matchesJeiBundle(jeiTarget("mezz.jei.gui.overlay.bookmarks.BookmarkButtonController"),
-                        jeiTarget("mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController"),
-                        jeiTarget("mezz.jei.gui.elements.IconButton"))
+                    jeiTarget("mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController"),
+                    jeiTarget("mezz.jei.gui.elements.IconButton"))
                     : matchesMinimap(mixinClassName, node);
         } catch (IOException | RuntimeException exception) {
             return false;
@@ -67,7 +67,7 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
             return field(target, "offIcon", drawable) && field(target, "onIcon", drawable)
                     && field(target, "toggleState", toggles)
                     && method(target, "<init>", "(Lmezz/jei/gui/overlay/bookmarks/BookmarkOverlay;Lmezz/jei/gui/bookmarks/BookmarkList;"
-                        + toggles + "Lmezz/jei/common/input/IInternalKeyMappings;)V")
+                    + toggles + "Lmezz/jei/common/input/IInternalKeyMappings;)V")
                     && method(target, "onPress", "(" + input + ")Z");
         if (mixin.endsWith("GuiIconToggleButtonMixin"))
             return field(target, "controller", "Lmezz/jei/api/gui/buttons/IIconButtonController;")

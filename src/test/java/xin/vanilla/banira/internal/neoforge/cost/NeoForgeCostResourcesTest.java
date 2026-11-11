@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.neoforge.cost;
 
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.food.FoodData;
 import org.junit.Before;
 import org.junit.Test;
 import xin.vanilla.banira.api.cost.*;

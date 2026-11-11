@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix3x2fStack;
 
@@ -9,7 +9,9 @@ import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** Connects matrix-only callbacks to the current GUI extraction pass. */
+/**
+ * Connects matrix-only callbacks to the current GUI extraction pass.
+ */
 public final class NativeGuiGraphics {
     private static final ThreadLocal<WeakReference<GuiGraphicsExtractor>> CURRENT = new ThreadLocal<>();
 

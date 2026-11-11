@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.gui;
 
+import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.client.StringSplitter;
-import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -16,25 +16,30 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class NotificationDetailScreenTest {
-    @Test public void visibleContentKeepsItsStyle() throws Exception {
+    @Test
+    public void visibleContentKeepsItsStyle() throws Exception {
         assertEquals("https://example.com/0", ((ClickEvent.OpenUrl) style(screen(), 117, 61).getClickEvent()).uri().toString());
     }
 
-    @Test public void bottomEdgeDoesNotExposeClippedContent() throws Exception {
+    @Test
+    public void bottomEdgeDoesNotExposeClippedContent() throws Exception {
         assertNull(style(screen(), 117, 114));
     }
 
-    @Test public void belowPanelDoesNotExposeClippedContent() throws Exception {
+    @Test
+    public void belowPanelDoesNotExposeClippedContent() throws Exception {
         assertNull(style(screen(), 117, 150));
     }
 
-    @Test public void horizontalEdgesDoNotExposeStyles() throws Exception {
+    @Test
+    public void horizontalEdgesDoNotExposeStyles() throws Exception {
         NotificationLogScreen screen = screen();
         assertNull(style(screen, 115, 61));
         assertNull(style(screen, 204, 61));
     }
 
-    @Test public void scrollingChangesTheStyledSourceLine() throws Exception {
+    @Test
+    public void scrollingChangesTheStyledSourceLine() throws Exception {
         NotificationLogScreen screen = screen();
         BaniraScreen.MouseScrolledHandleArgs args = new BaniraScreen.MouseScrolledHandleArgs()
                 .mouseX(117).mouseY(61).delta(-3);
@@ -43,7 +48,8 @@ public class NotificationDetailScreenTest {
         assertEquals("https://example.com/3", ((ClickEvent.OpenUrl) style(screen, 117, 61).getClickEvent()).uri().toString());
     }
 
-    @Test public void scrollingOutsideContentLeavesItUnchanged() throws Exception {
+    @Test
+    public void scrollingOutsideContentLeavesItUnchanged() throws Exception {
         NotificationLogScreen screen = screen();
         BaniraScreen.MouseScrolledHandleArgs args = new BaniraScreen.MouseScrolledHandleArgs()
                 .mouseX(115).mouseY(61).delta(-3);
@@ -54,7 +60,8 @@ public class NotificationDetailScreenTest {
 
     private static NotificationLogScreen screen() throws Exception {
         Class<?> unsafe = Class.forName("sun.misc.Unsafe");
-        Field instance = unsafe.getDeclaredField("theUnsafe"); instance.setAccessible(true);
+        Field instance = unsafe.getDeclaredField("theUnsafe");
+        instance.setAccessible(true);
         NotificationLogScreen screen = (NotificationLogScreen) unsafe.getMethod("allocateInstance", Class.class)
                 .invoke(instance.get(null), NotificationLogScreen.class);
         Font font = (Font) unsafe.getMethod("allocateInstance", Class.class).invoke(instance.get(null), Font.class);
@@ -69,8 +76,9 @@ public class NotificationDetailScreenTest {
         set(NotificationLogScreen.class, screen, "detailContentTop", 60.0);
         set(NotificationLogScreen.class, screen, "detailContentMaxLineW", 88);
         List<FormattedCharSequence> lines = new ArrayList<>();
-        for (int i = 0; i < 20; i++) lines.add(FormattedCharSequence.forward("link", Style.EMPTY
-                .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create("https://example.com/" + i)))));
+        for (int i = 0; i < 20; i++)
+            lines.add(FormattedCharSequence.forward("link", Style.EMPTY
+                    .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create("https://example.com/" + i)))));
         set(NotificationLogScreen.class, screen, "detailContentLines", lines);
         try {
             Field field = NotificationLogScreen.class.getDeclaredField("detailViewport");
@@ -92,6 +100,8 @@ public class NotificationDetailScreenTest {
     }
 
     private static void set(Class<?> type, Object target, String name, Object value) throws Exception {
-        Field field = type.getDeclaredField(name); field.setAccessible(true); field.set(target, value);
+        Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 }

@@ -1,6 +1,8 @@
 package xin.vanilla.banira.common.data;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.BaniraLang;
@@ -281,11 +283,13 @@ public class ComponentVanillaTransportTest {
                 if (object.has(field)) result.addAll(keys(object.get(field)));
             if (object.has("hoverEvent")) {
                 JsonObject hover = object.getAsJsonObject("hoverEvent");
-                if (hover.has("contents") && "show_text".equals(hover.get("action").getAsString())) result.addAll(keys(hover.get("contents")));
+                if (hover.has("contents") && "show_text".equals(hover.get("action").getAsString()))
+                    result.addAll(keys(hover.get("contents")));
             }
             if (object.has("hover_event")) {
                 JsonObject hover = object.getAsJsonObject("hover_event");
-                if (hover.has("value") && "show_text".equals(hover.get("action").getAsString())) result.addAll(keys(hover.get("value")));
+                if (hover.has("value") && "show_text".equals(hover.get("action").getAsString()))
+                    result.addAll(keys(hover.get("value")));
             }
         }
         return result;

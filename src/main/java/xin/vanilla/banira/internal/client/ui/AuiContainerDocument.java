@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import com.sighs.apricityui.init.Document;
-import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.internal.compat.aui.AuiDocumentAccess;
+import xin.vanilla.banira.internal.compat.aui.AuiDocumentRenderSubmission;
 
 import java.util.ArrayList;
 import java.util.HashMap;

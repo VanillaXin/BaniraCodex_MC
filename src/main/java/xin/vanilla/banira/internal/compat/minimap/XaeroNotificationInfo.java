@@ -13,15 +13,12 @@ import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 import xin.vanilla.banira.internal.client.minimap.MinimapTextLayout;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.function.Consumer;
 
-/** Loaded only by guarded Xaero mixins. */
+/**
+ * Loaded only by guarded Xaero mixins.
+ */
 public final class XaeroNotificationInfo {
     private static final Set<InfoDisplayManager> MANAGERS = Collections.newSetFromMap(new WeakHashMap<>());
     private static final Map<Identifier, InfoDisplay<Boolean>> DISPLAYS = new HashMap<>();

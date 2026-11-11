@@ -39,10 +39,11 @@ public class UiNotificationPortTest {
         var scroll = node.methods.stream().filter(m -> m.name.equals("mouseScrolled")).findFirst().orElseThrow();
         assertEquals("(DDDD)Z", scroll.desc);
         boolean delegates = false;
-        for (var instruction : scroll.instructions) if (instruction instanceof MethodInsnNode call && call.name.equals("mouseScrolled")) {
-            assertEquals("(DDDD)Z", call.desc);
-            delegates = true;
-        }
+        for (var instruction : scroll.instructions)
+            if (instruction instanceof MethodInsnNode call && call.name.equals("mouseScrolled")) {
+                assertEquals("(DDDD)Z", call.desc);
+                delegates = true;
+            }
         assertTrue(delegates);
     }
 
@@ -51,18 +52,20 @@ public class UiNotificationPortTest {
         var hud = node("client/notification/NotificationUnreadHud");
         var open = hud.methods.stream().filter(m -> m.name.equals("historyScreen")).findFirst().orElseThrow();
         int screens = 0;
-        for (var instruction : open.instructions) if (instruction instanceof TypeInsnNode type) {
-            assertFalse("Anonymous native-only return handlers must not duplicate the shared callback", type.desc.startsWith("xin/vanilla/banira/client/notification/NotificationUnreadHud$"));
-            if (type.desc.equals("xin/vanilla/banira/client/gui/NotificationLogScreen")) screens++;
-        }
+        for (var instruction : open.instructions)
+            if (instruction instanceof TypeInsnNode type) {
+                assertFalse("Anonymous native-only return handlers must not duplicate the shared callback", type.desc.startsWith("xin/vanilla/banira/client/notification/NotificationUnreadHud$"));
+                if (type.desc.equals("xin/vanilla/banira/client/gui/NotificationLogScreen")) screens++;
+            }
         assertEquals(1, screens);
         var history = node("client/gui/NotificationLogScreen");
         int registrations = 0, nativeReturns = 0;
-        for (var method : history.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call && call.owner.endsWith("/NotificationUiSession")) {
-                if (method.name.equals("<init>") && call.name.equals("onParentReturn")) registrations++;
-                if (method.name.equals("onClose") && call.name.equals("afterParentReturn")) nativeReturns++;
-            }
+        for (var method : history.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call && call.owner.endsWith("/NotificationUiSession")) {
+                    if (method.name.equals("<init>") && call.name.equals("onParentReturn")) registrations++;
+                    if (method.name.equals("onClose") && call.name.equals("afterParentReturn")) nativeReturns++;
+                }
         assertEquals(1, registrations);
         assertEquals(1, nativeReturns);
     }

@@ -1,10 +1,9 @@
 package xin.vanilla.banira.internal.neoforge.compat.jei;
 
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.inputs.IJeiUserInput;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
-import mezz.jei.api.gui.inputs.IJeiUserInput;
-import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
 import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
 import net.minecraft.client.Minecraft;
@@ -17,6 +16,7 @@ import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryActionProvider;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
 import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import javax.annotation.Nullable;

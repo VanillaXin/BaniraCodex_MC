@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client;
 
-import net.minecraft.util.Util;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nonnull;

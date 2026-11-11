@@ -1,9 +1,5 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
-import org.joml.Matrix3x2fStack;
-import org.joml.Vector2f;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -12,10 +8,11 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.IMEPreeditOverlay;
 import net.minecraft.client.input.PreeditEvent;
-
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import org.joml.Matrix3x2fStack;
+import org.joml.Vector2f;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
 import xin.vanilla.banira.client.enums.EnumTooltipTextureMode;
@@ -28,6 +25,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.banira.internal.client.BaniraClientRuntime;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

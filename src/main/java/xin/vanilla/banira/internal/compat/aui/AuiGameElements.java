@@ -5,14 +5,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.effect.MobEffectInstance;
-import xin.vanilla.banira.client.util.ExtractedGuiRenderer;
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
+import xin.vanilla.banira.client.util.ExtractedGuiRenderer;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import java.util.Collections;
 import java.util.List;

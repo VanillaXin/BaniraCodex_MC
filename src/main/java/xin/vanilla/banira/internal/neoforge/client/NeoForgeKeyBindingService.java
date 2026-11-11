@@ -14,12 +14,8 @@ import xin.vanilla.banira.internal.client.InputStateManager;
 import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * NeoForge 按键注册服务：静态初始化阶段先入队，注册事件到来时统一提交。

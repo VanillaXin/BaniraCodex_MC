@@ -7,7 +7,9 @@ import org.junit.rules.ExternalResource;
 
 import java.lang.reflect.Field;
 
-/** Supplies only the client fields read by native screen constructors. */
+/**
+ * Supplies only the client fields read by native screen constructors.
+ */
 public final class NativeClientRule extends ExternalResource {
     private Object previous;
     private Field instance;

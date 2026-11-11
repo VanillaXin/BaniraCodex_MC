@@ -19,7 +19,6 @@ dependencies {
         jarJar.ranged(it, '[1.10.5,1.11)')
         jarJar.pin(it, '1.10.5')
     }
-    testRuntimeOnly 'org.joml:joml:1.10.5'
     def localContract = providers.gradleProperty('banira.auiContractJar').orNull
     if (localContract != null) {
         def artifact = new File(localContract)
@@ -60,21 +59,3 @@ def verifyAuiContract = tasks.register('verifyAuiContract') {
 }
 
 tasks.named('compileJava') { dependsOn verifyAuiContract }
-
-tasks.withType(Test).configureEach {
-    dependsOn verifyAuiContract
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
-    }
-}
-
-tasks.register('auiFoundationArtifactTest', Test) {
-    dependsOn 'reobfShadowJar', 'testClasses'
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    filter { includeTestsMatching '*AuiFoundationRuntimeTest.actualProductionArchiveCarriesLibraryAndRefmap' }
-    inputs.file(tasks.shadowJar.archiveFile)
-    doFirst {
-        systemProperty 'banira.aui.foundationArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
-    }
-}

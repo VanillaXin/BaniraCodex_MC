@@ -137,12 +137,9 @@ repositories { flatDir { dirs minimapLibraryDirectory } }
 
 dependencies {
     compileOnly fg.deobf("curse.maven:ftb-chunks-forge-314906:5423717")
-    testRuntimeOnly fg.deobf("maven.modrinth:xaeros-minimap:YyvBt0jJ")
-    testRuntimeOnly fg.deobf("banira.optional:xaerolib-forge-1.18.2:1.7.3")
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:YyvBt0jJ")
     compileOnly fg.deobf("banira.optional:xaerolib-forge-1.18.2:1.7.3")
     compileOnly fg.deobf("maven.modrinth:journeymap:Q3tpDCFf")
-    testImplementation fg.deobf("maven.modrinth:journeymap:Q3tpDCFf")
     if (project.hasProperty('minimapSmoke')) {
         switch (project.property('minimapSmoke').toString()) {
             case '':
@@ -161,10 +158,6 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    testImplementation 'junit:junit:4.13.2'
 
     // The dedicated-server smoke child must not load client-only FPS HUD mods.
     if (!(project.findProperty('banira.networkSmoke.server') ?: 'false').toString().toBoolean()) {

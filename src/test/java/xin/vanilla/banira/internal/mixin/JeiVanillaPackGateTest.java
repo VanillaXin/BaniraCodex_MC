@@ -14,16 +14,35 @@ import static org.junit.Assert.*;
 public class JeiVanillaPackGateTest {
     private static final String CALL = "(Ljava/util/function/Consumer;Lnet/minecraft/server/packs/repository/Pack$PackConstructor;)V";
 
-    @Test public void acceptsDevelopmentCall() throws Exception { assertTrue(matches(target("loadPacks", CALL))); }
-    @Test public void acceptsProductionSrgCall() throws Exception { assertTrue(matches(target("m_7686_", CALL))); }
-    @Test public void skipsMissingFallbackInOlderJei() throws Exception { assertFalse(matches(new ClassNode())); }
-    @Test public void skipsChangedConstructorContract() throws Exception { assertFalse(matches(target("loadPacks", "()V"))); }
-    @Test public void skipsChangedFallbackReturnType() throws Exception {
+    @Test
+    public void acceptsDevelopmentCall() throws Exception {
+        assertTrue(matches(target("loadPacks", CALL)));
+    }
+
+    @Test
+    public void acceptsProductionSrgCall() throws Exception {
+        assertTrue(matches(target("m_7686_", CALL)));
+    }
+
+    @Test
+    public void skipsMissingFallbackInOlderJei() throws Exception {
+        assertFalse(matches(new ClassNode()));
+    }
+
+    @Test
+    public void skipsChangedConstructorContract() throws Exception {
+        assertFalse(matches(target("loadPacks", "()V")));
+    }
+
+    @Test
+    public void skipsChangedFallbackReturnType() throws Exception {
         ClassNode node = target("loadPacks", CALL);
         node.methods.get(0).desc = "()Ljava/lang/Object;";
         assertFalse(matches(node));
     }
-    @Test public void skipsAmbiguousCalls() throws Exception {
+
+    @Test
+    public void skipsAmbiguousCalls() throws Exception {
         ClassNode node = target("loadPacks", CALL);
         node.methods.get(0).instructions.add(call("loadPacks", CALL));
         assertFalse(matches(node));

@@ -6,7 +6,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.*;
 

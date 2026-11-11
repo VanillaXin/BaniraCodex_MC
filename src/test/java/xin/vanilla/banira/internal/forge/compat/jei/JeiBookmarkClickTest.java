@@ -40,7 +40,7 @@ public class JeiBookmarkClickTest {
         }
     }
 
-    public enum InputType { SIMULATE, EXECUTE }
+    public enum InputType {SIMULATE, EXECUTE}
 
     public static class LegacyInput {
         public static LegacyInput fromVanilla(int key, int scan, int modifiers, InputType type) {
@@ -61,6 +61,7 @@ public class JeiBookmarkClickTest {
 
     public static class LegacyButton {
         int clicks;
+
         protected boolean onMouseClicked(LegacyInput input) {
             assertNotNull(input);
             clicks++;
@@ -70,6 +71,7 @@ public class JeiBookmarkClickTest {
 
     public static class ModernButton {
         int clicks;
+
         protected boolean onMouseClicked(ModernInput input) {
             assertNotNull(input);
             clicks++;
@@ -78,7 +80,9 @@ public class JeiBookmarkClickTest {
     }
 
     public static class UnsupportedButton {
-        protected boolean onMouseClicked(String input) { return true; }
+        protected boolean onMouseClicked(String input) {
+            return true;
+        }
     }
 
     public static class BrokenButton {

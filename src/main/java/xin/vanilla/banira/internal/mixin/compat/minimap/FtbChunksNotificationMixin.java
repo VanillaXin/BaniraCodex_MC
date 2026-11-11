@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
+import dev.ftb.mods.ftbchunks.client.FTBChunksClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import dev.ftb.mods.ftbchunks.client.FTBChunksClientConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;

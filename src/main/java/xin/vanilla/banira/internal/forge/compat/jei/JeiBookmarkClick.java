@@ -4,7 +4,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-/** Resolves the input contract of the installed JEI version once per button. */
+/**
+ * Resolves the input contract of the installed JEI version once per button.
+ */
 final class JeiBookmarkClick {
     private JeiBookmarkClick() {
     }

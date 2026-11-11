@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.minimap;
 
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 public final class MinimapLineSnapshot {
     private final ResourceLocation id;

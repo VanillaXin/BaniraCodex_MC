@@ -56,7 +56,8 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                 if (call.getOpcode() == Opcodes.INVOKEVIRTUAL
                         && call.owner.equals("net/minecraft/server/packs/repository/ServerPacksSource")
                         && (call.name.equals("loadPacks") || call.name.equals("m_7686_"))
-                        && call.desc.equals("(Ljava/util/function/Consumer;Lnet/minecraft/server/packs/repository/Pack$PackConstructor;)V")) calls++;
+                        && call.desc.equals("(Ljava/util/function/Consumer;Lnet/minecraft/server/packs/repository/Pack$PackConstructor;)V"))
+                    calls++;
             }
             return calls == 1;
         }

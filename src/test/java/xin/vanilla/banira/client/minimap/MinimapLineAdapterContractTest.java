@@ -26,12 +26,13 @@ public class MinimapLineAdapterContractTest {
     }
 
     private boolean calls(ClassNode node, String owner, String method) {
-        for (MethodNode m : node.methods) for (AbstractInsnNode instruction : m.instructions) {
-            if (instruction instanceof MethodInsnNode) {
-                MethodInsnNode call = (MethodInsnNode) instruction;
-                if (call.owner.equals(owner) && call.name.equals(method)) return true;
+        for (MethodNode m : node.methods)
+            for (AbstractInsnNode instruction : m.instructions) {
+                if (instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (call.owner.equals(owner) && call.name.equals(method)) return true;
+                }
             }
-        }
         return false;
     }
 
@@ -91,9 +92,10 @@ public class MinimapLineAdapterContractTest {
         ClassNode target = node("xin/vanilla/banira/internal/mixin/compat/minimap/FtbChunksNotificationMixin");
         assertTrue("Wrap width must use the native rounded text scale", calls(target, "java/lang/Math", "round"));
         boolean proportional = false;
-        for (MethodNode method : target.methods) for (AbstractInsnNode instruction : method.instructions)
-            if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode)
-                proportional |= ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("MINIMAP_PROPORTIONAL");
+        for (MethodNode method : target.methods)
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode)
+                    proportional |= ((org.objectweb.asm.tree.FieldInsnNode) instruction).name.equals("MINIMAP_PROPORTIONAL");
         assertTrue("Proportional map scale must remain supported", proportional);
         ClassNode nativeTarget = new ClassNode();
         nativeTarget.methods.add(new MethodNode(0, "buildMinimapTextData",
@@ -121,11 +123,12 @@ public class MinimapLineAdapterContractTest {
         MethodNode raw = null;
         for (MethodNode method : node(BRIDGE).methods) if (method.name.equals("notificationText")) raw = method;
         assertNotNull("Missing non-recursive notification supplier", raw);
-        for (AbstractInsnNode instruction : raw.instructions) if (instruction instanceof MethodInsnNode) {
-            MethodInsnNode call = (MethodInsnNode) instruction;
-            assertFalse(call.name, call.owner.equals(BRIDGE) && (call.name.equals("rows")
-                    || call.name.equals("text") || call.name.equals("claim")));
-        }
+        for (AbstractInsnNode instruction : raw.instructions)
+            if (instruction instanceof MethodInsnNode) {
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                assertFalse(call.name, call.owner.equals(BRIDGE) && (call.name.equals("rows")
+                        || call.name.equals("text") || call.name.equals("claim")));
+            }
     }
 
     @Test

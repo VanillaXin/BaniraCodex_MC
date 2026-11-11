@@ -114,12 +114,12 @@ public final class OptionalCompatibilityMixinPluginTest {
     public void acceptsRuntimeSrgWidgetMethodsWithTheSamePoseStackContract() throws Exception {
         ClassNode widget = nativeClass(FTB_GROUP);
         MethodNode render = widget.methods.stream().filter(method ->
-                (method.name.equals("render") || method.name.equals("m_6305_"))
-                        && method.desc.equals("(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
+                        (method.name.equals("render") || method.name.equals("m_6305_"))
+                                && method.desc.equals("(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
                 .findFirst().orElseThrow(AssertionError::new);
         MethodNode press = widget.methods.stream().filter(method ->
-                (method.name.equals("onPress") || method.name.equals("m_5691_"))
-                        && method.desc.equals("()V"))
+                        (method.name.equals("onPress") || method.name.equals("m_5691_"))
+                                && method.desc.equals("()V"))
                 .findFirst().orElseThrow(AssertionError::new);
         render.name = "m_6305_";
         press.name = "m_5691_";
@@ -150,10 +150,10 @@ public final class OptionalCompatibilityMixinPluginTest {
         wireHandler(button, BUTTON_MIXIN, "getLangKey", "banira$getLangKey");
         wireHandler(button, BUTTON_MIXIN, "onClicked", "banira$onClicked");
         String renderName = widget.methods.stream().filter(method ->
-                method.name.equals("render") || method.name.equals("m_6305_"))
+                        method.name.equals("render") || method.name.equals("m_6305_"))
                 .findFirst().orElseThrow(AssertionError::new).name;
         String pressName = widget.methods.stream().filter(method ->
-                method.name.equals("onPress") || method.name.equals("m_5691_"))
+                        method.name.equals("onPress") || method.name.equals("m_5691_"))
                 .findFirst().orElseThrow(AssertionError::new).name;
         wireHandler(widget, GROUP_MIXIN, renderName, "banira$render");
         isolated.postApply(FTB_BUTTON, button, BUTTON_MIXIN, null);
@@ -191,7 +191,7 @@ public final class OptionalCompatibilityMixinPluginTest {
     }
 
     private static void wireHandler(ClassNode target, String mixinName, String methodName,
-                                     String handlerName) throws IOException {
+                                    String handlerName) throws IOException {
         // Model postApply call edges only; these nodes are never defined as JVM classes.
         MethodNode handler = nativeClass(mixinName).methods.stream()
                 .filter(method -> method.name.equals(handlerName)).findFirst().orElseThrow(AssertionError::new);

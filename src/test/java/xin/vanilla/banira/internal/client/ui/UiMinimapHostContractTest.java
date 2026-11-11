@@ -4,7 +4,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.data.ScreenCoordinate;

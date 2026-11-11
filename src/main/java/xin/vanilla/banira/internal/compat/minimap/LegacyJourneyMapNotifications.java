@@ -5,21 +5,16 @@ import journeymap.client.ui.minimap.MiniMap;
 import journeymap.client.ui.theme.ThemeLabelSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
-import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
+import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class LegacyJourneyMapNotifications {
     private static final Map<ResourceLocation, ThemeLabelSource.InfoSlot> SLOTS = new HashMap<>();

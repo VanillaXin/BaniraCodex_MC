@@ -5,9 +5,9 @@ import lombok.experimental.Accessors;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.internal.client.ui.UiKeyCapture;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.CharInputEvent;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
+import xin.vanilla.banira.internal.client.ui.UiKeyCapture;
 
 import javax.annotation.Nullable;
 import java.util.List;

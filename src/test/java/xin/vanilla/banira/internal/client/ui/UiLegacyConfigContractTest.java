@@ -2,13 +2,13 @@ package xin.vanilla.banira.internal.client.ui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.junit.Test;
-import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
-import xin.vanilla.banira.client.gui.event.KeyEvent;
+import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.event.CharInputEvent;
+import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.widget.KeyCaptureInputWidget;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.BaniraClientPacketHandlers;
+import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 
 import static org.junit.Assert.*;
 

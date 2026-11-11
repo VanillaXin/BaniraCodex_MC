@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class UiLegacyContainerRendererTest {

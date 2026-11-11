@@ -2,14 +2,11 @@ package xin.vanilla.banira.client.gui;
 
 import org.junit.Test;
 
-import java.lang.reflect.InvocationTargetException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class EffectClockDurationTest {
     private static Object call(String name, Class<?>[] types, Object... values) {

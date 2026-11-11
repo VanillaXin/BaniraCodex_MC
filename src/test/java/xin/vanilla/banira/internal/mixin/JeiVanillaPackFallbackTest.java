@@ -44,7 +44,10 @@ public class JeiVanillaPackFallbackTest {
         };
         Pack.PackConstructor factory = (Pack.PackConstructor) replacement.invoke(null, broken);
         AtomicInteger opened = new AtomicInteger();
-        Supplier<PackResources> resources = () -> { opened.incrementAndGet(); return null; };
+        Supplier<PackResources> resources = () -> {
+            opened.incrementAndGet();
+            return null;
+        };
         Component title = Component.literal("Vanilla server data");
         Component description = Component.literal("Server recipes");
         PackMetadataSection metadata = new PackMetadataSection(description, 10);

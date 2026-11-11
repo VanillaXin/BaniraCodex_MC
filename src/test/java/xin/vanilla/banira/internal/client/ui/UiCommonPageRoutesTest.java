@@ -2,7 +2,10 @@ package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
+
 import static org.junit.Assert.*;
 
 public class UiCommonPageRoutesTest {
@@ -29,9 +32,10 @@ public class UiCommonPageRoutesTest {
         var init = node.methods.stream().filter(m -> m.name.equals("init")).findFirst().orElseThrow();
         assertTrue(java.util.Arrays.stream(init.instructions.toArray()).anyMatch(i ->
                 i instanceof MethodInsnNode c && c.owner.equals("xin/vanilla/banira/api/client/ui/BaniraUi") && c.name.equals("install")));
-        for (var method : node.methods) for (var instruction : method.instructions)
-            if (instruction instanceof TypeInsnNode type)
-                assertFalse(type.desc.startsWith("com/sighs/apricityui/"));
+        for (var method : node.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof TypeInsnNode type)
+                    assertFalse(type.desc.startsWith("com/sighs/apricityui/"));
     }
 
     private ClassNode read(String type) throws Exception {

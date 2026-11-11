@@ -15,6 +15,11 @@ import java.util.UUID;
 final class NeoForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
+    @Override
+    public int readableBytes() {
+        return delegate.readableBytes();
+    }
+
     NeoForgePacketBuffer(FriendlyByteBuf delegate) {
         this.delegate = delegate;
     }

@@ -1,6 +1,7 @@
 package xin.vanilla.banira.client.notification;
 
 import xin.vanilla.banira.common.notification.NotificationTypeKeys;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;

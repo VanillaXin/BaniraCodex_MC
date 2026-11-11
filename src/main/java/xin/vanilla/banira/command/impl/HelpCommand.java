@@ -61,7 +61,7 @@ public final class HelpCommand {
                 commandTips.color(EnumMCColor.GRAY.getColor());
                 String com = "/" + keyValue.key();
                 helpInfo.append(BaniraComponent.get().literal(com)
-                                .clickEvent(new ClickEvent.SuggestCommand( com))
+                                .clickEvent(new ClickEvent.SuggestCommand(com))
                                 .hoverEvent(new HoverEvent.ShowText(
                                         BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )
@@ -108,7 +108,7 @@ public final class HelpCommand {
                 helpInfo = BaniraComponent.get().empty();
                 String com = "/" + BaniraCommand.getCommand(type);
                 helpInfo.append(BaniraComponent.get().literal(com)
-                                .clickEvent(new ClickEvent.SuggestCommand( com))
+                                .clickEvent(new ClickEvent.SuggestCommand(com))
                                 .hoverEvent(new HoverEvent.ShowText(
                                         BaniraComponent.get().transLang(lang, EnumI18nType.WORD, "click_to_suggest").toVanilla(lang)))
                         )

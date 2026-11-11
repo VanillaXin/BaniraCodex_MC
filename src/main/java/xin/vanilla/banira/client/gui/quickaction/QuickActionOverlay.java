@@ -1,10 +1,6 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
 import com.google.gson.JsonObject;
-
-import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -17,8 +13,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
-
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
@@ -27,7 +23,6 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.enums.EnumRenderDepth;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.client.util.CoalescingAsyncTask;
 import xin.vanilla.banira.client.util.TextureUtils;
@@ -36,6 +31,7 @@ import xin.vanilla.banira.common.enums.EnumPosition;
 import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import xin.vanilla.banira.internal.client.ui.QuickActionHudFrame;
 import xin.vanilla.banira.internal.client.ui.SharedHudHosts;
 import xin.vanilla.banira.internal.config.CustomConfig;
@@ -730,7 +726,6 @@ public final class QuickActionOverlay {
 
         stack.pushMatrix();
         graphics.nextStratum();
-
 
 
         int borderRgb = theme.border() | 0xFF000000;
@@ -1805,7 +1800,6 @@ public final class QuickActionOverlay {
         // 圆角菜单绘制后需保证混合与 GUI 着色器可用（见 AbstractGuiUtils#restoreGuiRenderState）
 
 
-
         int textColor = theme.textPrimary() | 0xFF000000;
         int innerTop = ctxInnerTop;
         int innerBottom = innerTop + ctxInnerH;
@@ -1870,7 +1864,6 @@ public final class QuickActionOverlay {
         } finally {
             hudFrame.unclip();
         }
-
 
 
         contextX = x;

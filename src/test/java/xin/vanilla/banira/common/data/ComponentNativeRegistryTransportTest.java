@@ -2,11 +2,7 @@ package xin.vanilla.banira.common.data;
 
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Lifecycle;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
-import net.minecraft.core.MappedRegistry;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.*;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -68,7 +64,7 @@ public class ComponentNativeRegistryTransportTest {
         opaque.putString("translate", "opaque-item-data");
         context.item.set(DataComponents.CUSTOM_DATA, CustomData.of(opaque));
         var original = net.minecraft.network.chat.Component.translatable("format.banira_codex.config_editor_sync_server_ok",
-                net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"))
+                        net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"))
                 .withStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowItem(ItemStackTemplate.fromNonEmptyStack(context.item))));
         var ops = context.registries.createSerializationContext(JsonOps.INSTANCE);
         var before = ComponentSerialization.CODEC.encodeStart(ops, original).getOrThrow();

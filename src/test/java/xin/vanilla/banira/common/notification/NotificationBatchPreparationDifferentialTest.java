@@ -5,8 +5,8 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStackTemplate;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -107,7 +107,7 @@ public class NotificationBatchPreparationDifferentialTest {
             Component entry = original
                     ? BaniraComponent.get().object(net.minecraft.network.chat.Component.literal("mixed-original")).languageCode(LANGUAGE)
                     : text("mixed-hover").hoverEvent(new HoverEvent.ShowText(
-                            net.minecraft.network.chat.Component.literal("mixed-hover-details")));
+                    net.minecraft.network.chat.Component.literal("mixed-hover-details")));
             fixture.entries.set(200, entry);
             List<String> before = fixture.inputSnapshot();
             assertEquals(reference(fixture), production(fixture));

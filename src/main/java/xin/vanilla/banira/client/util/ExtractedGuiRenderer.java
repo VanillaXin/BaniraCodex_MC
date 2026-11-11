@@ -5,10 +5,10 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.resources.Identifier;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fc;
 
@@ -16,10 +16,12 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-/** Version-local submission context for GUI extraction, including native HUD fallback. */
+/**
+ * Version-local submission context for GUI extraction, including native HUD fallback.
+ */
 public final class ExtractedGuiRenderer {
     private static final ThreadLocal<Context> CURRENT = new ThreadLocal<>();
     private static Function<GuiGraphicsExtractor, GuiRenderState> stateAccess;
@@ -114,7 +116,7 @@ public final class ExtractedGuiRenderer {
         }
     }
 
-    public enum Primitive { QUADS, TRIANGLES, TRIANGLE_STRIP }
+    public enum Primitive {QUADS, TRIANGLES, TRIANGLE_STRIP}
 
     public static final class VertexBatch {
         private final Primitive primitive;
@@ -208,10 +210,14 @@ public final class ExtractedGuiRenderer {
     private record Geometry(List<Vertex> vertices, @Nullable ScreenRectangle scissorArea,
                             ScreenRectangle bounds) implements GuiElementRenderState {
         @Override
-        public RenderPipeline pipeline() { return RenderPipelines.GUI; }
+        public RenderPipeline pipeline() {
+            return RenderPipelines.GUI;
+        }
 
         @Override
-        public TextureSetup textureSetup() { return TextureSetup.noTexture(); }
+        public TextureSetup textureSetup() {
+            return TextureSetup.noTexture();
+        }
 
         @Override
         public void buildVertices(VertexConsumer consumer) {

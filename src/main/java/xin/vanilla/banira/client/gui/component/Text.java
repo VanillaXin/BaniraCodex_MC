@@ -1,10 +1,10 @@
 package xin.vanilla.banira.client.gui.component;
 
-import org.joml.Matrix3x2fStack;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.MutableComponent;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;

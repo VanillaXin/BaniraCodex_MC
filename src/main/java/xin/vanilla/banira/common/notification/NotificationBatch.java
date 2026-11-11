@@ -5,8 +5,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Color;
-import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumI18nType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,7 +67,7 @@ public final class NotificationBatch {
     }
 
     private static NotificationBudget.Payload preparePage(Component page, String language,
-                                                            RegistryAccess registries, PreparedPlainPage plain) {
+                                                          RegistryAccess registries, PreparedPlainPage plain) {
         return plain == null ? NotificationBudget.prepare(page, language, registries)
                 : NotificationBudget.encodePrepared(page, language, registries);
     }
@@ -87,7 +87,7 @@ public final class NotificationBatch {
         }
 
         private static PreparedPlainPage forBatch(Component prefix, List<Component> entries,
-                                                   Component separator, String language) {
+                                                  Component separator, String language) {
             // Exact ArrayList access cannot invoke caller code while checking the whole batch.
             if (language == null || entries.getClass() != ArrayList.class || entries.isEmpty()
                     || !supports(prefix, true) || !supports(separator, false)) return null;

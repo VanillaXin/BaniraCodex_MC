@@ -5,11 +5,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 
 import java.io.ByteArrayInputStream;
@@ -186,7 +182,7 @@ public final class FtbSidebarContractTest {
     public void mapBindingReadsPrivateFinalStorageAndRejectsInvalidBindings() throws Exception {
         Fixture fixture = fixedFixture();
         java.lang.reflect.Method bind = fixture.loadClass(
-                "xin.vanilla.banira.internal.compat.FtbLibraryContract")
+                        "xin.vanilla.banira.internal.compat.FtbLibraryContract")
                 .getMethod("bindButtons", Class.class);
         java.lang.reflect.Field field = (java.lang.reflect.Field) bind.invoke(null, MutableMapManager.class);
         MutableMapManager manager = new MutableMapManager();
@@ -233,7 +229,7 @@ public final class FtbSidebarContractTest {
     }
 
     static void wireHandler(Fixture fixture, ClassNode target, String mixinName,
-                                     String methodName, String handlerName) throws IOException {
+                            String methodName, String handlerName) throws IOException {
         // Model actual compiled handler call edges without defining optional JVM classes.
         MethodNode handler = fixture.node(mixinName).methods.stream().filter(method ->
                 method.name.equals(handlerName)).findFirst().orElseThrow(AssertionError::new);
@@ -246,11 +242,20 @@ public final class FtbSidebarContractTest {
             int opcode;
             switch (argument.getSort()) {
                 case Type.OBJECT:
-                case Type.ARRAY: opcode = Opcodes.ACONST_NULL; break;
-                case Type.FLOAT: opcode = Opcodes.FCONST_0; break;
-                case Type.DOUBLE: opcode = Opcodes.DCONST_0; break;
-                case Type.LONG: opcode = Opcodes.LCONST_0; break;
-                default: opcode = Opcodes.ICONST_0;
+                case Type.ARRAY:
+                    opcode = Opcodes.ACONST_NULL;
+                    break;
+                case Type.FLOAT:
+                    opcode = Opcodes.FCONST_0;
+                    break;
+                case Type.DOUBLE:
+                    opcode = Opcodes.DCONST_0;
+                    break;
+                case Type.LONG:
+                    opcode = Opcodes.LCONST_0;
+                    break;
+                default:
+                    opcode = Opcodes.ICONST_0;
             }
             edge.add(new InsnNode(opcode));
         }
@@ -478,7 +483,7 @@ public final class FtbSidebarContractTest {
             ClassNode node = new ClassNode();
             new ClassReader(code).accept(node, 0);
             MethodNode instance = node.methods.stream().filter(method -> method.name.equals("getInstance")
-                    && method.desc.equals("()Lnet/fabricmc/loader/api/FabricLoader;"))
+                            && method.desc.equals("()Lnet/fabricmc/loader/api/FabricLoader;"))
                     .findFirst().orElseThrow(AssertionError::new);
             instance.instructions.clear();
             instance.tryCatchBlocks.clear();

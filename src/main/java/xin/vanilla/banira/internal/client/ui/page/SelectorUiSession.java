@@ -11,7 +11,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.BaniraComponent;
-
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.gui.*;

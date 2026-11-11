@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.data;
 
 
-import org.joml.Matrix3x2fStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.common.enums.EnumPosition;
 
 /**

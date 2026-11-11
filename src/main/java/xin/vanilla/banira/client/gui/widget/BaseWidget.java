@@ -1,12 +1,10 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
-
-import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.api.client.input.BaniraInputState;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -17,6 +15,7 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.interaction.HoverInsets;
 import xin.vanilla.banira.common.enums.EnumPosition;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import javax.annotation.Nullable;
 import java.util.*;

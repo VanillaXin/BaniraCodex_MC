@@ -16,7 +16,9 @@ public final class CostFailure {
     public static final CostFailure RATE_LIMITED = of("banira:rate_limited");
     private final String code;
 
-    private CostFailure(String code) { this.code = code; }
+    private CostFailure(String code) {
+        this.code = code;
+    }
 
     public static CostFailure of(String code) {
         Objects.requireNonNull(code, "code");
@@ -25,11 +27,26 @@ public final class CostFailure {
         return new CostFailure(code);
     }
 
-    public String code() { return code; }
-    public boolean isFailure() { return !equals(NONE); }
-    @Override public boolean equals(Object other) {
+    public String code() {
+        return code;
+    }
+
+    public boolean isFailure() {
+        return !equals(NONE);
+    }
+
+    @Override
+    public boolean equals(Object other) {
         return other instanceof CostFailure && code.equals(((CostFailure) other).code);
     }
-    @Override public int hashCode() { return code.hashCode(); }
-    @Override public String toString() { return code; }
+
+    @Override
+    public int hashCode() {
+        return code.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return code;
+    }
 }

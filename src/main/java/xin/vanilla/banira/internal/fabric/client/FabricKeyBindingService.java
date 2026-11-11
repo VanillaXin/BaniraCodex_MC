@@ -3,8 +3,8 @@ package xin.vanilla.banira.internal.fabric.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.BaniraKeySpec;
@@ -13,12 +13,8 @@ import xin.vanilla.banira.platform.BaniraInputService;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
 import java.nio.charset.StandardCharsets;
-import java.util.HexFormat;
+import java.util.*;
 
 /**
  * Fabric 按键注册服务，隐藏 KeyMapping 实现细节。

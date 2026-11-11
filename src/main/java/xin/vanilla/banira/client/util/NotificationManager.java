@@ -1,11 +1,11 @@
 package xin.vanilla.banira.client.util;
 
 import com.mojang.blaze3d.platform.Window;
-import org.joml.Matrix3x2fStack;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Style;
+import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.NotificationLogEntry;

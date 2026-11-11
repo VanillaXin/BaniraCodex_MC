@@ -1,6 +1,5 @@
 package xin.vanilla.banira.client.notification;
 
-import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -8,6 +7,8 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
+import org.joml.Matrix3x2fStack;
+import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.FontDrawArgs;
@@ -16,9 +17,7 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
-
 import xin.vanilla.banira.internal.client.InputStateManager;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -46,7 +45,9 @@ public final class NotificationStyleInteractionHelper {
     }
 
     private abstract static class ClickBridge extends Screen {
-        private ClickBridge() { super(Component.empty()); }
+        private ClickBridge() {
+            super(Component.empty());
+        }
 
         private static boolean handle(Minecraft mc, Screen screen, ClickEvent event) {
             if (event instanceof ClickEvent.OpenUrl url) {

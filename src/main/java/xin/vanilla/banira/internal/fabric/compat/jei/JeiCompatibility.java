@@ -1,23 +1,23 @@
 package xin.vanilla.banira.internal.fabric.compat.jei;
 
-import org.joml.Matrix3x2fStack;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.inputs.IJeiUserInput;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
-import mezz.jei.api.gui.inputs.IJeiUserInput;
-import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
-import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 import mezz.jei.gui.overlay.bookmarks.BookmarkButtonController;
 import mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButtonController;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
-import net.fabricmc.loader.api.FabricLoader;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryAction;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryActionProvider;
 import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+import xin.vanilla.banira.internal.client.compat.jei.JeiRuntimeAccess;
+import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

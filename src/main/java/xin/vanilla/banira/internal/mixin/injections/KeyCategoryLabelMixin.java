@@ -10,7 +10,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.internal.fabric.client.FabricKeyBindingService;
 
-/** Keeps registered Banira categories on their existing translation keys. */
+/**
+ * Keeps registered Banira categories on their existing translation keys.
+ */
 @Mixin(KeyMapping.Category.class)
 public abstract class KeyCategoryLabelMixin {
     @Shadow

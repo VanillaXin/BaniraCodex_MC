@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client;
 
-import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.joml.Matrix3x2fStack;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;

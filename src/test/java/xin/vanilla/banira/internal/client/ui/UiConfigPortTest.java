@@ -36,11 +36,12 @@ public class UiConfigPortTest {
         var method = type.methods.stream().filter(m -> m.name.equals("mouseScrolled")).findFirst().orElseThrow();
         assertEquals("(DDDD)Z", method.desc);
         boolean delegates = false;
-        for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode invocation
-                && invocation.name.equals("mouseScrolled")) {
-            assertEquals("(DDDD)Z", invocation.desc);
-            delegates = true;
-        }
+        for (var instruction : method.instructions)
+            if (instruction instanceof MethodInsnNode invocation
+                    && invocation.name.equals("mouseScrolled")) {
+                assertEquals("(DDDD)Z", invocation.desc);
+                delegates = true;
+            }
         assertTrue(delegates);
     }
 
@@ -98,9 +99,10 @@ public class UiConfigPortTest {
         for (String[] expected : new String[][]{{"applyRemoteConfigSnapshot", "acceptRemoteSnapshot"}, {"refreshOpenConfigEditor", "refresh"}}) {
             var method = type.methods.stream().filter(m -> m.name.equals(expected[0])).findFirst().orElseThrow();
             boolean delivered = false;
-            for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode invocation
-                    && invocation.owner.equals("xin/vanilla/banira/internal/client/ui/page/ConfigUiSession")
-                    && invocation.name.equals(expected[1])) delivered = true;
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode invocation
+                        && invocation.owner.equals("xin/vanilla/banira/internal/client/ui/page/ConfigUiSession")
+                        && invocation.name.equals(expected[1])) delivered = true;
             assertTrue(expected[0], delivered);
         }
     }

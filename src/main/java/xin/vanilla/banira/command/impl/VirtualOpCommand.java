@@ -43,7 +43,7 @@ public final class VirtualOpCommand {
         }
         if (!CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP)
                 && (source.getEntity() == null || !xin.vanilla.banira.internal.server.NativePermissionLevels.has(
-                        source.permissions(), CommonConfig.get().permission().virtualOpPermission()))) {
+                source.permissions(), CommonConfig.get().permission().virtualOpPermission()))) {
             MessageUtils.sendMessage(source, false,
                     BaniraComponent.get().trans(EnumI18nType.WORD, "command_disabled"));
             return 0;
@@ -141,7 +141,7 @@ public final class VirtualOpCommand {
         return Commands.literal(CommonConfig.get().command().commandVirtualOp())
                 .requires(source -> (source.getEntity() != null && CommandUtils.hasVirtualPermission(source.getEntity(), EnumCommandType.VIRTUAL_OP))
                         || xin.vanilla.banira.internal.server.NativePermissionLevels.has(
-                                source.permissions(), CommonConfig.get().permission().virtualOpPermission()))
+                        source.permissions(), CommonConfig.get().permission().virtualOpPermission()))
                 .then(Commands.argument("operation", StringArgumentType.word())
                         .suggests(VirtualOpCommand::operationSuggestion)
                         .then(Commands.argument("player", EntityArgument.players())

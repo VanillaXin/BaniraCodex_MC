@@ -17,7 +17,7 @@ public abstract class SidebarGroupGuiButtonMixin {
     @Inject(method = "extractContents(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",
             at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private void banira$extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
-                                       float partialTicks, CallbackInfo callback) {
+                                        float partialTicks, CallbackInfo callback) {
         if (FtbLibraryCompatibility.shouldSuppressNativeGroup()) {
             FtbLibraryCompatibility.clearReservedArea();
             callback.cancel();

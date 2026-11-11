@@ -8,9 +8,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class NativeScreenBackgroundTest {
     private static final String GUI_RENDER = "(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V";

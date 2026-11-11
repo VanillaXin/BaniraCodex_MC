@@ -1,6 +1,5 @@
 package xin.vanilla.banira.internal.compat.nbtac;
 
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -9,7 +8,6 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import static org.junit.Assert.*;
 

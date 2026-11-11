@@ -4,7 +4,6 @@ import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.sidebar.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
@@ -14,8 +13,8 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.gui.quickaction.*;
-import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 import xin.vanilla.banira.internal.client.ui.NativeGuiGraphics;
+import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;

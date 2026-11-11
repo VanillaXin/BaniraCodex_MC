@@ -678,7 +678,8 @@ public final class Component implements Cloneable, Serializable {
         if (this.i18nType == EnumI18nType.ORIGINAL && this.original instanceof net.minecraft.network.chat.Component) {
             net.minecraft.network.chat.Component source = (net.minecraft.network.chat.Component) this.original;
             if (this.getChildren().isEmpty() && source.getSiblings().isEmpty()
-                    && source.getContents() instanceof net.minecraft.network.chat.contents.PlainTextContents) return false;
+                    && source.getContents() instanceof net.minecraft.network.chat.contents.PlainTextContents)
+                return false;
         }
         return true;
     }
@@ -759,7 +760,8 @@ public final class Component implements Cloneable, Serializable {
     }
 
     private boolean requiresNativePreparation() {
-        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null) return true;
+        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null)
+            return true;
         for (Component child : this.getChildren()) if (child.requiresNativePreparation()) return true;
         for (Component arg : this.getArgs()) if (arg != null && arg.requiresNativePreparation()) return true;
         return false;
@@ -1020,8 +1022,9 @@ public final class Component implements Cloneable, Serializable {
             result.clickEvent(legacyClickEvent(parseClickEventAction(clickAction), clickValue));
         } else {
             JsonObject click = JsonUtils.getJsonObject(jsonObject, "clickEvent", null);
-            if (click != null) ClickEvent.CODEC.parse(componentRegistries().createSerializationContext(JsonOps.INSTANCE), click)
-                    .result().ifPresent(result::clickEvent);
+            if (click != null)
+                ClickEvent.CODEC.parse(componentRegistries().createSerializationContext(JsonOps.INSTANCE), click)
+                        .result().ifPresent(result::clickEvent);
         }
         JsonObject hover = JsonUtils.getJsonObject(jsonObject, "hoverEvent", null);
         if (hover != null) {
@@ -1128,7 +1131,7 @@ public final class Component implements Cloneable, Serializable {
         }
         if (component.hoverEvent() != null) {
             HoverEvent.CODEC.encodeStart((registries != null ? registries : componentRegistries()).createSerializationContext(JsonOps.INSTANCE),
-                    NativeComponentTranslations.prepareHover(component.hoverEvent(), component.languageCodeOrDefault(), false))
+                            NativeComponentTranslations.prepareHover(component.hoverEvent(), component.languageCodeOrDefault(), false))
                     .result().ifPresent(h -> JsonUtils.set(result, "hoverEvent", h));
         }
         JsonArray children = new JsonArray();

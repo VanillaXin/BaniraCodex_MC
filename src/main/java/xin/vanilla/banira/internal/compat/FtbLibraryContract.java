@@ -2,11 +2,7 @@ package xin.vanilla.banira.internal.compat;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -170,7 +166,8 @@ public final class FtbLibraryContract {
             String renderer = "dev/ftb/mods/ftblibrary/client/icon/IconRenderer";
             requireShape(icon, "getRenderer", "()L" + renderer + ";", Opcodes.ACC_PUBLIC, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             ClassNode renderType = read(loader, renderer);
-            if ((renderType.access & Opcodes.ACC_INTERFACE) == 0) throw new IllegalArgumentException("IconRenderer must remain an interface");
+            if ((renderType.access & Opcodes.ACC_INTERFACE) == 0)
+                throw new IllegalArgumentException("IconRenderer must remain an interface");
             requireShape(renderType, "render", "(L" + ICON + ";" + namespace.stack + "IIII)V", Opcodes.ACC_PUBLIC, Opcodes.ACC_STATIC);
         } else if (!hasDraw(loader, icon, namespace.stack, new HashSet<>())) {
             throw new IllegalArgumentException(ICON + ".draw(" + namespace.stack + "IIII)V public instance contract missing");
@@ -261,7 +258,8 @@ public final class FtbLibraryContract {
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 if (!call.owner.equals(owner.name)) continue;
                 for (MethodNode handler : owner.methods) {
-                    if (handler == method || !handler.name.equals(call.name) || !handler.desc.equals(call.desc)) continue;
+                    if (handler == method || !handler.name.equals(call.name) || !handler.desc.equals(call.desc))
+                        continue;
                     Set<String> found = new HashSet<>();
                     for (AbstractInsnNode body : handler.instructions) {
                         if (body instanceof MethodInsnNode) {

@@ -7,7 +7,8 @@ import xin.vanilla.banira.internal.fabric.cost.FabricCostResources;
 import xin.vanilla.banira.platform.BaniraCostService;
 
 public final class FabricBaniraCostService implements BaniraCostService {
-    @Override public CostAccess access(Object payer, InventoryScope scope) {
+    @Override
+    public CostAccess access(Object payer, InventoryScope scope) {
         if (!(payer instanceof ServerPlayer)) throw new IllegalArgumentException("Server player required");
         return FabricCostResources.access((ServerPlayer) payer, scope);
     }

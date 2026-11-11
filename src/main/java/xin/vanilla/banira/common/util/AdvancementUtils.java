@@ -5,7 +5,6 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.data.ArraySet;

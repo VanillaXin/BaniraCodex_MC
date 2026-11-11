@@ -315,7 +315,9 @@ public class Notification extends NotificationData {
             sw = mc.getWindow().getGuiScaledWidth();
         }
         int reserve = (int) (padding() * 2 + CLOSE_GAP + CLOSE_BTN + 8);
-        int maxTextW = layoutMaxWidth > 0 ? Math.max(1, layoutMaxWidth - reserve) : Math.max(40, sw - reserve);
+        int maxCardW = xin.vanilla.banira.client.notification.NotificationBubbleLayout.maximumWidth(sw,
+                layoutMaxWidth > 0 ? layoutMaxWidth : sw);
+        int maxTextW = Math.max(1, maxCardW - reserve);
         String lang = Translator.getClientLanguage();
         this.vanillaDrawText = ColorUtils.readableVanillaComponentCopy(
                 this.component().toVanilla(lang), this.bgColor().argb());
@@ -339,9 +341,9 @@ public class Notification extends NotificationData {
         double textH = this.richDrawLines.size() * lineH;
         this.cachedWidth = this.richTextMaxLineW + this.padding() * 2 + CLOSE_GAP + CLOSE_BTN;
         this.cachedHeight = Math.max(textH + this.padding() * 2, CLOSE_BTN + this.padding() * 2);
+        cachedWidth = xin.vanilla.banira.client.notification.NotificationBubbleLayout.width(sw,
+                maxCardW, (int) Math.ceil(cachedWidth + (auiLayout ? 2 : 0)));
         if (auiLayout) {
-            cachedWidth = Math.min(layoutMaxWidth > 0 ? layoutMaxWidth : sw,
-                    Math.max(120, cachedWidth + 2));
             cachedHeight = xin.vanilla.banira.client.notification.NotificationBubbleLayout.height(richDrawLines.size());
         }
     }

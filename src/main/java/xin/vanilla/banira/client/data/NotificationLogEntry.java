@@ -31,6 +31,14 @@ public class NotificationLogEntry {
     private String notificationType = NotificationTypeKeys.DEFAULT;
     private String source; // "network" | "local"
     private boolean read;
+    private Boolean defaultImportant;
+
+    public NotificationLogEntry(long id, long timestamp, String componentJson, String positionName,
+                                String animationName, long durationTime, String styleName,
+                                String notificationType, String source, boolean read) {
+        this(id, timestamp, componentJson, positionName, animationName, durationTime, styleName,
+                notificationType, source, read, null);
+    }
 
     public NotificationLogEntry(long id, long timestamp, String componentJson, String positionName,
                                 String animationName, long durationTime, String styleName,
@@ -41,7 +49,7 @@ public class NotificationLogEntry {
 
     public NotificationLogEntry copy() {
         return new NotificationLogEntry(id, timestamp, componentJson, positionName, animationName,
-                durationTime, styleName, notificationType, source, read);
+                durationTime, styleName, notificationType, source, read, defaultImportant);
     }
 
     public Component component() {

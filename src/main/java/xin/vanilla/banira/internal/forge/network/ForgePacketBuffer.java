@@ -15,6 +15,11 @@ import java.util.UUID;
 public final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
+    @Override
+    public int readableBytes() {
+        return delegate.readableBytes();
+    }
+
     public ForgePacketBuffer(FriendlyByteBuf delegate) {
         this.delegate = delegate;
     }

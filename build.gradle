@@ -152,9 +152,6 @@ def minimapCompilerLibraries = providers.provider {
 }
 dependencies {
     compileOnly files(minimapCompilerLibraries)
-    testRuntimeOnly files(providers.provider {
-        sourceSets.main.compileClasspath.files.findAll { (it.name.toLowerCase().contains('xaero') || it.name.toLowerCase().contains('journeymap')) }
-    })
     // Xaero, FTB and Atlas currently publish NeoForge 26.1.2 references, not 26.1 runtime inputs.
     compileOnly(xaeroCompileReference) { transitive = false }
     compileOnly(journeyMapContract) { transitive = false }
@@ -183,9 +180,6 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
-    testCompileOnly 'org.projectlombok:lombok:1.18.48'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
-    testImplementation 'junit:junit:4.13.2'
 
     baniraJeiContract jeiContract
     if ((project.findProperty('banira.devInventoryIntegrations') ?: 'true').toString().toBoolean()) {
@@ -193,12 +187,6 @@ dependencies {
     }
 }
 
-tasks.withType(Test).configureEach {
-    inputs.files(configurations.baniraJeiContract)
-    doFirst {
-        systemProperty 'banira.jei.contractJar', configurations.baniraJeiContract.singleFile.absolutePath
-    }
-}
 
 tasks.withType(ProcessResources).configureEach {
     filteringCharset = 'UTF-8'

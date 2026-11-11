@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Owns read state independently of overlay visibility and duplicate coalescing.
@@ -14,9 +15,38 @@ public final class NotificationHistory {
     private final List<NotificationLogEntry> entries = new ArrayList<>();
     private int unreadCount;
     private long revision;
+    private final Predicate<NotificationLogEntry> importance;
+
+    public NotificationHistory() {
+        this(entry -> true);
+    }
+
+    public NotificationHistory(Predicate<NotificationLogEntry> importance) {
+        this.importance = java.util.Objects.requireNonNull(importance);
+    }
+
+    /**
+     * Ordinary entries stay in history without retaining unread reminders.
+     */
+    public synchronized boolean refreshImportance() {
+        boolean changed = false;
+        for (NotificationLogEntry entry : entries) {
+            Boolean previousDefault = entry.defaultImportant();
+            boolean tracksUnread = importance.test(entry);
+            if (!java.util.Objects.equals(previousDefault, entry.defaultImportant())) changed = true;
+            if (!entry.read() && !tracksUnread) {
+                entry.read(true);
+                unreadCount--;
+                changed = true;
+            }
+        }
+        if (changed) revision++;
+        return changed;
+    }
 
     public synchronized void append(NotificationLogEntry entry, int maxEntries) {
         NotificationLogEntry copy = entry.copy();
+        if (!importance.test(copy)) copy.read(true);
         entries.add(0, copy);
         if (!copy.read()) unreadCount++;
         trim(maxEntries);

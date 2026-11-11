@@ -611,15 +611,15 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
             }
 
             public int size() {
-                return types.size() * 5;
+                return types.size() * 6;
             }
 
             public String key(int index) {
-                return "type:" + types.get(index / 5) + ":" + index % 5;
+                return "type:" + types.get(index / 6) + ":" + index % 6;
             }
 
             public void bind(UiView row, int index) {
-                bindType(row, types.get(index / 5), index % 5, owner);
+                bindType(row, types.get(index / 6), index % 6, owner);
             }
 
             public void unbind(UiView row, int index) {
@@ -645,8 +645,8 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         Map<String, Integer> anchors = new LinkedHashMap<>();
         anchors.put("all", 0);
         for (int index = 0; index < types.size(); index++) {
-            anchors.putIfAbsent("module:" + typeNamespace(types.get(index)), index * 5);
-            anchors.put("type:" + types.get(index), index * 5);
+            anchors.putIfAbsent("module:" + typeNamespace(types.get(index)), index * 6);
+            anchors.put("type:" + types.get(index), index * 6);
         }
         List<String> keys = new ArrayList<>(anchors.keySet());
         view.rows("categories", new UiRowPresentation() {
@@ -703,7 +703,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
                     owner.state().selectedId(key);
                     owner.state().rowPosition(target);
                     owner.state().scrollOffset(target * 24.0);
-                    owner.state().scrollAnchor(types.isEmpty() ? "" : "type:" + types.get(target / 5) + ":0");
+                    owner.state().scrollAnchor(types.isEmpty() ? "" : "type:" + types.get(target / 6) + ":0");
                     rebuildTypes();
                 }));
             }
@@ -727,7 +727,7 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         if (previous != null) previous.close();
         UiOwnedResources owned = new UiOwnedResources();
         rows.put(row, owned);
-        String key = new String[]{"hidden", "duration", "animation", "position", "display"}[field];
+        String key = new String[]{"hidden", "duration", "animation", "position", "display", "important"}[field];
         row.text("label", tr("notification_type_config_" + key));
         row.text("field_unit", BaniraComponent.get().literal(field == 1 ? "ms" : ""));
         Component tooltip = NotificationTypeRegistry.tooltip(type);
@@ -742,7 +742,15 @@ public final class NotificationUiSession implements UiPageSession, UiCloseGuard,
         Consumer<NotificationTypeSettingsStore.TypeSettings> update = next -> {
             if (view == owner) settings(type, next);
         };
-        if (field == 0) {
+        if (field == 5) {
+            List<DropdownOption> options = new ArrayList<>();
+            for (String mode : new String[]{"default", "true", "false"})
+                options.add(new DropdownOption(mode, tr("notification_importance_" + mode).toString()));
+            row.control("input", new UiControlSpec(UiControlSpec.Kind.SELECT, 256, "", false, options, DropdownInputMode.SELECTION_ONLY));
+            row.value("input", UiValue.text(value.important() == null ? "default" : value.important().toString()));
+            owned.own(row.onValue("input", next -> update.accept(settings(type).important(
+                    "default".equals(next.asText()) ? null : Boolean.valueOf(next.asText())))));
+        } else if (field == 0) {
             row.value("input", UiValue.bool(value.hidden()));
             owned.own(row.onValue("input", next -> update.accept(settings(type).hidden(next.asBoolean()))));
         } else if (field == 1) {

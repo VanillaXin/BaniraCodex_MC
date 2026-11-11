@@ -31,7 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
 @Accessors(fluent = true)
 public final class NotificationManager {
     private final EnumMap<EnumPosition, List<Notification>> notifications = new EnumMap<>(EnumPosition.class);
-    private final NotificationHistory history = new NotificationHistory();
+    private final NotificationHistory history = new NotificationHistory(entry -> {
+        NotificationTypeSettingsStore store = NotificationTypeSettingsStore.get();
+        return !store.isSettingsLoadedFromDisk() || store.getOrCreate(entry.notificationType())
+                .tracksUnread(entry);
+    });
+    private long importanceRevision = Long.MIN_VALUE;
     private final NotificationMuteState muteState = new NotificationMuteState(System::nanoTime);
     private final AtomicLong nextLogId = new AtomicLong(System.currentTimeMillis());
     private static final NotificationManager instance = new NotificationManager();
@@ -180,24 +185,29 @@ public final class NotificationManager {
     }
 
     public List<NotificationLogEntry> getLog() {
+        refreshImportance();
         return history.snapshot();
     }
 
     public int unreadCount() {
+        refreshImportance();
         return history.unreadCount();
     }
 
     public long historyRevision() {
+        refreshImportance();
         return history.revision();
     }
 
     public synchronized boolean markRead(long id) {
+        refreshImportance();
         if (!history.markRead(id)) return false;
         saveLogAsync();
         return true;
     }
 
     public synchronized boolean markAllRead() {
+        refreshImportance();
         if (!history.markAllRead()) return false;
         saveLogAsync();
         return true;
@@ -260,6 +270,15 @@ public final class NotificationManager {
         List<NotificationLogEntry> loaded = NotificationLogStore.load(notificationLogMaxEntries());
         history.replace(loaded, notificationLogMaxEntries());
         for (NotificationLogEntry entry : loaded) nextLogId.accumulateAndGet(entry.id(), Math::max);
+        importanceRevision = Long.MIN_VALUE;
+        refreshImportance();
+    }
+
+    private synchronized void refreshImportance() {
+        NotificationTypeSettingsStore store = NotificationTypeSettingsStore.get();
+        if (!store.isSettingsLoadedFromDisk() || importanceRevision == store.revision()) return;
+        importanceRevision = store.revision();
+        if (history.refreshImportance()) saveLogAsync();
     }
 
     private static int notificationLogMaxEntries() {

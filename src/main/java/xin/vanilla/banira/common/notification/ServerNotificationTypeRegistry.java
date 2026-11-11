@@ -18,6 +18,7 @@ import java.util.List;
  * 客户端在本地 JSON 无该类型条目时采用（客户端模组显式 {@code NotificationTypeRegistry.register(id, mode)} 优先）。
  */
 public final class ServerNotificationTypeRegistry {
+    private static final java.util.concurrent.ConcurrentHashMap<String, Boolean> IMPORTANT_DEFAULTS = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final ServerNotificationTypeRegistryState STATE = new ServerNotificationTypeRegistryState();
 
@@ -26,6 +27,17 @@ public final class ServerNotificationTypeRegistry {
                 EnumNotificationTypeDisplayMode.VANILLA_CHAT);
         register(NotificationTypeKeys.COMMAND_FEEDBACK, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
                 EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+    }
+
+    static {
+        registerImportance(NotificationTypeKeys.HELP, false);
+        registerImportance(NotificationTypeKeys.COMMAND_FEEDBACK, false);
+    }
+
+    public static void registerImportance(String typeId, boolean important) {
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        ensureKnown(type);
+        IMPORTANT_DEFAULTS.put(type, important);
     }
 
     private ServerNotificationTypeRegistry() {
@@ -68,7 +80,11 @@ public final class ServerNotificationTypeRegistry {
      * 注销通知类型声明。默认类型会被保留。
      */
     public static boolean unregister(String typeId) {
-        return STATE.unregister(typeId);
+        boolean removed = STATE.unregister(typeId);
+        if (!NotificationTypeKeys.DEFAULT.equals(NotificationTypeKeys.normalizeOrDefault(typeId))) {
+            IMPORTANT_DEFAULTS.remove(NotificationTypeKeys.normalizeOrDefault(typeId));
+        }
+        return removed;
     }
 
     /**
@@ -96,7 +112,12 @@ public final class ServerNotificationTypeRegistry {
      * 构建登录同步条目（类型 id + 可选的客户端默认展示方式）
      */
     public static List<NotificationTypeSyncEntry> buildSyncEntries() {
-        return STATE.buildSyncEntries();
+        List<NotificationTypeSyncEntry> result = new java.util.ArrayList<>();
+        for (NotificationTypeSyncEntry entry : STATE.buildSyncEntries()) {
+            result.add(new NotificationTypeSyncEntry(entry.typeId(), entry.defaultDisplayIfAbsent(),
+                    IMPORTANT_DEFAULTS.get(entry.typeId())));
+        }
+        return result;
     }
 
     /**

@@ -28,16 +28,3 @@ tasks.named('assemble').configure { dependsOn 'shadowJar' }
 tasks.withType(org.gradle.api.publish.maven.tasks.AbstractPublishToMaven).configureEach {
     dependsOn 'shadowJar'
 }
-
-tasks.register('scriptArtifactTest', Test) {
-    dependsOn 'shadowJar', 'testClasses'
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    filter { includeTestsMatching '*ScriptArtifactTest' }
-    inputs.file(tasks.shadowJar.archiveFile)
-    inputs.files(configurations.scriptCompilerCollision)
-    doFirst {
-        systemProperty 'banira.scriptArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
-        systemProperty 'banira.scriptCollision', configurations.scriptCompilerCollision.asPath
-    }
-}

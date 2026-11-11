@@ -23,7 +23,6 @@ dependencies {
     }
     compileOnly files(configurations.auiContract)
     compileOnly 'org.joml:joml:1.10.5'
-    testRuntimeOnly 'org.joml:joml:1.10.5'
 }
 def verify = tasks.register('verifyAuiContract') {
     doLast {
@@ -33,15 +32,3 @@ def verify = tasks.register('verifyAuiContract') {
     }
 }
 tasks.named('compileJava') { dependsOn verify }
-tasks.withType(Test).configureEach {
-    dependsOn verify
-    doFirst {
-        def contracts = sourceSets.main.compileClasspath.files.findAll { artifact ->
-            if (!artifact.name.endsWith('.jar')) return false
-            new ZipFile(artifact).withCloseable { zip -> zip.getEntry('com/sighs/apricityui/screen/ApricityScreen.class') != null }
-        }
-        if (contracts.size() != 1) throw new GradleException('Expected one compile-only AUI contract')
-        systemProperty 'banira.aui.contractJar', contracts[0].absolutePath
-        systemProperty 'banira.aui.contractOnRuntimeClasspath', configurations.runtimeClasspath.files.contains(contracts[0])
-    }
-}

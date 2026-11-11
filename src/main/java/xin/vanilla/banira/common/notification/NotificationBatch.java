@@ -79,7 +79,7 @@ public final class NotificationBatch {
         }
 
         private static PreparedPlainPage forBatch(Component prefix, List<Component> entries,
-                                                   Component separator, String language) {
+                                                  Component separator, String language) {
             // Exact ArrayList access cannot invoke caller code while checking the whole batch.
             if (language == null || entries.getClass() != ArrayList.class || entries.isEmpty()
                     || !supports(prefix, true) || !supports(separator, false)) return null;

@@ -1,9 +1,9 @@
 package xin.vanilla.banira.client.gui;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.Banira;

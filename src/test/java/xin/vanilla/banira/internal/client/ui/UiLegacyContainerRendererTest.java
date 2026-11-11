@@ -1,6 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class UiLegacyContainerRendererTest {
@@ -14,13 +15,14 @@ public class UiLegacyContainerRendererTest {
         }
         boolean negative = false;
         int flushes = 0;
-        for (lombok.var method : node.methods) if (method.name.equals("render"))
-            for (lombok.var instruction : method.instructions) {
-                if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode && Double.valueOf(-10).equals(((org.objectweb.asm.tree.LdcInsnNode) instruction).cst))
-                    negative = true;
-                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("flush"))
-                    flushes++;
-            }
+        for (lombok.var method : node.methods)
+            if (method.name.equals("render"))
+                for (lombok.var instruction : method.instructions) {
+                    if (instruction instanceof org.objectweb.asm.tree.LdcInsnNode && Double.valueOf(-10).equals(((org.objectweb.asm.tree.LdcInsnNode) instruction).cst))
+                        negative = true;
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("flush"))
+                        flushes++;
+                }
         assertFalse("A negative document layer can be occluded by the screen dim background", negative);
         assertEquals("Native and AUI batches must be ordered around container painting", 2, flushes);
         org.objectweb.asm.tree.ClassNode container = new org.objectweb.asm.tree.ClassNode();
@@ -33,7 +35,7 @@ public class UiLegacyContainerRendererTest {
                 && java.util.Arrays.stream(method.instructions.toArray()).anyMatch(i -> i instanceof org.objectweb.asm.tree.FieldInsnNode
                 && ((org.objectweb.asm.tree.FieldInsnNode) i).name.equals("blitOffset"))));
         try (lombok.var jar = new java.util.jar.JarFile(System.getProperty("banira.aui.contractJar"));
-            lombok.var stream = jar.getInputStream(jar.getJarEntry("com/sighs/apricityui/render/Base.class"))) {
+             lombok.var stream = jar.getInputStream(jar.getJarEntry("com/sighs/apricityui/render/Base.class"))) {
             org.objectweb.asm.tree.ClassNode engine = new org.objectweb.asm.tree.ClassNode();
             new org.objectweb.asm.ClassReader(stream).accept(engine, 0);
             lombok.var method = engine.methods.stream().filter(m -> m.name.equals("resolveFlatDocumentBaseZ")).findFirst().orElseThrow(java.util.NoSuchElementException::new);

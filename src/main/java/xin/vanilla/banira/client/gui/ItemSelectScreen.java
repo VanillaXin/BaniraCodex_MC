@@ -32,6 +32,7 @@ import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -318,7 +319,7 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
         }
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
-        String[] btnIds = { "type", "item", "count", "nbt" };
+        String[] btnIds = {"type", "item", "count", "nbt"};
         for (int i = 0; i < btnIds.length; i++) {
             String btnId = btnIds[i];
             ButtonWidget btn = new ButtonWidget(this);

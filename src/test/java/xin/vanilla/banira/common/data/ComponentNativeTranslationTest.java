@@ -50,7 +50,7 @@ public class ComponentNativeTranslationTest {
     @Test
     public void modTemplateKeepsNativeArgumentAndTranslatesOnlyModText() {
         Component value = BaniraComponent.get().transAuto("config_editor_sync_server_ok",
-                new TranslationTextComponent("item.minecraft.diamond"))
+                        new TranslationTextComponent("item.minecraft.diamond"))
                 .languageCode("zh_cn");
         ITextComponent result = value.toVanilla("zh_cn");
         assertTrue(result.getString().startsWith("服务端已应用并保存 "));

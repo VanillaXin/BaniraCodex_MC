@@ -8,7 +8,6 @@ import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigValueType;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;

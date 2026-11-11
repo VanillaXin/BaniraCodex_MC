@@ -2,11 +2,7 @@ package xin.vanilla.banira.internal.compat;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -144,7 +140,8 @@ public final class IpnInventoryContract {
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 if (!call.owner.equals(owner.name)) continue;
                 for (MethodNode handler : owner.methods) {
-                    if (handler == method || !handler.name.equals(call.name) || !handler.desc.equals(call.desc)) continue;
+                    if (handler == method || !handler.name.equals(call.name) || !handler.desc.equals(call.desc))
+                        continue;
                     for (AbstractInsnNode body : handler.instructions) {
                         if (body instanceof MethodInsnNode) {
                             MethodInsnNode invoked = (MethodInsnNode) body;

@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.util.text.Style;
 import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.Style;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.component.Notification;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
@@ -94,15 +94,30 @@ public final class NotificationHudPresentation implements AutoCloseable {
         node.attribute("class", css);
         String style;
         switch (css) {
-            case "notice-mask": style = "position:absolute;pointer-events:none;"; break;
-            case "notice-icon": style = "position:absolute;left:6px;top:5px;width:9px;height:9px;image-rendering:pixelated;"; break;
-            case "notice-name": style = "position:absolute;left:19px;top:5px;right:28px;height:10px;font-family:default;font-size:7px;line-height:10px;white-space:nowrap;overflow:hidden;"; break;
-            case "notice-severity": style = "position:absolute;right:20px;top:5px;width:8px;height:8px;"; break;
-            case "notice-close": style = "position:absolute;right:4px;top:4px;width:11px;height:11px;image-rendering:pixelated;"; break;
-            case "notice-body": style = "position:absolute;left:6px;right:6px;top:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BODY_TOP
-                    + "px;bottom:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BOTTOM + "px;overflow:hidden;"; break;
-            case "notice-line": style = "display:flex;flex-direction:row;align-items:flex-start;width:100%;height:10px;min-height:10px;overflow:hidden;"; break;
-            default: style = "";
+            case "notice-mask":
+                style = "position:absolute;pointer-events:none;";
+                break;
+            case "notice-icon":
+                style = "position:absolute;left:6px;top:5px;width:9px;height:9px;image-rendering:pixelated;";
+                break;
+            case "notice-name":
+                style = "position:absolute;left:19px;top:5px;right:28px;height:10px;font-family:default;font-size:7px;line-height:10px;white-space:nowrap;overflow:hidden;";
+                break;
+            case "notice-severity":
+                style = "position:absolute;right:20px;top:5px;width:8px;height:8px;";
+                break;
+            case "notice-close":
+                style = "position:absolute;right:4px;top:4px;width:11px;height:11px;image-rendering:pixelated;";
+                break;
+            case "notice-body":
+                style = "position:absolute;left:6px;right:6px;top:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BODY_TOP
+                        + "px;bottom:" + xin.vanilla.banira.client.notification.NotificationBubbleLayout.BOTTOM + "px;overflow:hidden;";
+                break;
+            case "notice-line":
+                style = "display:flex;flex-direction:row;align-items:flex-start;width:100%;height:10px;min-height:10px;overflow:hidden;";
+                break;
+            default:
+                style = "";
         }
         if (!style.isEmpty()) node.attribute("style", style);
         parent.append(node);
@@ -220,10 +235,17 @@ public final class NotificationHudPresentation implements AutoCloseable {
                         + HudDrawList.css(notification.notificationTheme().textSecondary()) + ";");
                 String tone;
                 switch (style) {
-                    case "warning": tone = "#b4924d"; break;
-                    case "error": tone = "#ba6a7a"; break;
-                    case "success": tone = "#6f9e85"; break;
-                    default: tone = "#729789";
+                    case "warning":
+                        tone = "#b4924d";
+                        break;
+                    case "error":
+                        tone = "#ba6a7a";
+                        break;
+                    case "success":
+                        tone = "#6f9e85";
+                        break;
+                    default:
+                        tone = "#729789";
                 }
                 rule.attribute("style", "position:absolute;left:0;top:0;width:2px;height:100%;background:" + tone + ";");
                 severity.attribute("src", "apricityui:apricity/banira_codex/icons/hud-" + style + ".png");

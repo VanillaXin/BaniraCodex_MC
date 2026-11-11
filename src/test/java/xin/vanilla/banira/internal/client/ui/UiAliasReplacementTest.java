@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
 public class UiAliasReplacementTest {

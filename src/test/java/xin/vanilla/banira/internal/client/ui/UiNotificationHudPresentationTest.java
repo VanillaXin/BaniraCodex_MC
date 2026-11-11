@@ -1,15 +1,14 @@
 package xin.vanilla.banira.internal.client.ui;
 
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.Style;
 import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.event.ClickEvent;
 import org.junit.Test;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.component.Notification;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import static org.junit.Assert.*;
 

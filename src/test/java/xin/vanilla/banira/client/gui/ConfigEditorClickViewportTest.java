@@ -13,7 +13,8 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.lang.reflect.Field;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigEditorClickViewportTest {
     @Before

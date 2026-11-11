@@ -1,7 +1,6 @@
 package xin.vanilla.banira.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -422,7 +421,9 @@ public class ConfigEditorScreen extends BaniraScreen implements UiNativePage {
         uiSession.refresh(configName);
     }
 
-    /** Server snapshots belong to this editor session, never to the local runtime configuration. */
+    /**
+     * Server snapshots belong to this editor session, never to the local runtime configuration.
+     */
     public void applyRemoteSnapshot(String configName, Map<String, Object> snapshot) {
         uiSession.acceptRemoteSnapshot(configName, snapshot);
     }

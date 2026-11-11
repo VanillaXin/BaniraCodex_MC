@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
-import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 
 public final class CommonUiPages {

@@ -1,16 +1,21 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import xin.vanilla.banira.api.client.ui.UiHudFrame;
 import xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract;
 
-import java.net.URLClassLoader;
 import java.io.File;
 import java.io.InputStream;
+import java.net.URLClassLoader;
 import java.util.*;
-import java.util.jar.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import static org.junit.Assert.*;
 
@@ -26,7 +31,9 @@ public class Forge16UiCompatibilityTest {
                 JarEntry entry = entries.nextElement();
                 if (!entry.getName().endsWith(".class")) continue;
                 ClassNode node = new ClassNode();
-                try (InputStream input = jar.getInputStream(entry)) { new ClassReader(input).accept(node, 0); }
+                try (InputStream input = jar.getInputStream(entry)) {
+                    new ClassReader(input).accept(node, 0);
+                }
                 assertEquals(52, node.version);
                 for (MethodNode method : node.methods) {
                     if ((method.access & Opcodes.ACC_ABSTRACT) != 0) continue;

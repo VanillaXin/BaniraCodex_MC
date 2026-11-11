@@ -19,13 +19,13 @@ import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.client.util.NotificationManager;
+import xin.vanilla.banira.common.config.ConfigListSpecHelper;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumSeason;
+import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 import xin.vanilla.banira.internal.client.ConfigEditorInputLimits;
 import xin.vanilla.banira.internal.client.ConfigListDraft;
-import xin.vanilla.banira.common.config.ConfigListSpecHelper;
-import xin.vanilla.banira.common.util.JsonUtils;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;

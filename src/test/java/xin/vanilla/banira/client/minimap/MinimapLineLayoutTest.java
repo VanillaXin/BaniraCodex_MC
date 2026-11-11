@@ -1,8 +1,10 @@
 package xin.vanilla.banira.client.minimap;
 
 import org.junit.Test;
+
 import java.lang.reflect.Method;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertArrayEquals;
 
 public class MinimapLineLayoutTest {
     private float[] positions(float anchor, boolean above, float screenHeight, float... heights) throws Exception {

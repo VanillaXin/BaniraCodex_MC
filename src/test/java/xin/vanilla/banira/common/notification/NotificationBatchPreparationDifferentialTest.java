@@ -2,8 +2,8 @@ package xin.vanilla.banira.common.notification;
 
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.event.HoverEvent;
 import org.junit.BeforeClass;
@@ -103,7 +103,7 @@ public class NotificationBatchPreparationDifferentialTest {
             Component entry = original
                     ? BaniraComponent.get().object(new StringTextComponent("mixed-original")).languageCode(LANGUAGE)
                     : text("mixed-hover").hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new StringTextComponent("mixed-hover-details")));
+                    new StringTextComponent("mixed-hover-details")));
             fixture.entries.set(200, entry);
             List<String> before = fixture.inputSnapshot();
             assertEquals(reference(fixture), production(fixture));

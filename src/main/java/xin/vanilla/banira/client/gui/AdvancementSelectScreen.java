@@ -6,9 +6,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -37,6 +37,7 @@ import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
 import xin.vanilla.banira.internal.network.data.AdvancementData;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -332,7 +333,7 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
         // region 操作按钮
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
-        String[] btnIds = { "type", "advancement" };
+        String[] btnIds = {"type", "advancement"};
         for (int i = 0; i < btnIds.length; i++) {
             String btnId = btnIds[i];
             ButtonWidget btn = new ButtonWidget(this);

@@ -14,7 +14,6 @@ import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.internal.client.ui.page.FormUiSession;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.*;
 

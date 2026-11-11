@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.client.Minecraft;
 import dev.ftb.mods.ftbchunks.client.FTBChunksClientConfig;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.ITextComponent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;

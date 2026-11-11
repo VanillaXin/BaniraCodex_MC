@@ -6,6 +6,7 @@ import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
 import xin.vanilla.banira.client.gui.EffectSelectScreen;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
+
 import static org.junit.Assert.assertTrue;
 
 public class Forge16SelectorRoutingTest {

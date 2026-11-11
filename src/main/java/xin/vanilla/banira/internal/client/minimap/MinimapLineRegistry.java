@@ -7,17 +7,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Consumer;
 
 public final class MinimapLineRegistry {
@@ -136,7 +126,7 @@ public final class MinimapLineRegistry {
     }
 
     private static EnumNotificationHudHost select(EnumNotificationHudHost preference,
-                                                   Map<EnumNotificationHudHost, Long> hosts, long nowNanos) {
+                                                  Map<EnumNotificationHudHost, Long> hosts, long nowNanos) {
         if (preference == EnumNotificationHudHost.AUTO) {
             for (EnumNotificationHudHost host : EnumNotificationHudHost.values()) {
                 if (active(host, hosts, nowNanos)) return host;

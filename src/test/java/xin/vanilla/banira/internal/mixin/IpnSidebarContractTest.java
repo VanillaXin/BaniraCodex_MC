@@ -9,7 +9,8 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public final class IpnSidebarContractTest {
     private static final String RENDER = "org.anti_ad.mc.ipnext.gui.inject.base.SortButtonWidget";
@@ -78,7 +79,7 @@ public final class IpnSidebarContractTest {
         assertTrue(handler.methods.stream().anyMatch(method -> method.name.equals("getCurrentWidgets")
                 && method.desc.equals("()Ljava/util/List;")));
         handler.methods.stream().filter(method -> method.name.equals("getCurrentWidgets")
-                && method.desc.equals("()Ljava/util/List;"))
+                        && method.desc.equals("()Ljava/util/List;"))
                 .forEach(method -> method.desc = "()Ljava/util/Collection;");
         fixture.replace(handler);
         assertRejected(fixture);
@@ -101,7 +102,7 @@ public final class IpnSidebarContractTest {
         assertTrue(settings.methods.stream().anyMatch(method -> method.name.equals("onClick")
                 && method.desc.equals("()V")));
         settings.methods.stream().filter(method -> method.name.equals("onClick")
-                && method.desc.equals("()V"))
+                        && method.desc.equals("()V"))
                 .forEach(method -> method.access |= Opcodes.ACC_STATIC);
         fixture.replace(settings);
         assertRejected(fixture);
@@ -146,7 +147,7 @@ public final class IpnSidebarContractTest {
         assertFalse("A lost click call edge must revoke the whole IPN takeover", hooksApplied(fixture));
 
         MethodNode init = fixture.node(
-                "xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompatibility")
+                        "xin.vanilla.banira.internal.forge.compat.ipn.InventoryProfilesNextCompatibility")
                 .methods.stream().filter(method -> method.name.equals("init"))
                 .findFirst().orElseThrow(AssertionError::new);
         int gate = -1;

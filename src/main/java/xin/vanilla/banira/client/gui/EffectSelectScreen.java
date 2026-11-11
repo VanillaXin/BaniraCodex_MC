@@ -6,11 +6,11 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
@@ -38,6 +38,7 @@ import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.UiViewState;
 import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -373,7 +374,7 @@ public class EffectSelectScreen extends BaniraScreen implements UiNativePage {
         addWidget(submitButtonWidget);
         int opBtnX = this.panelLeft - OP_BTN_SIZE - OP_BTN_GAP;
         int opBtnY = this.panelTop;
-        String[] btnIds = { "type", "effect", "duration", "amplifier" };
+        String[] btnIds = {"type", "effect", "duration", "amplifier"};
         for (int i = 0; i < btnIds.length; i++) {
             String btnId = btnIds[i];
             ButtonWidget btn = new ButtonWidget(this);

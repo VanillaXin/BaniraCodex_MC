@@ -7,8 +7,8 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraConfigs;
-import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
+import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
 import xin.vanilla.banira.client.gui.NotificationLogScreen;
 import xin.vanilla.banira.client.gui.NotificationTypeConfigScreen;
@@ -18,10 +18,10 @@ import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.util.LogoModifier;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.ClientConfigView;
 import xin.vanilla.banira.internal.client.ui.UiBackendController;
 import xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.function.Consumer;
 

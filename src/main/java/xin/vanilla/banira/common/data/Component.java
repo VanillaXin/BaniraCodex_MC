@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * 富文本数据模型。构造方法与静态工厂仅同包可见；外部 Mod 须通过 {@link AbstractComponent}
@@ -749,7 +748,8 @@ public final class Component implements Cloneable, Serializable {
     }
 
     private boolean requiresNativePreparation() {
-        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null) return true;
+        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null)
+            return true;
         for (Component child : this.getChildren()) if (child.requiresNativePreparation()) return true;
         for (Component arg : this.getArgs()) if (arg != null && arg.requiresNativePreparation()) return true;
         return false;
@@ -1045,7 +1045,8 @@ public final class Component implements Cloneable, Serializable {
             result.add("original", new com.google.gson.JsonParser().parse(
                     ITextComponent.Serializer.toJson((ITextComponent) component.original())));
         }
-        if (result.has("original")) result.add("original", prepareNativeJson(result.get("original"), component.languageCodeOrDefault(), false));
+        if (result.has("original"))
+            result.add("original", prepareNativeJson(result.get("original"), component.languageCodeOrDefault(), false));
         if (!component.isModIdEmpty()) {
             JsonUtils.set(result, "modId", component.modId());
         }
@@ -1090,7 +1091,8 @@ public final class Component implements Cloneable, Serializable {
         if (component.hoverEvent() != null) {
             JsonUtils.set(result, "hoverEvent", component.hoverEvent().serialize());
         }
-        if (result.has("hoverEvent")) result.add("hoverEvent", prepareNativeHover(result.get("hoverEvent"), component.languageCodeOrDefault()));
+        if (result.has("hoverEvent"))
+            result.add("hoverEvent", prepareNativeHover(result.get("hoverEvent"), component.languageCodeOrDefault()));
         JsonArray children = new JsonArray();
         for (Component child : component.getChildren()) {
             children.add(serialize(child));

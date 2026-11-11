@@ -1,10 +1,6 @@
 package xin.vanilla.banira.internal.client.minimap;
 
-import net.minecraft.util.text.CharacterManager;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.ITextProperties;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
+import net.minecraft.util.text.*;
 
 import java.util.ArrayList;
 import java.util.List;

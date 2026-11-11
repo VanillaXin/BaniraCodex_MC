@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;

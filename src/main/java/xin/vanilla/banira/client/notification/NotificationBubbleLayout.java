@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.notification;
 
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.List;
 

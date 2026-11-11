@@ -2,8 +2,8 @@ package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;

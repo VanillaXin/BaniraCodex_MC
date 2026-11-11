@@ -2,17 +2,17 @@ package xin.vanilla.banira.client.notification;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TranslationTextComponent;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
-import xin.vanilla.banira.internal.config.ClientConfig;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
+import xin.vanilla.banira.internal.config.ClientConfig;
 
 import java.util.Collections;
 import java.util.List;

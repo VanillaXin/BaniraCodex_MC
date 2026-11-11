@@ -1,10 +1,10 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

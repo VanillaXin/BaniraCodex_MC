@@ -1,11 +1,11 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.util.NonNullList;
+import net.minecraft.enchantment.EnchantmentData;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.*;
 import net.minecraft.potion.PotionUtils;
 import net.minecraft.potion.Potions;
-import net.minecraft.enchantment.EnchantmentData;
-import net.minecraft.enchantment.Enchantments;
+import net.minecraft.util.NonNullList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

@@ -10,8 +10,10 @@ import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
+
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.Assert.*;
 
 public class UiForge16CommonPagePortTest {
@@ -32,7 +34,7 @@ public class UiForge16CommonPagePortTest {
 
     @Test
     public void allFourNativePagesExposeSharedSessions() throws Exception {
-        for (String name : new String[] { "CodexNavigationScreen", "InputFormScreen", "ConfirmDialogScreen", "ReadOnlyTextScreen" }) {
+        for (String name : new String[]{"CodexNavigationScreen", "InputFormScreen", "ConfirmDialogScreen", "ReadOnlyTextScreen"}) {
             ClassNode screen = code("client/gui/" + name);
             assertTrue(name, screen.interfaces.contains("xin/vanilla/banira/internal/client/ui/UiNativePage"));
             assertTrue(name, screen.methods.stream().anyMatch(method -> method.name.equals("uiPage")));

@@ -3,6 +3,7 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.*;
+
 import static org.junit.Assert.*;
 
 public class UiPlayerPreferenceNetworkWiringTest {

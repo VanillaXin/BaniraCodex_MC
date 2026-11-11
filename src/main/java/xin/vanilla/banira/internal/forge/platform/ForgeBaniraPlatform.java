@@ -37,7 +37,9 @@ public final class ForgeBaniraPlatform implements BaniraPlatform {
     }
 
     @Override
-    public BaniraCostService costService() { return costs; }
+    public BaniraCostService costService() {
+        return costs;
+    }
 
     @Override
     public String minecraftVersion() {

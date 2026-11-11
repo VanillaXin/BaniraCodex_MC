@@ -4,7 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
-/** Buffer and clipping operations for the MatrixStack GUI renderer. */
+/**
+ * Buffer and clipping operations for the MatrixStack GUI renderer.
+ */
 public final class LegacyUiGraphics {
     private LegacyUiGraphics() {
     }

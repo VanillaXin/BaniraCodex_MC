@@ -5,11 +5,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 
 import java.io.ByteArrayInputStream;
@@ -23,11 +19,7 @@ import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -113,7 +105,7 @@ public final class FtbSidebarContractTest {
         assertTrue(manager.methods.stream().anyMatch(method -> method.name.equals("getGroups")
                 && method.desc.equals("()Ljava/util/List;")));
         manager.methods.stream().filter(method -> method.name.equals("getGroups")
-                && method.desc.equals("()Ljava/util/List;"))
+                        && method.desc.equals("()Ljava/util/List;"))
                 .forEach(method -> method.desc = "()Ljava/util/Collection;");
         fixture.replace(manager);
         assertRejected(fixture);
@@ -182,7 +174,7 @@ public final class FtbSidebarContractTest {
     public void iconBindingWritesPrivateInstanceFieldsAndRejectsInvalidBindings() throws Exception {
         Fixture fixture = fixedFixture();
         java.lang.reflect.Method bind = fixture.loadClass(
-                "xin.vanilla.banira.internal.compat.FtbLibraryContract")
+                        "xin.vanilla.banira.internal.compat.FtbLibraryContract")
                 .getMethod("bindIcon", Class.class, Class.class);
         java.lang.reflect.Field field = (java.lang.reflect.Field) bind.invoke(
                 null, MutableIconButton.class, IconFixture.class);
@@ -232,7 +224,7 @@ public final class FtbSidebarContractTest {
     }
 
     static void wireHandler(Fixture fixture, ClassNode target, String mixinName,
-                                     String methodName, String handlerName) throws IOException {
+                            String methodName, String handlerName) throws IOException {
         // Model actual compiled handler call edges without defining optional JVM classes.
         MethodNode handler = fixture.node(mixinName).methods.stream().filter(method ->
                 method.name.equals(handlerName)).findFirst().orElseThrow(AssertionError::new);
@@ -245,11 +237,20 @@ public final class FtbSidebarContractTest {
             int opcode;
             switch (argument.getSort()) {
                 case Type.OBJECT:
-                case Type.ARRAY: opcode = Opcodes.ACONST_NULL; break;
-                case Type.FLOAT: opcode = Opcodes.FCONST_0; break;
-                case Type.DOUBLE: opcode = Opcodes.DCONST_0; break;
-                case Type.LONG: opcode = Opcodes.LCONST_0; break;
-                default: opcode = Opcodes.ICONST_0;
+                case Type.ARRAY:
+                    opcode = Opcodes.ACONST_NULL;
+                    break;
+                case Type.FLOAT:
+                    opcode = Opcodes.FCONST_0;
+                    break;
+                case Type.DOUBLE:
+                    opcode = Opcodes.DCONST_0;
+                    break;
+                case Type.LONG:
+                    opcode = Opcodes.LCONST_0;
+                    break;
+                default:
+                    opcode = Opcodes.ICONST_0;
             }
             edge.add(new InsnNode(opcode));
         }
@@ -322,8 +323,8 @@ public final class FtbSidebarContractTest {
         if (Files.isDirectory(root)) {
             try (Stream<Path> files = Files.walk(root, 12)) {
                 Path artifact = files.filter(path -> path.getFileName().toString()
-                        .startsWith("ftb-library-fabric-438495-")
-                        && path.getFileName().toString().endsWith("-5543334.jar"))
+                                .startsWith("ftb-library-fabric-438495-")
+                                && path.getFileName().toString().endsWith("-5543334.jar"))
                         .sorted().findFirst().orElse(null);
                 if (artifact != null) return new Fixture(artifact);
             }
@@ -450,7 +451,7 @@ public final class FtbSidebarContractTest {
             ClassNode node = new ClassNode();
             new ClassReader(code).accept(node, 0);
             MethodNode instance = node.methods.stream().filter(method -> method.name.equals("getInstance")
-                    && method.desc.equals("()Lnet/fabricmc/loader/api/FabricLoader;"))
+                            && method.desc.equals("()Lnet/fabricmc/loader/api/FabricLoader;"))
                     .findFirst().orElseThrow(AssertionError::new);
             instance.instructions.clear();
             instance.tryCatchBlocks.clear();

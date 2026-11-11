@@ -5,8 +5,6 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;

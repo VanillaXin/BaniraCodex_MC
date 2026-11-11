@@ -10,8 +10,8 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.internal.client.ui.TextCompletionState;
 import xin.vanilla.banira.internal.client.ui.TextCompletionLayout;
+import xin.vanilla.banira.internal.client.ui.TextCompletionState;
 
 public final class CompletionInputWidget extends InputWidget {
     private final TextCompletionState completion;

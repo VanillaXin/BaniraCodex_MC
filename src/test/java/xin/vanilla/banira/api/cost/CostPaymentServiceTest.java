@@ -28,7 +28,9 @@ public class CostPaymentServiceTest {
     @Test
     public void followupFailureLeavesPaymentTerminal() {
         Fixture f = new Fixture();
-        f.followup = () -> { throw new IllegalStateException("Transport gone"); };
+        f.followup = () -> {
+            throw new IllegalStateException("Transport gone");
+        };
         CostOperation op = CostOperation.create(f.identity());
         assertTrue(f.service.commit(op, f).isCommitted());
         assertEquals(CostOperation.State.PAID, op.state());
@@ -42,12 +44,23 @@ public class CostPaymentServiceTest {
             Fixture f = new Fixture();
             CostOperation op = CostOperation.create(f.identity());
             switch (change) {
-                case 0: f.payer = new UUID(0, 2); break;
-                case 1: f.generation++; break;
-                case 2: f.signature = "other-target"; break;
-                case 3: f.domain = "other:business"; break;
-                case 4: f.id++; break;
-                default: throw new AssertionError();
+                case 0:
+                    f.payer = new UUID(0, 2);
+                    break;
+                case 1:
+                    f.generation++;
+                    break;
+                case 2:
+                    f.signature = "other-target";
+                    break;
+                case 3:
+                    f.domain = "other:business";
+                    break;
+                case 4:
+                    f.id++;
+                    break;
+                default:
+                    throw new AssertionError();
             }
             assertEquals(change == 1 ? CostFailure.CONFIGURATION_UNAVAILABLE : CostFailure.INVALID_OPERATION,
                     f.service.commit(op, f).failure());
@@ -97,7 +110,9 @@ public class CostPaymentServiceTest {
     @Test
     public void paymentExceptionIsTerminalAndDoesNotRunFollowup() {
         Fixture f = new Fixture();
-        f.onPay = () -> { throw new IllegalStateException("Payment failed"); };
+        f.onPay = () -> {
+            throw new IllegalStateException("Payment failed");
+        };
         CostOperation op = CostOperation.create(f.identity());
         assertEquals(CostFailure.PAYMENT_FAILED, f.service.commit(op, f).failure());
         assertEquals(CostOperation.State.FAILED, op.state());
@@ -112,7 +127,11 @@ public class CostPaymentServiceTest {
         CostOperation op = CostOperation.create(f.identity());
         AtomicReference<Throwable> error = new AtomicReference<>();
         Thread thread = new Thread(() -> {
-            try { f.service.commit(op, f); } catch (Throwable e) { error.set(e); }
+            try {
+                f.service.commit(op, f);
+            } catch (Throwable e) {
+                error.set(e);
+            }
         });
         thread.start();
         thread.join();
@@ -129,11 +148,20 @@ public class CostPaymentServiceTest {
             int currentChange = change;
             f.onPlan = () -> {
                 switch (currentChange) {
-                    case 0: f.generation++; break;
-                    case 1: f.payer = new UUID(0, 2); break;
-                    case 2: f.signature = "replacement"; break;
-                    case 3: f.validity = CostFailure.ACTOR_UNAVAILABLE; break;
-                    default: throw new AssertionError();
+                    case 0:
+                        f.generation++;
+                        break;
+                    case 1:
+                        f.payer = new UUID(0, 2);
+                        break;
+                    case 2:
+                        f.signature = "replacement";
+                        break;
+                    case 3:
+                        f.validity = CostFailure.ACTOR_UNAVAILABLE;
+                        break;
+                    default:
+                        throw new AssertionError();
                 }
             };
             CostFailure expected = change == 0 ? CostFailure.CONFIGURATION_UNAVAILABLE
@@ -191,7 +219,11 @@ public class CostPaymentServiceTest {
         assertEquals("before", plan.snapshots().get(0).before());
         assertEquals("after", plan.snapshots().get(0).after());
         assertTrue(plan.snapshots().get(0).reversible());
-        try { plan.snapshots().clear(); fail("Mutable snapshots"); } catch (UnsupportedOperationException expected) { }
+        try {
+            plan.snapshots().clear();
+            fail("Mutable snapshots");
+        } catch (UnsupportedOperationException expected) {
+        }
     }
 
     @Test
@@ -204,12 +236,25 @@ public class CostPaymentServiceTest {
             assertEquals(CostOperation.State.PAID, operation.state());
             return Collections.singletonList(new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "actual", true));
         };
-        f.onPay = () -> { };
+        f.onPay = () -> {
+        };
         CostPaymentService<Fixture> service = new CostPaymentService<>(context -> original, Fixture::identity, new CostPaymentService.PaymentAccess<Fixture>() {
-            public CostFailure validate(Fixture context) { return CostFailure.NONE; }
-            public CostFailure pay(Fixture context, CostPaymentPlan plan) { f.debits++; return CostFailure.NONE; }
-            public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) { return f.receipt.apply(plan); }
-            public void afterPayment(Fixture context, CostPaymentPlan plan) { assertEquals("actual", plan.snapshots().get(0).after()); }
+            public CostFailure validate(Fixture context) {
+                return CostFailure.NONE;
+            }
+
+            public CostFailure pay(Fixture context, CostPaymentPlan plan) {
+                f.debits++;
+                return CostFailure.NONE;
+            }
+
+            public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) {
+                return f.receipt.apply(plan);
+            }
+
+            public void afterPayment(Fixture context, CostPaymentPlan plan) {
+                assertEquals("actual", plan.snapshots().get(0).after());
+            }
         });
         CostPaymentPlan result = service.commit(operation, f);
         assertTrue(result.isCommitted());
@@ -242,8 +287,11 @@ public class CostPaymentServiceTest {
                 new CostPaymentPlan.ResourceSnapshot("test:other", "before", "actual", true),
                 new CostPaymentPlan.ResourceSnapshot("test:resource", "foreign", "actual", true),
                 new CostPaymentPlan.ResourceSnapshot("test:resource", "before", "actual", false)}) {
-            try { plan.withSnapshots(Collections.singletonList(snapshot)); fail("Receipt changed identity"); }
-            catch (IllegalArgumentException expected) { }
+            try {
+                plan.withSnapshots(Collections.singletonList(snapshot));
+                fail("Receipt changed identity");
+            } catch (IllegalArgumentException expected) {
+            }
         }
     }
 
@@ -265,9 +313,16 @@ public class CostPaymentServiceTest {
         CostPaymentPlan plan = CostPaymentPlan.ready(1, costs, Collections.emptyList());
         costs.clear();
         assertEquals(1, plan.requirements().size());
-        try { plan.requirements().clear(); fail("Mutable plan"); } catch (UnsupportedOperationException expected) { }
-        try { CostPaymentPlan.failed(CostFailure.PAYMENT_FAILED).paid(); fail("Failed plan paid"); }
-        catch (IllegalStateException expected) { }
+        try {
+            plan.requirements().clear();
+            fail("Mutable plan");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            CostPaymentPlan.failed(CostFailure.PAYMENT_FAILED).paid();
+            fail("Failed plan paid");
+        } catch (IllegalStateException expected) {
+        }
     }
 
     private static final class Fixture implements CostPaymentService.PaymentAccess<Fixture> {
@@ -288,8 +343,14 @@ public class CostPaymentServiceTest {
                     : CostPaymentPlan.failed(CostFailure.INSUFFICIENT_RESOURCE);
         }, Fixture::identity, this);
 
-        CostIdentity identity() { return new CostIdentity(domain, payer, id, generation, signature, configuration); }
-        public CostFailure validate(Fixture context) { return validity; }
+        CostIdentity identity() {
+            return new CostIdentity(domain, payer, id, generation, signature, configuration);
+        }
+
+        public CostFailure validate(Fixture context) {
+            return validity;
+        }
+
         public CostFailure pay(Fixture context, CostPaymentPlan plan) {
             debits++;
             if (onPay != null) onPay.run();
@@ -297,10 +358,14 @@ public class CostPaymentServiceTest {
             balance -= plan.requirements().get(0).amount();
             return CostFailure.NONE;
         }
+
         public void afterPayment(Fixture context, CostPaymentPlan plan) {
             followups++;
             if (followup != null) followup.run();
         }
-        public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) { return receipt.apply(plan); }
+
+        public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(Fixture context, CostPaymentPlan plan) {
+            return receipt.apply(plan);
+        }
     }
 }

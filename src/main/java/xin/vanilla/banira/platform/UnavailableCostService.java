@@ -5,7 +5,9 @@ import xin.vanilla.banira.api.cost.InventoryScope;
 
 public enum UnavailableCostService implements BaniraCostService {
     INSTANCE;
-    @Override public CostAccess access(Object payer, InventoryScope scope) {
+
+    @Override
+    public CostAccess access(Object payer, InventoryScope scope) {
         throw new IllegalStateException("Cost resources are unavailable on this platform");
     }
 }

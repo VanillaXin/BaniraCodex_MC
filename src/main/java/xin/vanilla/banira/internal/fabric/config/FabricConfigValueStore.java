@@ -192,7 +192,8 @@ final class FabricConfigValueStore implements ConfigValueStore {
             staged = Files.createTempFile(file.getParent(), ".banira-config-", ".tmp");
             byte[] written = renderToml(candidate).getBytes(StandardCharsets.UTF_8);
             Files.write(staged, written);
-            if (!xin.vanilla.banira.internal.config.ConfigFileCommit.replaceIfUnchanged(staged, file, expectedBytes)) return false;
+            if (!xin.vanilla.banira.internal.config.ConfigFileCommit.replaceIfUnchanged(staged, file, expectedBytes))
+                return false;
             staged = null;
             values.clear();
             values.putAll(candidate);

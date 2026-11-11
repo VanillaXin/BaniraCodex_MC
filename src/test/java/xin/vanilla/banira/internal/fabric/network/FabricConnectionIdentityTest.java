@@ -1,11 +1,15 @@
 package xin.vanilla.banira.internal.fabric.network;
 
 import org.junit.Test;
+
 import java.lang.reflect.Method;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class FabricConnectionIdentityTest {
-    @Test public void serverContextsRetainCapturedHandlerIdentity() throws Exception {
+    @Test
+    public void serverContextsRetainCapturedHandlerIdentity() throws Exception {
         Object first = new Object(), second = new Object();
         FabricNetworkContext old = FabricNetworkContext.server(null, null, first);
         FabricNetworkContext current = FabricNetworkContext.server(null, null, second);
@@ -17,7 +21,9 @@ public class FabricConnectionIdentityTest {
                 java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(source.contains("FabricNetworkContext.server(server, player, handler)"));
     }
-    @Test public void callbacksCaptureTheConnectionBeforeEnqueueing() throws Exception {
+
+    @Test
+    public void callbacksCaptureTheConnectionBeforeEnqueueing() throws Exception {
         Object first = new Object(), second = new Object();
         Method create = FabricNetworkContext.class.getMethod("client", Object.class);
         Object old = create.invoke(null, first);

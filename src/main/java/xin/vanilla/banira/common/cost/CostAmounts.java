@@ -4,7 +4,8 @@ import xin.vanilla.banira.api.cost.CostAmount;
 import xin.vanilla.banira.api.cost.CostFailure;
 
 public final class CostAmounts {
-    private CostAmounts() { }
+    private CostAmounts() {
+    }
 
     public static CostAmount normalize(double raw, int min, int max) {
         if (min < 0 || max < -1 || max >= 0 && max < min) throw new IllegalArgumentException("Invalid cost limits");

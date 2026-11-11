@@ -51,6 +51,10 @@ public final class BaniraClientModSetup {
     }
 
     private static void registerOwnNotificationTypes() {
+        BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.HELP, false);
+        BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.COMMAND_FEEDBACK, false);
+        BaniraClientEventHub.Player.onClientLoggedOut(player ->
+                xin.vanilla.banira.client.notification.NotificationTypeRegistry.clearServerImportance());
         BaniraClientNotificationTypes.registerModDisplayName(Banira.MOD_ID,
                 BaniraComponent.get().transClientAuto("mod_name"));
         BaniraClientNotificationTypes.register(NotificationTypeKeys.HELP,

@@ -8,6 +8,10 @@ import java.util.UUID;
  * Banira 网络缓冲区抽象；只暴露公共协议当前需要的稳定读写操作。
  */
 public interface BaniraPacketBuffer {
+    default int readableBytes() {
+        return 0;
+    }
+
     String readUtf();
 
     String readUtf(int maxLength);

@@ -27,6 +27,36 @@ public final class NotificationTypeRegistry {
     private static final Map<String, Component> TYPE_TOOLTIPS = new ConcurrentHashMap<>();
     private static final Map<String, Component> MOD_DISPLAY_NAMES = new ConcurrentHashMap<>();
 
+    private static final ConcurrentHashMap<String, Boolean> IMPORTANT_DEFAULTS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Boolean> SERVER_IMPORTANT_DEFAULTS = new ConcurrentHashMap<>();
+
+    public static void registerImportance(String typeId, boolean important) {
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        ensureKnown(type);
+        Boolean previous = IMPORTANT_DEFAULTS.put(type, important);
+        if (!java.util.Objects.equals(previous, important)) NotificationTypeSettingsStore.get().invalidateImportance();
+    }
+
+    public static void acceptServerImportance(String typeId, @Nullable Boolean important) {
+        if (important == null) return;
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        Boolean previous = SERVER_IMPORTANT_DEFAULTS.put(type, important);
+        if (!java.util.Objects.equals(previous, important)) NotificationTypeSettingsStore.get().invalidateImportance();
+    }
+
+    public static void clearServerImportance() {
+        if (SERVER_IMPORTANT_DEFAULTS.isEmpty()) return;
+        SERVER_IMPORTANT_DEFAULTS.clear();
+        NotificationTypeSettingsStore.get().invalidateImportance();
+    }
+
+    @Nullable
+    public static Boolean importanceDefault(String typeId) {
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        Boolean local = IMPORTANT_DEFAULTS.get(type);
+        return local != null ? local : SERVER_IMPORTANT_DEFAULTS.get(type);
+    }
+
     private NotificationTypeRegistry() {
     }
 

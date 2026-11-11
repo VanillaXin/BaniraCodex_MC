@@ -358,6 +358,7 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
         addAnimationRow(child, cw, typeId, st);
         addPositionRow(child, cw, typeId, st);
         addDisplayModeRow(child, cw, typeId, st);
+        addImportanceRow(child, cw, typeId, st);
 
         child.refreshLayout();
         return child;
@@ -397,6 +398,22 @@ public class NotificationTypeConfigScreen extends BaniraScreen implements UiNati
             btn.text(toggleText(next));
         });
         panel.addChildAuto(row, ROW_HEIGHT);
+    }
+
+    private void addImportanceRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {
+        TypeRow row = new TypeRow(this, cw, ROW_HEIGHT);
+        row.label(BaniraComponent.get().transClientAuto("notification_type_config_important").toString());
+        List<DropdownOption> entries = new ArrayList<>();
+        for (String mode : new String[]{"default", "true", "false"}) {
+            entries.add(new DropdownOption(mode, BaniraComponent.get().transClientAuto("notification_importance_" + mode).toString()));
+        }
+        DropdownSelectWidget dd = row.dropdownEntries(cw, entries, st.important() == null ? "default" : st.important().toString());
+        dd.onSelectionChanged(values -> {
+            if (values.isEmpty()) return;
+            String selected = values.get(0);
+            updateDraft(typeId, copySettings(typeId).important("default".equals(selected) ? null : Boolean.valueOf(selected)));
+        });
+        panel.addChildAuto(row, ROW_HEIGHT + 4);
     }
 
     private void addDurationRow(CollapsiblePanelWidget panel, double cw, String typeId, NotificationTypeSettingsStore.TypeSettings st) {

@@ -1,5 +1,7 @@
 package xin.vanilla.banira.api.client.ui;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public final class BaniraUi {
@@ -27,6 +29,7 @@ public final class BaniraUi {
     }
 
     private static volatile Driver driver;
+    private static final List<PendingHud> pendingHuds = new ArrayList<>();
 
     private BaniraUi() {
     }
@@ -41,8 +44,12 @@ public final class BaniraUi {
         return current != null && current.closePage(screen, Objects.requireNonNull(reason));
     }
 
-    public static void install(Driver clientDriver) {
+    public static synchronized void install(Driver clientDriver) {
         driver = Objects.requireNonNull(clientDriver, "clientDriver");
+        for (PendingHud pending : new ArrayList<>(pendingHuds)) {
+            pending.attach(clientDriver);
+            pendingHuds.remove(pending);
+        }
     }
 
     public static void open(UiPageSpec page, Object previousScreen) {
@@ -56,10 +63,48 @@ public final class BaniraUi {
         return current != null && current.usesAui(surfaceId);
     }
 
-    public static AutoCloseable registerHud(UiHudSpec hud) {
+    public static synchronized AutoCloseable registerHud(UiHudSpec hud) {
+        Objects.requireNonNull(hud, "hud");
         Driver current = driver;
-        if (current == null) throw new IllegalStateException("Client UI is not initialized");
-        return current.registerHud(Objects.requireNonNull(hud, "hud"));
+        if (current != null) return current.registerHud(hud);
+        // Dependent Fabric entrypoints can run before Banira's client entrypoint.
+        PendingHud pending = new PendingHud(hud);
+        pendingHuds.add(pending);
+        return pending;
+    }
+
+    private static final class PendingHud implements AutoCloseable {
+        private final UiHudSpec spec;
+        private AutoCloseable registration;
+        private boolean closed;
+
+        private PendingHud(UiHudSpec spec) {
+            this.spec = spec;
+        }
+
+        private void attach(Driver clientDriver) {
+            if (closed) return;
+            AutoCloseable attached = Objects.requireNonNull(clientDriver.registerHud(spec), "HUD registration");
+            if (closed) {
+                try {
+                    attached.close();
+                } catch (Exception failure) {
+                    throw new IllegalStateException("Unable to close cancelled HUD registration", failure);
+                }
+            } else {
+                registration = attached;
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            synchronized (BaniraUi.class) {
+                if (closed) return;
+                closed = true;
+                pendingHuds.remove(this);
+                if (registration != null) registration.close();
+            }
+        }
     }
 
     public static UiContainerLayer container(UiPageSpec page, java.util.function.BooleanSupplier current) {

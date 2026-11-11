@@ -673,7 +673,8 @@ public final class Component implements Cloneable, Serializable {
         if (this.i18nType == EnumI18nType.ORIGINAL && this.original instanceof net.minecraft.network.chat.Component) {
             net.minecraft.network.chat.Component source = (net.minecraft.network.chat.Component) this.original;
             if (this.getChildren().isEmpty() && source.getSiblings().isEmpty()
-                    && source.getContents() instanceof net.minecraft.network.chat.contents.LiteralContents) return false;
+                    && source.getContents() instanceof net.minecraft.network.chat.contents.LiteralContents)
+                return false;
         }
         return true;
     }
@@ -755,7 +756,8 @@ public final class Component implements Cloneable, Serializable {
     }
 
     private boolean requiresNativePreparation() {
-        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null) return true;
+        if (this.i18nType == EnumI18nType.ORIGINAL || this.i18nType == EnumI18nType.NONE || this.hoverEvent != null)
+            return true;
         for (Component child : this.getChildren()) if (child.requiresNativePreparation()) return true;
         for (Component arg : this.getArgs()) if (arg != null && arg.requiresNativePreparation()) return true;
         return false;

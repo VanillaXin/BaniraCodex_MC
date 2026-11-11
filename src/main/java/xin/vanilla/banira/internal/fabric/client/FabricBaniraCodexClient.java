@@ -14,6 +14,7 @@ import xin.vanilla.banira.BaniraCodex;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
+import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.api.client.event.BaniraClientSetupEvent;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
@@ -104,7 +105,7 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
     private static void registerOwnNotificationTypes() {
         BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.HELP, false);
         BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.COMMAND_FEEDBACK, false);
-        BaniraClientEventHub.Player.onClientLoggedOut(player ->
+        BaniraClientEvents.Player.onClientLoggedOut(player ->
                 xin.vanilla.banira.client.notification.NotificationTypeRegistry.clearServerImportance());
         BaniraClientNotificationTypes.registerModDisplayName(BaniraCodex.MODID,
                 BaniraComponent.get().transClientAuto("mod_name"));

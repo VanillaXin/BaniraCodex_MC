@@ -64,7 +64,6 @@ dependencies {
     modCompileOnly("dev.ftb.mods:ftb-chunks-fabric:1902.4.8-build.495") { transitive = false }
     modCompileOnly "maven.modrinth:xaeros-minimap:FEea9I9Z"
     modCompileOnly "maven.modrinth:journeymap:3ZtAeGzV"
-    testRuntimeOnly "maven.modrinth:journeymap:3ZtAeGzV"
     modCompileOnly "maven.modrinth:map-atlases:FbzWPUmP"
     modCompileOnly "maven.modrinth:voxelmap-updated:ZIM5SbqI"
     if (project.hasProperty('minimapSmoke')) {
@@ -90,11 +89,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-networking-api-v1:${project.fabric_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-lifecycle-events-v1:${project.fabric_version}"
 
-    testImplementation 'junit:junit:4.13.2'
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
     implementation "com.google.code.findbugs:jsr305:3.0.2"
     implementation "org.apache.maven:maven-artifact:4.0.0-rc-3"
@@ -136,9 +132,6 @@ def minimapCompilerLibraries = providers.provider {
 }
 dependencies {
     modCompileOnly files(minimapCompilerLibraries)
-    testRuntimeOnly files(providers.provider {
-        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('xaero') }
-    })
 }
 
 apply from: 'gradle/fabric-dev-runtime.gradle'
@@ -242,7 +235,6 @@ tasks.named('remapJar') {
 }
 
 // region 发布到 Maven 仓库（含本地 ~/.m2/repository）
-def publicationContractRepository = layout.buildDirectory.dir('publication-contract-repository')
 
 publishing {
     publications {
@@ -254,10 +246,6 @@ publishing {
     }
     repositories {
         mavenLocal()
-        maven {
-            name = 'publicationContract'
-            url = publicationContractRepository
-        }
     }
 }
 
@@ -276,26 +264,7 @@ tasks.withType(PublishToMavenLocal).configureEach {
     dependsOn 'remapJar', 'remapSourcesJar'
 }
 
-tasks.named('publishMavenJavaPublicationToPublicationContractRepository') {
-    // 隔离仓库只验证本次发布，避免旧分类 JAR 污染契约结果。
-    doFirst {
-        project.delete(publicationContractRepository)
-    }
-}
 
-tasks.named('test') {
-    dependsOn 'publishMavenJavaPublicationToPublicationContractRepository'
-    doFirst {
-        systemProperty 'banira.publication.repository',
-                publicationContractRepository.get().asFile.absolutePath
-        systemProperty 'banira.publication.group', project.group.toString()
-        systemProperty 'banira.publication.artifact', base.archivesName.get()
-        systemProperty 'banira.publication.version',
-                "${loader_type}-${minecraft_version}-${mod_version}"
-        systemProperty 'banira.publication.remapJar',
-                tasks.named('remapJar').get().archiveFile.get().asFile.absolutePath
-    }
-}
 // endregion 发布到 Maven 仓库（含本地 ~/.m2/repository）
 
 apply from: "gradle/publish-local-fingerprint.gradle"

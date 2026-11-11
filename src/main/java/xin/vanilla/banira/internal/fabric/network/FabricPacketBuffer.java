@@ -15,6 +15,11 @@ import java.util.UUID;
 public final class FabricPacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<FriendlyByteBuf> {
     private final FriendlyByteBuf delegate;
 
+    @Override
+    public int readableBytes() {
+        return delegate.readableBytes();
+    }
+
     public FabricPacketBuffer(FriendlyByteBuf delegate) {
         this.delegate = delegate;
     }

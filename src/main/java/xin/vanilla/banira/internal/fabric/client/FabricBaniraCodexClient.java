@@ -111,6 +111,10 @@ public final class FabricBaniraCodexClient implements ClientModInitializer {
     }
 
     private static void registerOwnNotificationTypes() {
+        BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.HELP, false);
+        BaniraClientNotificationTypes.registerImportance(NotificationTypeKeys.COMMAND_FEEDBACK, false);
+        BaniraClientEventHub.Player.onClientLoggedOut(player ->
+                xin.vanilla.banira.client.notification.NotificationTypeRegistry.clearServerImportance());
         BaniraClientNotificationTypes.registerModDisplayName(BaniraCodex.MODID,
                 BaniraComponent.get().transClientAuto("mod_name"));
         BaniraClientNotificationTypes.register(NotificationTypeKeys.HELP,

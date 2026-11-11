@@ -11,6 +11,16 @@ public final class NotificationBubbleLayout {
     private NotificationBubbleLayout() {
     }
 
+    public static int maximumWidth(int screenWidth, int regionWidth) {
+        int preferred = 180 + (int) Math.round(Math.max(0, screenWidth - 320) * 0.25);
+        return Math.max(1, Math.min(regionWidth, Math.min(420, preferred)));
+    }
+
+    public static int width(int screenWidth, int regionWidth, int contentWidth) {
+        int minimum = Math.min(240, 120 + (int) Math.round(Math.max(0, screenWidth - 320) * 0.16));
+        return Math.min(maximumWidth(screenWidth, regionWidth), Math.max(minimum, contentWidth));
+    }
+
     public static int lineLimit(int height) {
         return Math.max(1, (height - BODY_TOP - BOTTOM) / LINE_HEIGHT);
     }

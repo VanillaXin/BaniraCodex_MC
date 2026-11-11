@@ -67,6 +67,9 @@ public final class NotificationLogStore {
             for (JsonElement el : arr) {
                 JsonObject obj = el.getAsJsonObject();
                 entries.add(new NotificationLogEntry()
+                        .defaultImportant(obj.has("defaultImportant") && obj.get("defaultImportant").isJsonPrimitive()
+                                && obj.getAsJsonPrimitive("defaultImportant").isBoolean()
+                                ? obj.get("defaultImportant").getAsBoolean() : null)
                         .id(JsonUtils.getLong(obj, "id", 0))
                         .timestamp(JsonUtils.getLong(obj, "timestamp", 0))
                         .componentJson(JsonUtils.getString(obj, "componentJson", "{}"))
@@ -111,6 +114,7 @@ public final class NotificationLogStore {
             obj.addProperty("notificationType", e.notificationType() != null ? e.notificationType() : NotificationTypeKeys.DEFAULT);
             obj.addProperty("source", e.source());
             obj.addProperty("read", e.read());
+            if (e.defaultImportant() != null) obj.addProperty("defaultImportant", e.defaultImportant());
             arr.add(obj);
         }
         root.add("entries", arr);

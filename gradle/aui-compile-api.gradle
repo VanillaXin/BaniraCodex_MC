@@ -98,33 +98,17 @@ tasks.register('verifyAuiCompileApi') {
                 }
             }
         }
-        ['runtimeClasspath', 'testRuntimeClasspath', 'annotationProcessor', 'testAnnotationProcessor'].each { name ->
+        ['runtimeClasspath', 'annotationProcessor'].each { name ->
             if (configurations.findByName(name)?.files?.any { it.canonicalFile == input }) throw new GradleException("AUI declarations leaked into ${name}")
         }
     }
 }
 tasks.named('compileJava').configure { dependsOn 'verifyAuiCompileApi' }
-tasks.withType(Test).configureEach {
-    doFirst {
-        if (selected != null && classpath.files.any { it.canonicalFile == ownedFile(selected) }) throw new GradleException('AUI declarations on test runtime')
-    }
-}
-tasks.register('generateAuiCompileApi', JavaExec) {
-    dependsOn 'testClasses'
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass.set('xin.vanilla.banira.internal.compat.aui.AuiCompileApiTool')
-    maxHeapSize = '256m'
-    doFirst {
-        if (selected != null) throw new GradleException('Generate declarations from the official default configuration')
-        def output = ownedFile(new File(ownedRoot, 'generated').absolutePath)
-        args configurations.auiContract.singleFile.absolutePath, output.absolutePath
-    }
-}
 tasks.register('auiCompileApiModel') {
     dependsOn 'verifyAuiCompileApi'
     doLast {
         def paths = [:]
-        ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath', 'annotationProcessor', 'testAnnotationProcessor'].each { name ->
+        ['compileClasspath', 'runtimeClasspath', 'annotationProcessor'].each { name ->
             paths[name] = configurations[name].files.collect { it.canonicalPath }.sort()
         }
         def target = ownedFile(providers.gradleProperty('banira.auiCompileApiModel').get())

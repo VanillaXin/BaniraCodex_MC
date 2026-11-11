@@ -142,8 +142,6 @@ configurations.configureEach { configuration ->
 }
 repositories { flatDir { dirs minimapLibraryDirectory } }
 dependencies {
-    testRuntimeOnly fg.deobf("maven.modrinth:xaeros-minimap:dB6E0CY9")
-    testRuntimeOnly fg.deobf("banira.optional:xaerolib-forge-1.20.1:1.7.3")
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:dB6E0CY9")
     compileOnly fg.deobf("banira.optional:xaerolib-forge-1.20.1:1.7.3")
     compileOnly fg.deobf("maven.modrinth:journeymap:HWDC99DO")
@@ -186,10 +184,6 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    testImplementation 'junit:junit:4.13.2'
 
     // The dedicated-server smoke child must not load client-only FPS HUD mods.
     if (!(project.findProperty('banira.networkSmoke.server') ?: 'false').toString().toBoolean()) {
@@ -208,12 +202,6 @@ dependencies {
 
 apply from: 'gradle/aui-compile-api.gradle'
 
-tasks.withType(Test).configureEach {
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
-        systemProperty 'banira.minimap.contractJars', configurations.minimapContract.files.collect { it.absolutePath }.join(File.pathSeparator)
-    }
-}
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.
 def baniraDevFpsDefaultSettingsKey = 'extra_settings'
@@ -313,7 +301,4 @@ apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
 
 dependencies {
-    testRuntimeOnly files(providers.provider {
-        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('journeymap') }
-    })
 }

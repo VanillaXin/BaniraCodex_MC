@@ -81,11 +81,17 @@ public class CostResourceAccessTest {
     @Test
     public void builtinsCannotBeReplacedAndUnavailablePlatformCannotBeFree() {
         for (String name : new String[]{"banira:item", "banira:xp_point", "banira:xp_level", "banira:health", "banira:hunger", "banira:score"}) {
-            try { access().withResource(name, new Resource()); fail("Builtin replaced"); }
-            catch (IllegalArgumentException expected) { }
+            try {
+                access().withResource(name, new Resource());
+                fail("Builtin replaced");
+            } catch (IllegalArgumentException expected) {
+            }
         }
-        try { UnavailableCostService.INSTANCE.access(new Object(), InventoryScope.MAIN); fail("Unavailable service returned access"); }
-        catch (IllegalStateException expected) { }
+        try {
+            UnavailableCostService.INSTANCE.access(new Object(), InventoryScope.MAIN);
+            fail("Unavailable service returned access");
+        } catch (IllegalStateException expected) {
+        }
     }
 
     @Test
@@ -152,9 +158,17 @@ public class CostResourceAccessTest {
         CostOperation operation = CostOperation.create(identity);
         CostPaymentService<CostAccess> service = new CostPaymentService<>(a -> a.preview(leaf("test:card", 2), 1),
                 a -> identity, new CostPaymentService.PaymentAccess<CostAccess>() {
-            public CostFailure validate(CostAccess context) { return CostFailure.NONE; }
-            public CostFailure pay(CostAccess context, CostPaymentPlan plan) { return context.debit(plan); }
-            public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(CostAccess context, CostPaymentPlan plan) { return context.receipt(plan).snapshots(); }
+            public CostFailure validate(CostAccess context) {
+                return CostFailure.NONE;
+            }
+
+            public CostFailure pay(CostAccess context, CostPaymentPlan plan) {
+                return context.debit(plan);
+            }
+
+            public java.util.List<CostPaymentPlan.ResourceSnapshot> receipt(CostAccess context, CostPaymentPlan plan) {
+                return context.receipt(plan).snapshots();
+            }
         });
         CostPaymentPlan result = service.commit(operation, access);
         assertTrue(result.isCommitted());
@@ -180,7 +194,10 @@ public class CostResourceAccessTest {
     @Test
     public void mutationThenThrowCannotBecomeSuccessfulOrBlindlyRefunded() {
         Resource resource = new Resource();
-        resource.onDebit = () -> { resource.balance--; throw new IllegalStateException("Unknown provider failure"); };
+        resource.onDebit = () -> {
+            resource.balance--;
+            throw new IllegalStateException("Unknown provider failure");
+        };
         CostAccess access = access().withResource("test:card", resource);
         CostPaymentPlan plan = access.preview(leaf("test:card", 2), 1);
         assertEquals(CostFailure.UNCERTAIN, access.debit(plan));
@@ -192,7 +209,9 @@ public class CostResourceAccessTest {
     @Test
     public void throwingRestoreIsReportedAsUncertain() {
         Resource resource = new Resource();
-        resource.onRestore = () -> { throw new IllegalStateException("Restore unavailable"); };
+        resource.onRestore = () -> {
+            throw new IllegalStateException("Restore unavailable");
+        };
         CostAccess access = access().withResource("test:card", resource);
         CostPaymentPlan plan = access.preview(leaf("test:card", 2), 1);
         assertEquals(CostFailure.NONE, access.debit(plan));
@@ -242,15 +261,15 @@ public class CostResourceAccessTest {
 
     @Test
     public void receiptIsFrozenBeforeReturningFromSuccessfulDebit() {
-        Resource resource=new Resource();
-        CostAccess access=access().withResource("test:card",resource);
-        CostPaymentPlan plan=access.preview(leaf("test:card",2),1);
-        assertEquals(CostFailure.NONE,access.debit(plan));
+        Resource resource = new Resource();
+        CostAccess access = access().withResource("test:card", resource);
+        CostPaymentPlan plan = access.preview(leaf("test:card", 2), 1);
+        assertEquals(CostFailure.NONE, access.debit(plan));
         resource.balance++;
-        CostPaymentPlan receipt=access.receipt(plan);
-        assertEquals(8,Resource.amount(receipt.snapshots().get(0).after()));
-        assertEquals(CostFailure.UNCERTAIN,access.restore(receipt));
-        assertEquals(9,resource.balance);
+        CostPaymentPlan receipt = access.receipt(plan);
+        assertEquals(8, Resource.amount(receipt.snapshots().get(0).after()));
+        assertEquals(CostFailure.UNCERTAIN, access.restore(receipt));
+        assertEquals(9, resource.balance);
     }
 
     @Test
@@ -279,14 +298,20 @@ public class CostResourceAccessTest {
         CostFailure failure = CostFailure.NONE;
         Runnable onDebit;
         Runnable onRestore;
+
         public String snapshot() {
             if (throwPaidSnapshot && debits > 0) throw new IllegalStateException("Paid snapshot unavailable");
             return json(balance);
         }
+
         public CostFailure check(ResourceCost cost, int units, String before) {
             return amount(before) >= Math.multiplyExact(cost.amount(), units) ? CostFailure.NONE : CostFailure.INSUFFICIENT_RESOURCE;
         }
-        public String after(ResourceCost cost, int units, String before) { return json(amount(before) - Math.multiplyExact(cost.amount(), units)); }
+
+        public String after(ResourceCost cost, int units, String before) {
+            return json(amount(before) - Math.multiplyExact(cost.amount(), units));
+        }
+
         public CostFailure debit(String before, String after) {
             debits++;
             if (onDebit != null) onDebit.run();
@@ -294,20 +319,29 @@ public class CostResourceAccessTest {
             balance = amount(after);
             return CostFailure.NONE;
         }
+
         public CostFailure restore(String before, String after) {
             restores++;
             if (onRestore != null) onRestore.run();
             balance = amount(before);
             return CostFailure.NONE;
         }
-        public boolean reversible() { return reversible; }
+
+        public boolean reversible() {
+            return reversible;
+        }
+
         public CostFailure compensateReservation(String before, String after) {
             if (!reservationRefund) return CostFailure.UNCERTAIN;
             compensations++;
             balance += amount(before) - amount(after);
             return CostFailure.NONE;
         }
-        private static int amount(String json) { return new JsonParser().parse(json).getAsJsonObject().get("balance").getAsInt(); }
+
+        private static int amount(String json) {
+            return new JsonParser().parse(json).getAsJsonObject().get("balance").getAsInt();
+        }
+
         private static String json(int balance) {
             JsonObject json = new JsonObject();
             json.addProperty("schema", 1);

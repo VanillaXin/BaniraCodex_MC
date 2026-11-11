@@ -16,6 +16,7 @@ public final class MinimapLineLayout {
         }
         return positions;
     }
+
     public static boolean allowsLegacyJourneyScreen(boolean screenOpen, boolean chat) {
         return !screenOpen || chat;
     }

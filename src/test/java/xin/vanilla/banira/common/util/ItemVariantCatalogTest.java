@@ -1,17 +1,17 @@
 package xin.vanilla.banira.common.util;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.*;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.component.BundleContents;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -19,11 +19,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.TestBaniraPlatform;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.banira.internal.client.ui.NativeUiView;
 import xin.vanilla.banira.internal.client.ui.page.SelectorUiSession;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

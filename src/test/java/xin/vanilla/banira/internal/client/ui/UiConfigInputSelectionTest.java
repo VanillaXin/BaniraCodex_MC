@@ -3,20 +3,28 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.api.client.ui.UiControlSpec;
+import xin.vanilla.banira.api.client.ui.UiRowProvider;
+import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor.ConfigValueType;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
+
 import java.util.List;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 
 public class UiConfigInputSelectionTest {
     @BeforeClass
-    public static void bootstrap() { UiDomControlsTest.bootstrap(); }
+    public static void bootstrap() {
+        UiDomControlsTest.bootstrap();
+    }
 
     @Before
-    public void platform() { BaniraPlatforms.install(new TestBaniraPlatform()); }
+    public void platform() {
+        BaniraPlatforms.install(new TestBaniraPlatform());
+    }
 
     private UiDomControlsTest.Dom list() throws Exception {
         var fixture = new UiConfigSessionTest.Fixture();
@@ -81,8 +89,14 @@ public class UiConfigInputSelectionTest {
         var view = (UiDomView) dom.view();
         view.state().selection("retained/input", 3, 3);
         view.rows("fields", new UiRowProvider() {
-            public int size() { return 1; }
-            public String key(int index) { return "retained"; }
+            public int size() {
+                return 1;
+            }
+
+            public String key(int index) {
+                return "retained";
+            }
+
             public void bind(UiView row, int index) {
                 row.control("input", new UiControlSpec(UiControlSpec.Kind.TEXT, 128, "", false));
                 row.draft("input", "draft");

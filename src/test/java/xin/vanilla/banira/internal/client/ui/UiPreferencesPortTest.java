@@ -79,13 +79,14 @@ public class UiPreferencesPortTest {
         assertSame(MobEffects.LUCK.value(), lookup.invoke(null, "test:missing"));
         int constructors = 0, unwraps = 0;
         for (var method : node("client/gui/quickaction/CustomQuickActionStepsScreen").methods)
-            for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call) {
-                if (call.owner.equals("net/minecraft/world/effect/MobEffectInstance") && call.name.equals("<init>")) {
-                    assertEquals("(Lnet/minecraft/core/Holder;II)V", call.desc);
-                    constructors++;
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call) {
+                    if (call.owner.equals("net/minecraft/world/effect/MobEffectInstance") && call.name.equals("<init>")) {
+                        assertEquals("(Lnet/minecraft/core/Holder;II)V", call.desc);
+                        constructors++;
+                    }
+                    if (call.owner.equals("net/minecraft/core/Holder") && call.name.equals("value")) unwraps++;
                 }
-                if (call.owner.equals("net/minecraft/core/Holder") && call.name.equals("value")) unwraps++;
-            }
         assertEquals(1, constructors);
         assertTrue(unwraps > 0);
     }
@@ -94,13 +95,14 @@ public class UiPreferencesPortTest {
     public void preferenceSaveKeepsExistingTwoFieldWireAndSenderOwnedSnapshot() throws Exception {
         var packet = node("common/network/packet/CustomPlayerConfigSyncToServer");
         int reads = 0, writes = 0, senderIds = 0, snapshots = 0;
-        for (var method : packet.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call) {
-                if (call.owner.endsWith("/BaniraPacketBuffer") && call.name.equals("readUtf")) reads++;
-                if (call.owner.endsWith("/BaniraPacketBuffer") && call.name.equals("writeUtf")) writes++;
-                if (call.owner.endsWith("/ServerSenderAccess") && call.name.equals("uuidString")) senderIds++;
-                if (call.owner.endsWith("/ConfigSnapshotToClient") && call.name.equals("<init>")) snapshots++;
-            }
+        for (var method : packet.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call) {
+                    if (call.owner.endsWith("/BaniraPacketBuffer") && call.name.equals("readUtf")) reads++;
+                    if (call.owner.endsWith("/BaniraPacketBuffer") && call.name.equals("writeUtf")) writes++;
+                    if (call.owner.endsWith("/ServerSenderAccess") && call.name.equals("uuidString")) senderIds++;
+                    if (call.owner.endsWith("/ConfigSnapshotToClient") && call.name.equals("<init>")) snapshots++;
+                }
         assertEquals(2, reads);
         assertEquals(2, writes);
         assertEquals(1, senderIds);

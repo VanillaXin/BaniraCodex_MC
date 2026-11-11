@@ -7,7 +7,8 @@ import xin.vanilla.banira.internal.forge.cost.ForgeCostResources;
 import xin.vanilla.banira.platform.BaniraCostService;
 
 public final class ForgeBaniraCostService implements BaniraCostService {
-    @Override public CostAccess access(Object payer, InventoryScope scope) {
+    @Override
+    public CostAccess access(Object payer, InventoryScope scope) {
         if (!(payer instanceof ServerPlayer)) throw new IllegalArgumentException("Server player required");
         return ForgeCostResources.access((ServerPlayer) payer, scope);
     }

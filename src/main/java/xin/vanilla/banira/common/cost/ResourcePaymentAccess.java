@@ -23,7 +23,8 @@ public final class ResourcePaymentAccess implements CostAccess {
         }
     }
 
-    @Override public CostAccess withResource(String id, CostResourceAccess resource) {
+    @Override
+    public CostAccess withResource(String id, CostResourceAccess resource) {
         requireOwner();
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(resource, "resource");
@@ -34,7 +35,8 @@ public final class ResourcePaymentAccess implements CostAccess {
         return new ResourcePaymentAccess(copy, eligibility);
     }
 
-    @Override public CostPaymentPlan preview(CostRequirement requirement, int units) {
+    @Override
+    public CostPaymentPlan preview(CostRequirement requirement, int units) {
         requireOwner();
         Objects.requireNonNull(requirement, "requirement");
         if (units <= 0) throw new IllegalArgumentException("Positive units required");
@@ -44,12 +46,13 @@ public final class ResourcePaymentAccess implements CostAccess {
             List<List<ResourceCost>> paths = CostRequirementPlanner.paths(requirement);
             List<List<ResourceCost>> prepared = new ArrayList<>();
             for (List<ResourceCost> path : paths) prepared.add(CostRequirementPlanner.aggregate(path, units));
-            for (List<ResourceCost> path : prepared) for (ResourceCost cost : path) {
-                CostResourceAccess resource = resources.get(cost.resourceId());
-                if (resource == null) return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
-                CostFailure failure = Objects.requireNonNull(resource.validate(cost), "resource validation");
-                if (failure.isFailure()) return CostPaymentPlan.failed(failure);
-            }
+            for (List<ResourceCost> path : prepared)
+                for (ResourceCost cost : path) {
+                    CostResourceAccess resource = resources.get(cost.resourceId());
+                    if (resource == null) return CostPaymentPlan.failed(CostFailure.INVALID_PAYMENT);
+                    CostFailure failure = Objects.requireNonNull(resource.validate(cost), "resource validation");
+                    if (failure.isFailure()) return CostPaymentPlan.failed(failure);
+                }
             CostPaymentPlan unavailable = CostPaymentPlan.failed(CostFailure.INSUFFICIENT_RESOURCE);
             for (List<ResourceCost> leaves : prepared) {
                 CostPaymentPlan plan = previewPath(leaves, units);
@@ -85,21 +88,25 @@ public final class ResourcePaymentAccess implements CostAccess {
         return plan;
     }
 
-    @Override public CostFailure recheck(CostPaymentPlan plan) {
+    @Override
+    public CostFailure recheck(CostPaymentPlan plan) {
         requireOwner();
         Objects.requireNonNull(plan, "plan");
         Attempt attempt = attempts.get(plan);
-        if (!plan.isSuccess() || plan.isCommitted() || attempt == null || attempt.started) return CostFailure.INVALID_OPERATION;
+        if (!plan.isSuccess() || plan.isCommitted() || attempt == null || attempt.started)
+            return CostFailure.INVALID_OPERATION;
         CostFailure eligible = eligible();
         if (eligible.isFailure()) return eligible;
         for (ResourceSnapshot snapshot : plan.snapshots()) {
             CostResourceAccess resource = resources.get(snapshot.resourceId());
-            if (resource == null || !snapshot.before().equals(resource.snapshot())) return CostFailure.INVALID_OPERATION;
+            if (resource == null || !snapshot.before().equals(resource.snapshot()))
+                return CostFailure.INVALID_OPERATION;
         }
         return CostFailure.NONE;
     }
 
-    @Override public CostFailure debit(CostPaymentPlan plan) {
+    @Override
+    public CostFailure debit(CostPaymentPlan plan) {
         requireOwner();
         CostFailure initial = recheck(plan);
         Attempt attempt = attempts.get(plan);
@@ -114,8 +121,10 @@ public final class ResourcePaymentAccess implements CostAccess {
                 ResourceSnapshot snapshot = plan.snapshots().get(index);
                 CostResourceAccess resource = resources.get(snapshot.resourceId());
                 CostFailure failure = eligible();
-                if (!failure.isFailure() && !snapshot.before().equals(resource.snapshot())) failure = CostFailure.INVALID_OPERATION;
-                if (!failure.isFailure()) failure = Objects.requireNonNull(resource.debit(snapshot.before(), snapshot.after()), "debit failure");
+                if (!failure.isFailure() && !snapshot.before().equals(resource.snapshot()))
+                    failure = CostFailure.INVALID_OPERATION;
+                if (!failure.isFailure())
+                    failure = Objects.requireNonNull(resource.debit(snapshot.before(), snapshot.after()), "debit failure");
                 if (failure.isFailure()) {
                     boolean unchanged = snapshot.before().equals(resource.snapshot());
                     CostFailure rollback = rollback(paid, true);
@@ -135,10 +144,13 @@ public final class ResourcePaymentAccess implements CostAccess {
             }
             try {
                 List<ResourceSnapshot> actual = new ArrayList<>();
-                for (ResourceSnapshot snapshot : paid) actual.add(new ResourceSnapshot(snapshot.resourceId(), snapshot.before(),
-                        resources.get(snapshot.resourceId()).snapshot(), snapshot.reversible()));
+                for (ResourceSnapshot snapshot : paid)
+                    actual.add(new ResourceSnapshot(snapshot.resourceId(), snapshot.before(),
+                            resources.get(snapshot.resourceId()).snapshot(), snapshot.reversible()));
                 attempt.receipt = CostPaymentPlan.ready(plan.units(), plan.requirements(), actual).paid().withSnapshots(actual);
-            } catch (RuntimeException unknownReceipt) { attempt.receiptFailure = unknownReceipt; }
+            } catch (RuntimeException unknownReceipt) {
+                attempt.receiptFailure = unknownReceipt;
+            }
             return CostFailure.NONE;
         } catch (RuntimeException unknown) {
             rollback(paid, true);
@@ -146,19 +158,23 @@ public final class ResourcePaymentAccess implements CostAccess {
         }
     }
 
-    @Override public CostPaymentPlan receipt(CostPaymentPlan plan) {
+    @Override
+    public CostPaymentPlan receipt(CostPaymentPlan plan) {
         requireOwner();
         Attempt attempt = attempts.get(plan);
-        if (attempt != null && attempt.receiptFailure != null) throw new IllegalStateException("Paid receipt unavailable", attempt.receiptFailure);
+        if (attempt != null && attempt.receiptFailure != null)
+            throw new IllegalStateException("Paid receipt unavailable", attempt.receiptFailure);
         if (attempt == null || attempt.receipt == null) throw new IllegalStateException("Payment receipt unavailable");
         return attempt.receipt;
     }
 
-    @Override public CostFailure restore(CostPaymentPlan plan) {
+    @Override
+    public CostFailure restore(CostPaymentPlan plan) {
         requireOwner();
         Objects.requireNonNull(plan, "plan");
         if (plan.recoveryFailure().isFailure() || eligible().isFailure()) return CostFailure.UNCERTAIN;
-        if (!plan.isSuccess() || !plan.isCommitted() || !plan.hasConfirmedSnapshots()) return CostFailure.INVALID_OPERATION;
+        if (!plan.isSuccess() || !plan.isCommitted() || !plan.hasConfirmedSnapshots())
+            return CostFailure.INVALID_OPERATION;
         return rollback(plan.snapshots(), false);
     }
 
@@ -169,7 +185,10 @@ public final class ResourcePaymentAccess implements CostAccess {
             ResourceSnapshot snapshot = paid.get(i);
             CostResourceAccess resource = resources.get(snapshot.resourceId());
             try {
-                if (resource == null || !snapshot.reversible() || !resource.reversible()) { result = CostFailure.UNCERTAIN; continue; }
+                if (resource == null || !snapshot.reversible() || !resource.reversible()) {
+                    result = CostFailure.UNCERTAIN;
+                    continue;
+                }
                 if (!snapshot.after().equals(resource.snapshot())) {
                     if (!reservationFailure || resource.compensateReservation(snapshot.before(), snapshot.after()).isFailure())
                         result = CostFailure.UNCERTAIN;
@@ -177,12 +196,15 @@ public final class ResourcePaymentAccess implements CostAccess {
                 }
                 if (resource.restore(snapshot.before(), snapshot.after()).isFailure()
                         || !snapshot.before().equals(resource.snapshot())) result = CostFailure.UNCERTAIN;
-            } catch (RuntimeException unknown) { result = CostFailure.UNCERTAIN; }
+            } catch (RuntimeException unknown) {
+                result = CostFailure.UNCERTAIN;
+            }
         }
         return result;
     }
 
-    @Override public void afterPayment(CostPaymentPlan plan) {
+    @Override
+    public void afterPayment(CostPaymentPlan plan) {
         requireOwner();
         for (ResourceSnapshot snapshot : plan.snapshots()) {
             CostResourceAccess resource = resources.get(snapshot.resourceId());
@@ -190,10 +212,15 @@ public final class ResourcePaymentAccess implements CostAccess {
         }
     }
 
-    private CostFailure eligible() { return Objects.requireNonNull(eligibility.get(), "eligibility"); }
-    private void requireOwner() {
-        if (Thread.currentThread() != owner) throw new IllegalStateException("Resource access requires its owning server thread");
+    private CostFailure eligible() {
+        return Objects.requireNonNull(eligibility.get(), "eligibility");
     }
+
+    private void requireOwner() {
+        if (Thread.currentThread() != owner)
+            throw new IllegalStateException("Resource access requires its owning server thread");
+    }
+
     private static final class Attempt {
         boolean started;
         CostPaymentPlan receipt;

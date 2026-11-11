@@ -2,9 +2,7 @@ package xin.vanilla.banira.internal.client.ui;
 
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 public class UiQuickActionHostTest {
 

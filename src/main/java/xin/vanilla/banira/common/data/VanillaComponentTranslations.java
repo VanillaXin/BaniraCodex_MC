@@ -44,7 +44,8 @@ final class VanillaComponentTranslations {
         if (input == null || input.isJsonNull() || input.isJsonPrimitive()) return input;
         if (input.isJsonArray()) {
             JsonArray output = new JsonArray();
-            for (JsonElement element : input.getAsJsonArray()) output.add(prepare(element, language, vanillaOnly, format));
+            for (JsonElement element : input.getAsJsonArray())
+                output.add(prepare(element, language, vanillaOnly, format));
             return output;
         }
         JsonObject source = input.getAsJsonObject();
@@ -148,7 +149,8 @@ final class VanillaComponentTranslations {
                 if (item.has("components") && item.get("components").isJsonObject()) {
                     JsonObject components = item.getAsJsonObject("components");
                     for (String name : new String[]{"minecraft:custom_name", "minecraft:item_name", "minecraft:lore"})
-                        if (components.has(name)) components.add(name, prepare(components.get(name), language, vanillaOnly, format));
+                        if (components.has(name))
+                            components.add(name, prepare(components.get(name), language, vanillaOnly, format));
                 }
                 if (item.has("tag") && item.get("tag").isJsonPrimitive())
                     item.addProperty("tag", Component.prepareItemHoverTag(item.get("tag").getAsString(), language, vanillaOnly));
@@ -165,7 +167,8 @@ final class VanillaComponentTranslations {
             return output;
         }
         JsonObject output = new JsonObject();
-        for (Map.Entry<String, JsonElement> entry : input.getAsJsonObject().entrySet()) output.add(entry.getKey(), copy(entry.getValue()));
+        for (Map.Entry<String, JsonElement> entry : input.getAsJsonObject().entrySet())
+            output.add(entry.getKey(), copy(entry.getValue()));
         return output;
     }
 }

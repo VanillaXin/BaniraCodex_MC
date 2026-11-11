@@ -7,19 +7,22 @@ import java.util.Optional;
 public final class JeiRuntimeAccess {
     private static final String INPUT_API = "mezz.jei.api.gui.inputs.IJeiUserInput";
     private static final ClassValue<Optional<Method>> CONFIG_GETTERS = new ClassValue<Optional<Method>>() {
-        @Override protected Optional<Method> computeValue(Class<?> type) {
+        @Override
+        protected Optional<Method> computeValue(Class<?> type) {
             Method getter = publicMethod(type, "lookupHistoryEnabled");
             if (getter == null) getter = publicMethod(type, "isLookupHistoryEnabled");
             return Optional.ofNullable(getter);
         }
     };
     private static final ClassValue<Optional<Method>> VALUE_GETTERS = new ClassValue<Optional<Method>>() {
-        @Override protected Optional<Method> computeValue(Class<?> type) {
+        @Override
+        protected Optional<Method> computeValue(Class<?> type) {
             return Optional.ofNullable(publicMethod(type, "get"));
         }
     };
     private static final ClassValue<Optional<InputFactory>> INPUT_FACTORIES = new ClassValue<Optional<InputFactory>>() {
-        @Override protected Optional<InputFactory> computeValue(Class<?> input) {
+        @Override
+        protected Optional<InputFactory> computeValue(Class<?> input) {
             try {
                 for (Method factory : input.getMethods()) {
                     Class<?>[] parameters = factory.getParameterTypes();
@@ -114,6 +117,7 @@ public final class JeiRuntimeAccess {
     private static final class InputFactory {
         final Method factory;
         final Object execute;
+
         InputFactory(Method factory, Object execute) {
             this.factory = factory;
             this.execute = execute;

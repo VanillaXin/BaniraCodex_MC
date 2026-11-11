@@ -31,7 +31,9 @@ public class AuiCapabilityContractTest {
     public void absentAuiFallsBackWithoutLoadingClientClasses() throws Exception {
         assertFalse(compatible(new ClassLoader(null) {
             @Override
-            public InputStream getResourceAsStream(String name) { return null; }
+            public InputStream getResourceAsStream(String name) {
+                return null;
+            }
         }));
     }
 
@@ -68,7 +70,9 @@ public class AuiCapabilityContractTest {
                         ClassWriter writer = new ClassWriter(0);
                         node.accept(writer);
                         return new ByteArrayInputStream(writer.toByteArray());
-                    } catch (Exception e) { throw new AssertionError(e); }
+                    } catch (Exception e) {
+                        throw new AssertionError(e);
+                    }
                 }
             };
             assertFalse(compatible(changed));
@@ -215,7 +219,9 @@ public class AuiCapabilityContractTest {
                     ClassWriter writer = new ClassWriter(0);
                     node.accept(writer);
                     return new ByteArrayInputStream(writer.toByteArray());
-                } catch (Exception e) { throw new AssertionError(e); }
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
             }
         };
     }

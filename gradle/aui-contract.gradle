@@ -37,9 +37,3 @@ def verifyAuiContract = tasks.register('verifyAuiContract') {
     }
 }
 tasks.named('compileJava') { dependsOn verifyAuiContract }
-tasks.withType(Test).configureEach {
-    dependsOn verifyAuiContract
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
-    }
-}

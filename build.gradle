@@ -145,8 +145,6 @@ def minimapCompilerLibraries = providers.provider {
 dependencies {
     // Forge1.21.1 and these libraries already use Mojang names.
     compileOnly files(minimapCompilerLibraries)
-    testRuntimeOnly files(minimapCompilerLibraries)
-    testRuntimeOnly "maven.modrinth:xaeros-minimap:T0KItvO6"
     compileOnly "maven.modrinth:xaeros-minimap:T0KItvO6"
     compileOnly "maven.modrinth:journeymap:1y04dWbe"
     if (project.hasProperty('minimapSmoke')) {
@@ -177,10 +175,6 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    testImplementation 'junit:junit:4.13.2'
 
     // runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
     // runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
@@ -273,7 +267,4 @@ apply from: 'gradle/aui-contract.gradle'
 apply from: 'gradle/aui-validation-output.gradle'
 
 dependencies {
-    testRuntimeOnly files(providers.provider {
-        sourceSets.main.compileClasspath.files.findAll { it.name.toLowerCase().contains('journeymap') }
-    })
 }

@@ -7,10 +7,11 @@ import org.junit.Test;
 
 import java.lang.reflect.Proxy;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertSame;
 
 public class NeoForgeConnectionIdentityTest {
-    @Test public void payloadContextPreservesNativeConnectionIdentity() throws Exception {
+    @Test
+    public void payloadContextPreservesNativeConnectionIdentity() throws Exception {
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         IPayloadContext payload = (IPayloadContext) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class<?>[]{IPayloadContext.class}, (proxy, method, args) -> {

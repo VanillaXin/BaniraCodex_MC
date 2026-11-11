@@ -18,15 +18,33 @@ public final class CostIdentity {
         this.payer = Objects.requireNonNull(payer, "payer");
         this.businessSignature = Objects.requireNonNull(businessSignature, "businessSignature");
         this.configurationSignature = Objects.requireNonNull(configurationSignature, "configurationSignature");
-        if (domain.isEmpty() || operationId <= 0 || generation < 0) throw new IllegalArgumentException("Invalid cost identity");
+        if (domain.isEmpty() || operationId <= 0 || generation < 0)
+            throw new IllegalArgumentException("Invalid cost identity");
         this.operationId = operationId;
         this.generation = generation;
     }
 
-    public String domain() { return domain; }
-    public UUID payer() { return payer; }
-    public long operationId() { return operationId; }
-    public long generation() { return generation; }
-    public String businessSignature() { return businessSignature; }
-    public String configurationSignature() { return configurationSignature; }
+    public String domain() {
+        return domain;
+    }
+
+    public UUID payer() {
+        return payer;
+    }
+
+    public long operationId() {
+        return operationId;
+    }
+
+    public long generation() {
+        return generation;
+    }
+
+    public String businessSignature() {
+        return businessSignature;
+    }
+
+    public String configurationSignature() {
+        return configurationSignature;
+    }
 }

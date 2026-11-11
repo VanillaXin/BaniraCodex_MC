@@ -1,11 +1,11 @@
 package xin.vanilla.banira.internal.neoforge.cost;
 
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.food.FoodData;
 import org.junit.Before;
 import org.junit.Test;
 import xin.vanilla.banira.api.cost.*;
@@ -297,9 +297,14 @@ public class NeoForgeCostResourcesTest {
                     }));
             CostAccess access = xin.vanilla.banira.api.BaniraCosts.access(player, InventoryScope.MAIN);
             assertEquals(CostFailure.ACTOR_UNAVAILABLE, access.preview(CostRequirement.free(), 1).failure());
-            try { service.access(new Object(), InventoryScope.MAIN); fail("Non-player accepted"); }
-            catch (IllegalArgumentException expected) { }
-        } finally { platform.set(null, previous); }
+            try {
+                service.access(new Object(), InventoryScope.MAIN);
+                fail("Non-player accepted");
+            } catch (IllegalArgumentException expected) {
+            }
+        } finally {
+            platform.set(null, previous);
+        }
     }
 
     @Test
@@ -326,12 +331,12 @@ public class NeoForgeCostResourcesTest {
         CostAccess access = access(InventoryScope.MAIN);
         CostPaymentPlan plan = preview(access, "banira:score", 3, "token");
         assertTrue(plan.isSuccess());
-        assertEquals(10, player.board.getPlayerScoreInfo(player,objective).value());
+        assertEquals(10, player.board.getPlayerScoreInfo(player, objective).value());
         assertEquals(CostFailure.NONE, access.debit(plan));
-        assertEquals(7, player.board.getPlayerScoreInfo(player,objective).value());
+        assertEquals(7, player.board.getPlayerScoreInfo(player, objective).value());
         CostPaymentPlan receipt = access.receipt(plan);
         assertEquals(CostFailure.NONE, access.restore(receipt));
-        assertEquals(10, player.board.getPlayerScoreInfo(player,objective).value());
+        assertEquals(10, player.board.getPlayerScoreInfo(player, objective).value());
     }
 
     @Test
@@ -359,14 +364,14 @@ public class NeoForgeCostResourcesTest {
         net.minecraft.world.scores.Objective replacement = objective("token");
         player.board.getOrCreatePlayerScore(player, replacement).set(10);
         assertEquals(CostFailure.INVALID_OPERATION, access.debit(plan));
-        assertEquals(10, player.board.getPlayerScoreInfo(player,replacement).value());
+        assertEquals(10, player.board.getPlayerScoreInfo(player, replacement).value());
     }
 
     @Test
     public void zeroAndNegativeScoresCannotBeSpent() {
         net.minecraft.world.scores.Objective objective = objective("token");
         net.minecraft.world.scores.ScoreAccess score = player.board.getOrCreatePlayerScore(player, objective);
-        for (int value : new int[]{0,-1,Integer.MIN_VALUE}) {
+        for (int value : new int[]{0, -1, Integer.MIN_VALUE}) {
             score.set(value);
             assertEquals(CostFailure.INSUFFICIENT_RESOURCE, preview(access(InventoryScope.MAIN), "banira:score", 1, "token").failure());
             assertEquals(value, score.get());
@@ -376,157 +381,163 @@ public class NeoForgeCostResourcesTest {
     @Test
     public void scoreRemovalAfterPaymentCannotRecreateAnEntryDuringRestore() {
         net.minecraft.world.scores.Objective objective = objective("token");
-        player.board.getOrCreatePlayerScore(player,objective).set(10);
+        player.board.getOrCreatePlayerScore(player, objective).set(10);
         CostAccess access = access(InventoryScope.MAIN);
-        CostPaymentPlan plan = preview(access,"banira:score",3,"token");
-        assertEquals(CostFailure.NONE,access.debit(plan));
+        CostPaymentPlan plan = preview(access, "banira:score", 3, "token");
+        assertEquals(CostFailure.NONE, access.debit(plan));
         CostPaymentPlan receipt = access.receipt(plan);
-        player.board.resetSinglePlayerScore(player,objective);
-        assertEquals(CostFailure.UNCERTAIN,access.restore(receipt));
-        assertNull(player.board.getPlayerScoreInfo(player,objective));
+        player.board.resetSinglePlayerScore(player, objective);
+        assertEquals(CostFailure.UNCERTAIN, access.restore(receipt));
+        assertNull(player.board.getPlayerScoreInfo(player, objective));
     }
 
     @Test
     public void scoreboardCallbacksReplacingTheGoalAreUncertainNotSuccess() {
         player.board = new net.minecraft.world.scores.Scoreboard() {
-            @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
+            @Override
+            protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
                 if (score.value() == 7) {
                     removeObjective(goal);
-                    addObjective("token",net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,net.minecraft.network.chat.Component.literal("token"),
-                            net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER,false,null);
+                    addObjective("token", net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY, net.minecraft.network.chat.Component.literal("token"),
+                            net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER, false, null);
                 }
             }
         };
         net.minecraft.world.scores.Objective objective = objective("token");
-        player.board.getOrCreatePlayerScore(player,objective).set(10);
+        player.board.getOrCreatePlayerScore(player, objective).set(10);
         CostAccess access = access(InventoryScope.MAIN);
-        CostPaymentPlan plan = preview(access,"banira:score",3,"token");
-        assertEquals(CostFailure.UNCERTAIN,access.debit(plan));
-        assertNotSame(objective,player.board.getObjective("token"));
-        assertNull(player.board.getPlayerScoreInfo(player,player.board.getObjective("token")));
-        assertEquals(CostFailure.INVALID_OPERATION,access.debit(plan));
+        CostPaymentPlan plan = preview(access, "banira:score", 3, "token");
+        assertEquals(CostFailure.UNCERTAIN, access.debit(plan));
+        assertNotSame(objective, player.board.getObjective("token"));
+        assertNull(player.board.getPlayerScoreInfo(player, player.board.getObjective("token")));
+        assertEquals(CostFailure.INVALID_OPERATION, access.debit(plan));
     }
 
     @Test
     public void scoreDebitDoesNotOverwriteCallbackAwardsToFollowingObjective() {
-        boolean[] active={false};
+        boolean[] active = {false};
         player.board = new net.minecraft.world.scores.Scoreboard() {
-            @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
-                if(active[0] && goal.getName().equals("first") && score.value()==7) {
-                    net.minecraft.world.scores.ScoreAccess other=getOrCreatePlayerScore(player,getObjective("second"));
-                    other.set(other.get()+5);
+            @Override
+            protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
+                if (active[0] && goal.getName().equals("first") && score.value() == 7) {
+                    net.minecraft.world.scores.ScoreAccess other = getOrCreatePlayerScore(player, getObjective("second"));
+                    other.set(other.get() + 5);
                 }
             }
         };
-        net.minecraft.world.scores.Objective first=objective("first"),second=objective("second");
-        player.board.getOrCreatePlayerScore(player,first).set(10);
-        player.board.getOrCreatePlayerScore(player,second).set(10);
-        CostAccess access=access(InventoryScope.MAIN);
-        CostPaymentPlan plan=access.preview(CostRequirement.all(java.util.Arrays.asList(
-                CostRequirement.leaf(new ResourceCost("banira:score",3,"first")),
-                CostRequirement.leaf(new ResourceCost("banira:score",3,"second")))),1);
-        active[0]=true;
-        assertEquals(CostFailure.UNCERTAIN,access.debit(plan));
-        assertEquals(15,player.board.getPlayerScoreInfo(player,second).value());
+        net.minecraft.world.scores.Objective first = objective("first"), second = objective("second");
+        player.board.getOrCreatePlayerScore(player, first).set(10);
+        player.board.getOrCreatePlayerScore(player, second).set(10);
+        CostAccess access = access(InventoryScope.MAIN);
+        CostPaymentPlan plan = access.preview(CostRequirement.all(java.util.Arrays.asList(
+                CostRequirement.leaf(new ResourceCost("banira:score", 3, "first")),
+                CostRequirement.leaf(new ResourceCost("banira:score", 3, "second")))), 1);
+        active[0] = true;
+        assertEquals(CostFailure.UNCERTAIN, access.debit(plan));
+        assertEquals(15, player.board.getPlayerScoreInfo(player, second).value());
     }
 
     @Test
     public void scoreRestoreDoesNotOverwriteCallbackAwardsToFollowingObjective() {
-        boolean[] active={false};
+        boolean[] active = {false};
         player.board = new net.minecraft.world.scores.Scoreboard() {
-            @Override protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
-                if(active[0] && goal.getName().equals("first") && score.value()==10) {
-                    net.minecraft.world.scores.ScoreAccess other=getOrCreatePlayerScore(player,getObjective("second"));
-                    other.set(other.get()+5);
+            @Override
+            protected void onScoreChanged(net.minecraft.world.scores.ScoreHolder holder, net.minecraft.world.scores.Objective goal, net.minecraft.world.scores.Score score) {
+                if (active[0] && goal.getName().equals("first") && score.value() == 10) {
+                    net.minecraft.world.scores.ScoreAccess other = getOrCreatePlayerScore(player, getObjective("second"));
+                    other.set(other.get() + 5);
                 }
             }
         };
-        net.minecraft.world.scores.Objective first=objective("first"),second=objective("second");
-        player.board.getOrCreatePlayerScore(player,first).set(10);
-        player.board.getOrCreatePlayerScore(player,second).set(10);
-        CostAccess access=access(InventoryScope.MAIN);
-        CostPaymentPlan plan=access.preview(CostRequirement.all(java.util.Arrays.asList(
-                CostRequirement.leaf(new ResourceCost("banira:score",3,"first")),
-                CostRequirement.leaf(new ResourceCost("banira:score",3,"second")))),1);
-        assertEquals(CostFailure.NONE,access.debit(plan));
-        CostPaymentPlan receipt=access.receipt(plan);
-        active[0]=true;
-        assertEquals(CostFailure.UNCERTAIN,access.restore(receipt));
-        assertEquals(12,player.board.getPlayerScoreInfo(player,second).value());
+        net.minecraft.world.scores.Objective first = objective("first"), second = objective("second");
+        player.board.getOrCreatePlayerScore(player, first).set(10);
+        player.board.getOrCreatePlayerScore(player, second).set(10);
+        CostAccess access = access(InventoryScope.MAIN);
+        CostPaymentPlan plan = access.preview(CostRequirement.all(java.util.Arrays.asList(
+                CostRequirement.leaf(new ResourceCost("banira:score", 3, "first")),
+                CostRequirement.leaf(new ResourceCost("banira:score", 3, "second")))), 1);
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        CostPaymentPlan receipt = access.receipt(plan);
+        active[0] = true;
+        assertEquals(CostFailure.UNCERTAIN, access.restore(receipt));
+        assertEquals(12, player.board.getPlayerScoreInfo(player, second).value());
     }
 
     @Test
     public void exactAndIdItemRequirementsDoNotSpendTheSameStackTwice() {
         ItemStack tagged = new ItemStack(Items.PAPER);
-        CompoundTag tag = new CompoundTag(); tag.putInt("fee",1); tagged.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
-        player.getInventory().setItem(0,tagged);
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("fee", 1);
+        tagged.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+        player.getInventory().setItem(0, tagged);
         CostAccess access = access(InventoryScope.MAIN);
         CostRequirement requirement = CostRequirement.all(java.util.Arrays.asList(
-                CostRequirement.leaf(new ResourceCost("banira:item",1,"minecraft:paper",ResourceCost.MatchMode.ID)),
-                CostRequirement.leaf(new ResourceCost("banira:item",1,"minecraft:paper[minecraft:custom_data={fee:1}]"))));
-        assertEquals(CostFailure.INSUFFICIENT_RESOURCE, access.preview(requirement,1).failure());
-        player.getInventory().setItem(1,new ItemStack(Items.PAPER));
-        CostPaymentPlan plan = access.preview(requirement,1);
-        assertEquals(CostFailure.NONE,access.debit(plan));
-        assertTrue(player.getInventory().getItem(0).isEmpty()); assertTrue(player.getInventory().getItem(1).isEmpty());
+                CostRequirement.leaf(new ResourceCost("banira:item", 1, "minecraft:paper", ResourceCost.MatchMode.ID)),
+                CostRequirement.leaf(new ResourceCost("banira:item", 1, "minecraft:paper[minecraft:custom_data={fee:1}]"))));
+        assertEquals(CostFailure.INSUFFICIENT_RESOURCE, access.preview(requirement, 1).failure());
+        player.getInventory().setItem(1, new ItemStack(Items.PAPER));
+        CostPaymentPlan plan = access.preview(requirement, 1);
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        assertTrue(player.getInventory().getItem(0).isEmpty());
+        assertTrue(player.getInventory().getItem(1).isEmpty());
     }
 
     @Test
     public void repeatedItemAndLeavesCannotDoubleCountOneItem() {
-        player.getInventory().setItem(0,new ItemStack(Items.DIAMOND));
+        player.getInventory().setItem(0, new ItemStack(Items.DIAMOND));
         CostRequirement requirement = CostRequirement.all(java.util.Arrays.asList(
-                CostRequirement.leaf(new ResourceCost("banira:item",1,"minecraft:diamond")),
-                CostRequirement.leaf(new ResourceCost("banira:item",1,"minecraft:diamond"))));
-        assertEquals(CostFailure.INSUFFICIENT_RESOURCE,access(InventoryScope.MAIN).preview(requirement,1).failure());
-        assertEquals(1,player.getInventory().getItem(0).getCount());
+                CostRequirement.leaf(new ResourceCost("banira:item", 1, "minecraft:diamond")),
+                CostRequirement.leaf(new ResourceCost("banira:item", 1, "minecraft:diamond"))));
+        assertEquals(CostFailure.INSUFFICIENT_RESOURCE, access(InventoryScope.MAIN).preview(requirement, 1).failure());
+        assertEquals(1, player.getInventory().getItem(0).getCount());
     }
 
     private net.minecraft.world.scores.Objective objective(String name) {
-        return player.board.addObjective(name,net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
-                net.minecraft.network.chat.Component.literal(name),net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER,false,null);
+        return player.board.addObjective(name, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
+                net.minecraft.network.chat.Component.literal(name), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER, false, null);
     }
 
     @Test
     public void malformedMetadataInAnUnaffordablePathCannotAuthorizeFallback() {
         CostRequirement requirement = xin.vanilla.banira.api.BaniraCosts.parse(
                 "xpPoints(999)&&itemExact(\"minecraft:stone{broken\",1)||xpPoints(1)");
-        assertEquals(CostFailure.INVALID_PAYMENT,access(InventoryScope.MAIN).preview(requirement,1).failure());
-        assertEquals(10,player.totalExperience);
+        assertEquals(CostFailure.INVALID_PAYMENT, access(InventoryScope.MAIN).preview(requirement, 1).failure());
+        assertEquals(10, player.totalExperience);
     }
 
     @Test
     public void sameValuedScoreEntryReplacementCannotReusePreview() {
-        net.minecraft.world.scores.Objective objective=objective("token");
-        player.board.getOrCreatePlayerScore(player,objective).set(10);
-        CostAccess access=access(InventoryScope.MAIN);
-        CostPaymentPlan plan=preview(access,"banira:score",3,"token");
-        player.board.resetSinglePlayerScore(player,objective);
-        player.board.getOrCreatePlayerScore(player,objective).set(10);
-        assertEquals(CostFailure.INVALID_OPERATION,access.debit(plan));
-        assertEquals(10,player.board.getPlayerScoreInfo(player,objective).value());
+        net.minecraft.world.scores.Objective objective = objective("token");
+        player.board.getOrCreatePlayerScore(player, objective).set(10);
+        CostAccess access = access(InventoryScope.MAIN);
+        CostPaymentPlan plan = preview(access, "banira:score", 3, "token");
+        player.board.resetSinglePlayerScore(player, objective);
+        player.board.getOrCreatePlayerScore(player, objective).set(10);
+        assertEquals(CostFailure.INVALID_OPERATION, access.debit(plan));
+        assertEquals(10, player.board.getPlayerScoreInfo(player, objective).value());
     }
 
     @Test
     public void sameValuedScoreEntryReplacementCannotAuthorizeRestore() {
-        net.minecraft.world.scores.Objective objective=objective("token");
-        player.board.getOrCreatePlayerScore(player,objective).set(10);
-        CostAccess access=access(InventoryScope.MAIN);
-        CostPaymentPlan plan=preview(access,"banira:score",3,"token");
-        assertEquals(CostFailure.NONE,access.debit(plan));
-        CostPaymentPlan receipt=access.receipt(plan);
-        player.board.resetSinglePlayerScore(player,objective);
-        player.board.getOrCreatePlayerScore(player,objective).set(7);
-        assertEquals(CostFailure.UNCERTAIN,access.restore(receipt));
-        assertEquals(7,player.board.getPlayerScoreInfo(player,objective).value());
+        net.minecraft.world.scores.Objective objective = objective("token");
+        player.board.getOrCreatePlayerScore(player, objective).set(10);
+        CostAccess access = access(InventoryScope.MAIN);
+        CostPaymentPlan plan = preview(access, "banira:score", 3, "token");
+        assertEquals(CostFailure.NONE, access.debit(plan));
+        CostPaymentPlan receipt = access.receipt(plan);
+        player.board.resetSinglePlayerScore(player, objective);
+        player.board.getOrCreatePlayerScore(player, objective).set(7);
+        assertEquals(CostFailure.UNCERTAIN, access.restore(receipt));
+        assertEquals(7, player.board.getPlayerScoreInfo(player, objective).value());
     }
 
     @Test
     public void readOnlyScoreCriteriaCannotAuthorizeDebit() {
-        net.minecraft.world.scores.Objective objective=player.board.addObjective("health",net.minecraft.world.scores.criteria.ObjectiveCriteria.HEALTH,
-                net.minecraft.network.chat.Component.literal("health"),net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER,false,null);
-        player.board.getOrCreatePlayerScore(player,objective,true).set(10);
-        assertEquals(CostFailure.INVALID_PAYMENT,preview(access(InventoryScope.MAIN),"banira:score",1,"health").failure());
-        assertEquals(10,player.board.getPlayerScoreInfo(player,objective).value());
+        net.minecraft.world.scores.Objective objective = player.board.addObjective("health", net.minecraft.world.scores.criteria.ObjectiveCriteria.HEALTH,
+                net.minecraft.network.chat.Component.literal("health"), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER, false, null);
+        player.board.getOrCreatePlayerScore(player, objective, true).set(10);
+        assertEquals(CostFailure.INVALID_PAYMENT, preview(access(InventoryScope.MAIN), "banira:score", 1, "health").failure());
+        assertEquals(10, player.board.getPlayerScoreInfo(player, objective).value());
     }
 
     @Test
@@ -535,7 +546,11 @@ public class NeoForgeCostResourcesTest {
         CostPaymentPlan plan = preview(access, "banira:xp_point", 5, "");
         AtomicReference<Throwable> error = new AtomicReference<>();
         Thread thread = new Thread(() -> {
-            try { access.debit(plan); } catch (Throwable e) { error.set(e); }
+            try {
+                access.debit(plan);
+            } catch (Throwable e) {
+                error.set(e);
+            }
         });
         thread.start();
         thread.join();
@@ -558,22 +573,67 @@ public class NeoForgeCostResourcesTest {
         boolean cancel, mutateSecondary;
         int factor;
         net.minecraft.world.scores.Scoreboard board;
-        private Player() { super(null, null, null, net.minecraft.server.level.ClientInformation.createDefault()); }
-        @Override public net.minecraft.core.RegistryAccess registryAccess() { return net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY); }
-        @Override public UUID getUUID() { return id; }
-        @Override public net.minecraft.world.scores.Scoreboard getScoreboard() { return board; }
-        @Override public String getScoreboardName() { return "CostWallet"; }
-        @Override public FoodData getFoodData() { return food; }
-        @Override public float getHealth() { return health; }
-        @Override public void setHealth(float value) { health = value; }
-        @Override public boolean isAlive() { return health > 0 && !isRemoved(); }
-        @Override public void giveExperiencePoints(int amount) {
-            if (!cancel) totalExperience += amount * (factor == 0 ? 1 : factor);
-            if (mutateSecondary) { experienceLevel++; experienceProgress = .125f; }
+
+        private Player() {
+            super(null, null, null, net.minecraft.server.level.ClientInformation.createDefault());
         }
-        @Override public void giveExperienceLevels(int amount) {
+
+        @Override
+        public net.minecraft.core.RegistryAccess registryAccess() {
+            return net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+        }
+
+        @Override
+        public UUID getUUID() {
+            return id;
+        }
+
+        @Override
+        public net.minecraft.world.scores.Scoreboard getScoreboard() {
+            return board;
+        }
+
+        @Override
+        public String getScoreboardName() {
+            return "CostWallet";
+        }
+
+        @Override
+        public FoodData getFoodData() {
+            return food;
+        }
+
+        @Override
+        public float getHealth() {
+            return health;
+        }
+
+        @Override
+        public void setHealth(float value) {
+            health = value;
+        }
+
+        @Override
+        public boolean isAlive() {
+            return health > 0 && !isRemoved();
+        }
+
+        @Override
+        public void giveExperiencePoints(int amount) {
+            if (!cancel) totalExperience += amount * (factor == 0 ? 1 : factor);
+            if (mutateSecondary) {
+                experienceLevel++;
+                experienceProgress = .125f;
+            }
+        }
+
+        @Override
+        public void giveExperienceLevels(int amount) {
             if (!cancel) experienceLevel += amount * (factor == 0 ? 1 : factor);
-            if (mutateSecondary) { totalExperience++; experienceProgress = .125f; }
+            if (mutateSecondary) {
+                totalExperience++;
+                experienceProgress = .125f;
+            }
         }
     }
 }

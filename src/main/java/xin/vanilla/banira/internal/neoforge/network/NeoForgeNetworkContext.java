@@ -17,7 +17,9 @@ final class NeoForgeNetworkContext implements BaniraNetworkContext {
     }
 
     @Override
-    public Object connectionKey() { return delegate.connection(); }
+    public Object connectionKey() {
+        return delegate.connection();
+    }
 
     @Override
     public void enqueueWork(Runnable work) {

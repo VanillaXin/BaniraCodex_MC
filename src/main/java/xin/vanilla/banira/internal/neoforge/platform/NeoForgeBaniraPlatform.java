@@ -33,7 +33,9 @@ public final class NeoForgeBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
-    public BaniraCostService costService() { return costs; }
+    public BaniraCostService costService() {
+        return costs;
+    }
 
     @Nonnull
     @Override

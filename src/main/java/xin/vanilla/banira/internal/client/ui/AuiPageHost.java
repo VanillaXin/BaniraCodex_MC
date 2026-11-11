@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.client.ui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.sighs.apricityui.init.Document;
 import com.sighs.apricityui.screen.ApricityScreen;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.apache.logging.log4j.LogManager;

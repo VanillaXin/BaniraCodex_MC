@@ -98,8 +98,14 @@ public class PlayerConfigTooltipTest {
         fx.setAccessible(true);
         fy.setAccessible(true);
         double oldX = fx.getDouble(input), oldY = fy.getDouble(input);
-        try { fx.setDouble(input, x); fy.setDouble(input, y); action.run(); }
-        finally { fx.setDouble(input, oldX); fy.setDouble(input, oldY); }
+        try {
+            fx.setDouble(input, x);
+            fy.setDouble(input, y);
+            action.run();
+        } finally {
+            fx.setDouble(input, oldX);
+            fy.setDouble(input, oldY);
+        }
     }
 
     private static TooltipWidget childTooltip(IWidget widget) {
@@ -139,7 +145,9 @@ public class PlayerConfigTooltipTest {
 
         LabelWidget row(String title, String description, boolean hasTooltip) {
             BaseWidget row = new BaseWidget(this) {
-                @Override public void render(GuiGraphics graphics, float partialTicks) {}
+                @Override
+                public void render(GuiGraphics graphics, float partialTicks) {
+                }
             };
             row.bounds(new ScreenCoordinate(0, 0, 160, 20));
             LabelWidget label = new LabelWidget(this);
@@ -159,9 +167,22 @@ public class PlayerConfigTooltipTest {
             return label;
         }
 
-        @Override protected void buildPlayerConfig(CollapsiblePanelWidget root) {}
-        @Override protected void savePlayerConfig() {}
-        @Override public boolean isAnyDropdownSelectOpen() { return dropdown; }
-        @Override public void addDeferredTooltipRender(Consumer<GuiGraphics> render) { requests++; }
+        @Override
+        protected void buildPlayerConfig(CollapsiblePanelWidget root) {
+        }
+
+        @Override
+        protected void savePlayerConfig() {
+        }
+
+        @Override
+        public boolean isAnyDropdownSelectOpen() {
+            return dropdown;
+        }
+
+        @Override
+        public void addDeferredTooltipRender(Consumer<GuiGraphics> render) {
+            requests++;
+        }
     }
 }

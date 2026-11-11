@@ -1,15 +1,15 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.client.renderer.MultiBufferSource;
-import journeymap.client.render.draw.DrawUtil;
 import journeymap.client.render.draw.DrawStep;
+import journeymap.client.render.draw.DrawUtil;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Desc;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import xin.vanilla.banira.internal.compat.minimap.JourneyMapTextBounds;
 
 @Pseudo

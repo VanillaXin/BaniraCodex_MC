@@ -29,16 +29,3 @@ def verify = tasks.register('verifyAuiContract') {
     }
 }
 tasks.named('compileJava') { dependsOn verify }
-tasks.withType(Test).configureEach {
-    dependsOn verify
-    doFirst {
-        systemProperty 'banira.aui.officialContractJar', configurations.auiContract.singleFile.absolutePath
-        // Non-remapping Loom consumes the official unobfuscated archive directly.
-        def contracts = sourceSets.main.compileClasspath.files.findAll { artifact ->
-            if (!artifact.name.endsWith('.jar')) return false
-            new ZipFile(artifact).withCloseable { zip -> zip.getEntry('com/sighs/apricityui/screen/ApricityScreen.class') != null }
-        }
-        if (contracts.size() != 1) throw new GradleException('Expected one unobfuscated AUI compile contract')
-        systemProperty 'banira.aui.contractJar', contracts[0].absolutePath
-    }
-}

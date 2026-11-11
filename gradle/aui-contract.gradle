@@ -19,8 +19,6 @@ dependencies {
         jarJar.ranged(it, '[1.10.5,1.11)')
         jarJar.pin(it, '1.10.5')
     }
-    testCompileOnly 'org.joml:joml:1.10.5'
-    testRuntimeOnly 'org.joml:joml:1.10.5'
     def localContract = providers.gradleProperty('banira.auiContractJar').orNull
     if (localContract != null) {
         def artifact = new File(localContract)
@@ -61,13 +59,3 @@ def verifyAuiContract = tasks.register('verifyAuiContract') {
 }
 
 tasks.named('compileJava') { dependsOn verifyAuiContract }
-
-tasks.withType(Test).configureEach {
-    dependsOn verifyAuiContract
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiContract.singleFile.absolutePath
-        systemProperty 'banira.minimap.contractJars', configurations.compileClasspath.files.findAll {
-            it.name.startsWith('journeymap-') || it.name.startsWith('xaeros-minimap-') || it.name.startsWith('ftb-chunks-forge-')
-        }.collect { it.absolutePath }.join(File.pathSeparator)
-    }
-}

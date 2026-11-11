@@ -14,7 +14,8 @@ public class BaniraCostApiTest {
         try {
             new TestBaniraPlatform().costService().access(new Object(), InventoryScope.MAIN);
             fail("Missing platform support became free");
-        } catch (IllegalStateException expected) { }
+        } catch (IllegalStateException expected) {
+        }
     }
 
     @Test
@@ -24,7 +25,10 @@ public class BaniraCostApiTest {
         xin.vanilla.banira.api.cost.CostRequirement requirement = xin.vanilla.banira.api.cost.CostRequirement.all(children);
         children.clear();
         assertEquals(1, requirement.children().size());
-        try { requirement.children().clear(); fail("Mutable requirement tree"); }
-        catch (UnsupportedOperationException expected) { }
+        try {
+            requirement.children().clear();
+            fail("Mutable requirement tree");
+        } catch (UnsupportedOperationException expected) {
+        }
     }
 }

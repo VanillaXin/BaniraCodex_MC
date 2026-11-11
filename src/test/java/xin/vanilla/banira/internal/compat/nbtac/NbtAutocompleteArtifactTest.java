@@ -9,7 +9,6 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import static org.junit.Assert.*;
 

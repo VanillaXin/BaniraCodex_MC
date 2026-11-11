@@ -25,7 +25,6 @@ import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.ColorUtils;
 import xin.vanilla.banira.common.util.StringUtils;
-import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.ui.CommonUiPages;
 import xin.vanilla.banira.internal.client.ui.UiNativePage;
 import xin.vanilla.banira.internal.client.ui.UiViewState;

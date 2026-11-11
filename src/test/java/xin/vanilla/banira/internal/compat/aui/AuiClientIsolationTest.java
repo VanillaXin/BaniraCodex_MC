@@ -12,8 +12,11 @@ public class AuiClientIsolationTest {
     @Test
     public void preferenceDefaultsToEnabled() throws Exception {
         java.lang.reflect.Field field;
-        try { field = ClientConfig.class.getDeclaredField("useAui"); }
-        catch (NoSuchFieldException e) { throw new AssertionError("Missing useAui default", e); }
+        try {
+            field = ClientConfig.class.getDeclaredField("useAui");
+        } catch (NoSuchFieldException e) {
+            throw new AssertionError("Missing useAui default", e);
+        }
         field.setAccessible(true);
         assertEquals(true, field.get(new ClientConfig()));
     }

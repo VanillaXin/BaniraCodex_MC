@@ -1,14 +1,17 @@
 package xin.vanilla.banira.internal.fabric.cost;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.commands.arguments.item.ItemParser;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.api.cost.*;
 import xin.vanilla.banira.common.cost.ResourcePaymentAccess;
 
@@ -16,7 +19,8 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public final class FabricCostResources {
-    private FabricCostResources() { }
+    private FabricCostResources() {
+    }
 
     public static CostAccess access(ServerPlayer player, InventoryScope scope) {
         return access(player, scope, p -> p.server != null && p.server.isSameThread() && !p.hasDisconnected()
@@ -48,7 +52,8 @@ public final class FabricCostResources {
             this.id = id;
         }
 
-        @Override public String snapshot() {
+        @Override
+        public String snapshot() {
             JsonObject json = new JsonObject();
             json.addProperty("schema", 1);
             json.addProperty("payer", player.getUUID().toString());
@@ -70,7 +75,8 @@ public final class FabricCostResources {
             return json.toString();
         }
 
-        @Override public CostFailure check(ResourceCost cost, int units, String before) {
+        @Override
+        public CostFailure check(ResourceCost cost, int units, String before) {
             try {
                 if (!id.equals(cost.resourceId())) return CostFailure.INVALID_PAYMENT;
                 int amount = Math.multiplyExact(cost.amount(), units);
@@ -97,11 +103,15 @@ public final class FabricCostResources {
                     enough = health > amount;
                 } else enough = integer(json, "hunger") >= amount;
                 return enough ? CostFailure.NONE : CostFailure.INSUFFICIENT_RESOURCE;
-            } catch (ArithmeticException overflow) { return CostFailure.AMOUNT_OVERFLOW; }
-            catch (IllegalArgumentException | IllegalStateException invalid) { return CostFailure.INVALID_PAYMENT; }
+            } catch (ArithmeticException overflow) {
+                return CostFailure.AMOUNT_OVERFLOW;
+            } catch (IllegalArgumentException | IllegalStateException invalid) {
+                return CostFailure.INVALID_PAYMENT;
+            }
         }
 
-        @Override public CostFailure validate(ResourceCost cost) {
+        @Override
+        public CostFailure validate(ResourceCost cost) {
             if (!id.equals(cost.resourceId())) return CostFailure.INVALID_PAYMENT;
             if (!id.equals("banira:item")) return CostFailure.NONE;
             ItemStack required = item(cost.specification());
@@ -109,7 +119,8 @@ public final class FabricCostResources {
                     ? CostFailure.INVALID_PAYMENT : CostFailure.NONE;
         }
 
-        @Override public String after(ResourceCost cost, int units, String before) {
+        @Override
+        public String after(ResourceCost cost, int units, String before) {
             CostFailure failure = check(cost, units, before);
             if (failure.isFailure()) throw new IllegalArgumentException(failure.code());
             int amount = Math.multiplyExact(cost.amount(), units);
@@ -137,7 +148,8 @@ public final class FabricCostResources {
             return json.toString();
         }
 
-        @Override public CostFailure debit(String before, String after) {
+        @Override
+        public CostFailure debit(String before, String after) {
             JsonObject original = read(before), expected = read(after);
             if (!before.equals(snapshot())) return CostFailure.INVALID_OPERATION;
             if (experience()) return debitExperience(original, expected);
@@ -158,7 +170,8 @@ public final class FabricCostResources {
                 }
             } else if (id.equals("banira:health")) {
                 float health = Float.intBitsToFloat(integer(expected, "health"));
-                if (!Float.isFinite(health) || health <= 0 || health > player.getHealth()) return CostFailure.INVALID_PAYMENT;
+                if (!Float.isFinite(health) || health <= 0 || health > player.getHealth())
+                    return CostFailure.INVALID_PAYMENT;
                 player.setHealth(health);
             } else {
                 int hunger = integer(expected, "hunger");
@@ -194,7 +207,8 @@ public final class FabricCostResources {
             }
         }
 
-        @Override public CostFailure restore(String before, String after) {
+        @Override
+        public CostFailure restore(String before, String after) {
             try {
                 JsonObject original = read(before);
                 read(after);
@@ -220,19 +234,31 @@ public final class FabricCostResources {
                     player.getFoodData().setFoodLevel(hunger);
                 }
                 return before.equals(snapshot()) ? CostFailure.NONE : CostFailure.UNCERTAIN;
-            } catch (RuntimeException invalid) { return CostFailure.UNCERTAIN; }
+            } catch (RuntimeException invalid) {
+                return CostFailure.UNCERTAIN;
+            }
         }
 
-        @Override public boolean reversible() { return true; }
-        @Override public void afterPayment() {
+        @Override
+        public boolean reversible() {
+            return true;
+        }
+
+        @Override
+        public void afterPayment() {
             if (id.equals("banira:item")) {
                 player.getInventory().setChanged();
                 if (player.inventoryMenu != null) player.inventoryMenu.broadcastChanges();
             }
         }
 
-        private boolean experience() { return id.equals("banira:xp_point") || id.equals("banira:xp_level"); }
-        private int slotCount() { return scope == InventoryScope.MAIN ? player.getInventory().items.size() : player.getInventory().getContainerSize(); }
+        private boolean experience() {
+            return id.equals("banira:xp_point") || id.equals("banira:xp_level");
+        }
+
+        private int slotCount() {
+            return scope == InventoryScope.MAIN ? player.getInventory().items.size() : player.getInventory().getContainerSize();
+        }
 
         private JsonObject read(String text) {
             JsonObject json = new JsonParser().parse(text).getAsJsonObject();
@@ -240,7 +266,8 @@ public final class FabricCostResources {
                     || !payer.equals(player.getUUID()) || !id.equals(json.get("resource").getAsString()))
                 throw new IllegalArgumentException("Foreign resource snapshot");
             if (id.equals("banira:item") && (!scope.name().equals(json.get("scope").getAsString())
-                    || json.getAsJsonArray("slots").size() != slotCount())) throw new IllegalArgumentException("Foreign inventory scope");
+                    || json.getAsJsonArray("slots").size() != slotCount()))
+                throw new IllegalArgumentException("Foreign inventory scope");
             return json;
         }
 
@@ -251,8 +278,11 @@ public final class FabricCostResources {
         }
 
         private static int integer(JsonObject json, String field) {
-            try { return json.get(field).getAsBigDecimal().intValueExact(); }
-            catch (ArithmeticException | NullPointerException invalid) { throw new IllegalArgumentException("Invalid snapshot integer", invalid); }
+            try {
+                return json.get(field).getAsBigDecimal().intValueExact();
+            } catch (ArithmeticException | NullPointerException invalid) {
+                throw new IllegalArgumentException("Invalid snapshot integer", invalid);
+            }
         }
 
         private static JsonObject encode(ItemStack stack) {
@@ -273,7 +303,9 @@ public final class FabricCostResources {
                 if (stack.isEmpty()) throw new IllegalArgumentException("Unavailable snapshot item");
                 stack.setCount(count);
                 return stack;
-            } catch (CommandSyntaxException invalid) { throw new IllegalArgumentException("Invalid snapshot item", invalid); }
+            } catch (CommandSyntaxException invalid) {
+                throw new IllegalArgumentException("Invalid snapshot item", invalid);
+            }
         }
 
         private static boolean matches(ItemStack stack, ItemStack required, ResourceCost.MatchMode mode) {
@@ -289,7 +321,9 @@ public final class FabricCostResources {
                 if (reader.canRead()) return null;
                 ItemStack item = new ItemInput(parsed.item(), parsed.nbt()).createItemStack(1, false);
                 return item.isEmpty() ? null : item;
-            } catch (CommandSyntaxException | IllegalArgumentException invalid) { return null; }
+            } catch (CommandSyntaxException | IllegalArgumentException invalid) {
+                return null;
+            }
         }
     }
 }

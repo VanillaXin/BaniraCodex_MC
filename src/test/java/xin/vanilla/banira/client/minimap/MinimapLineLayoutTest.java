@@ -1,7 +1,9 @@
 package xin.vanilla.banira.client.minimap;
 
 import org.junit.Test;
+
 import java.lang.reflect.Method;
+
 import static org.junit.Assert.*;
 
 public class MinimapLineLayoutTest {
@@ -40,6 +42,7 @@ public class MinimapLineLayoutTest {
     public void emptyStackDoesNotReserveBlankSpace() throws Exception {
         assertArrayEquals(new float[0], positions(50, false, 480), .001f);
     }
+
     private boolean allowsLegacyJourneyScreen(boolean open, boolean chat) throws Exception {
         java.lang.reflect.Method method = null;
         for (java.lang.reflect.Method candidate : Class.forName("xin.vanilla.banira.internal.client.minimap.MinimapLineLayout").getMethods())

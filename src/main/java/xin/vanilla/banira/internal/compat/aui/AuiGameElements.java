@@ -1,8 +1,8 @@
 package xin.vanilla.banira.internal.compat.aui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -12,7 +12,6 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ImageWidget;
-import xin.vanilla.banira.client.gui.widget.ItemWidget;
 
 import java.util.Collections;
 import java.util.List;

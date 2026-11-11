@@ -18,6 +18,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
 
     private static final int MAX_TYPE_ID_LENGTH = 128;
     private static final int MAX_TYPE_COUNT = 512;
+    private static final int IMPORTANCE_EXTENSION = 0x424E4901;
 
     private final List<NotificationTypeSyncEntry> entries;
 
@@ -27,10 +28,7 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
 
     public NotificationTypesSyncToClient(BaniraPacketBuffer buf) {
         int n = buf.readVarInt();
-        if (n < 0) {
-            n = 0;
-        }
-        n = Math.min(n, MAX_TYPE_COUNT);
+        if (n < 0 || n > MAX_TYPE_COUNT) throw new IllegalArgumentException("Invalid notification type count");
         this.entries = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             String id = NotificationTypeKeys.normalizeOrDefault(buf.readUtf(MAX_TYPE_ID_LENGTH));
@@ -44,6 +42,20 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
                 }
             }
             this.entries.add(new NotificationTypeSyncEntry(id, mode));
+        }
+        // Keep the original entry layout intact for older peers.
+        if (buf.readableBytes() > 0) {
+            if (buf.readInt() != IMPORTANCE_EXTENSION || buf.readVarInt() != n) {
+                throw new IllegalArgumentException("Invalid notification importance extension");
+            }
+            for (int i = 0; i < n; i++) {
+                int importance = buf.readByte();
+                if (importance < 0 || importance > 2)
+                    throw new IllegalArgumentException("Invalid notification importance");
+                NotificationTypeSyncEntry entry = this.entries.get(i);
+                this.entries.set(i, new NotificationTypeSyncEntry(entry.typeId(), entry.defaultDisplayIfAbsent(),
+                        importance == 0 ? null : importance == 2));
+            }
         }
     }
 
@@ -59,6 +71,12 @@ public class NotificationTypesSyncToClient implements NetworkPacket {
             if (m != null) {
                 buf.writeVarInt(m.ordinal());
             }
+        }
+        buf.writeInt(IMPORTANCE_EXTENSION);
+        buf.writeVarInt(n);
+        for (int i = 0; i < n; i++) {
+            Boolean important = entries.get(i).important();
+            buf.writeByte(important == null ? 0 : important ? 2 : 1);
         }
     }
 

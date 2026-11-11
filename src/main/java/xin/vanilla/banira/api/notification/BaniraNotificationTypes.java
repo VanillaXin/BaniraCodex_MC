@@ -21,6 +21,10 @@ public final class BaniraNotificationTypes {
     private BaniraNotificationTypes() {
     }
 
+    public static void registerImportance(@Nonnull String typeId, boolean important) {
+        ServerNotificationTypeRegistry.registerImportance(typeId, important);
+    }
+
     @Nonnull
     public static String normalizeOrDefault(String typeId) {
         return NotificationTypeKeys.normalizeOrDefault(typeId);

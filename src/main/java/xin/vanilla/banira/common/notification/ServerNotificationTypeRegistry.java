@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 客户端在本地 JSON 无该类型条目时采用（客户端模组显式 {@code NotificationTypeRegistry.register(id, mode)} 优先）。
  */
 public final class ServerNotificationTypeRegistry {
+    private static final java.util.concurrent.ConcurrentHashMap<String, Boolean> IMPORTANT_DEFAULTS = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final Set<String> KNOWN = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap<String, TypeLayoutDefaults> LAYOUT_DEFAULTS = new ConcurrentHashMap<>();
@@ -36,6 +37,17 @@ public final class ServerNotificationTypeRegistry {
                 EnumNotificationTypeDisplayMode.VANILLA_CHAT);
         register(NotificationTypeKeys.COMMAND_FEEDBACK, EnumPosition.TOP_CENTER, EnumMoveType.AUTO,
                 EnumNotificationTypeDisplayMode.VANILLA_CHAT);
+    }
+
+    static {
+        registerImportance(NotificationTypeKeys.HELP, false);
+        registerImportance(NotificationTypeKeys.COMMAND_FEEDBACK, false);
+    }
+
+    public static void registerImportance(String typeId, boolean important) {
+        String type = NotificationTypeKeys.normalizeOrDefault(typeId);
+        ensureKnown(type);
+        IMPORTANT_DEFAULTS.put(type, important);
     }
 
     private ServerNotificationTypeRegistry() {
@@ -119,7 +131,7 @@ public final class ServerNotificationTypeRegistry {
         for (String id : ids) {
             String key = NotificationTypeKeys.normalizeOrDefault(id);
             EnumNotificationTypeDisplayMode d = SYNC_CLIENT_DISPLAY_IF_ABSENT.get(key);
-            out.add(new NotificationTypeSyncEntry(key, d));
+            out.add(new NotificationTypeSyncEntry(key, d, IMPORTANT_DEFAULTS.get(key)));
         }
         return out;
     }

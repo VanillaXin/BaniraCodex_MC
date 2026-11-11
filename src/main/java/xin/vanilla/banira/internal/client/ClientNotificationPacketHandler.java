@@ -47,11 +47,13 @@ public final class ClientNotificationPacketHandler {
     }
 
     public static void handleTypes(NotificationTypesSyncToClient packet) {
+        NotificationTypeRegistry.clearServerImportance();
         for (NotificationTypeSyncEntry e : packet.entries()) {
             if (e == null) {
                 continue;
             }
             NotificationTypeRegistry.ensureKnown(e.typeId());
+            NotificationTypeRegistry.acceptServerImportance(e.typeId(), e.important());
             NotificationTypeRegistry.acceptServerSyncedDisplayDefault(e.typeId(), e.defaultDisplayIfAbsent());
             NotificationTypeSettingsStore.get().applyResolvedDisplayDefaultIfNoSavedEntry(e.typeId());
         }

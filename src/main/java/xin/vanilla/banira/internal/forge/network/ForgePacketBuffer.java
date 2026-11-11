@@ -15,6 +15,11 @@ import java.util.UUID;
 final class ForgePacketBuffer implements BaniraPacketBuffer, NativePacketBufferAccess<PacketBuffer> {
     private final PacketBuffer buffer;
 
+    @Override
+    public int readableBytes() {
+        return buffer.readableBytes();
+    }
+
     ForgePacketBuffer(PacketBuffer buffer) {
         this.buffer = buffer;
     }

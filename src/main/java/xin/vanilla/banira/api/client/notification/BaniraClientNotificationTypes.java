@@ -16,6 +16,13 @@ public final class BaniraClientNotificationTypes {
     private BaniraClientNotificationTypes() {
     }
 
+    /**
+     * Registers the type default without changing a player's saved preference.
+     */
+    public static void registerImportance(@Nonnull String typeId, boolean important) {
+        NotificationTypeRegistry.registerImportance(typeId, important);
+    }
+
     public static void register(@Nonnull String typeId) {
         NotificationTypeRegistry.register(typeId);
     }

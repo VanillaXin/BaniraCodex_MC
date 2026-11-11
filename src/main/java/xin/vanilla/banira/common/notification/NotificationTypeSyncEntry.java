@@ -12,10 +12,20 @@ public final class NotificationTypeSyncEntry {
      * 为 null 表示服务端未登记该类型的客户端默认展示方式，由客户端本地 {@code register} 或 OVERLAY 决定
      */
     private final EnumNotificationTypeDisplayMode defaultDisplayIfAbsent;
+    private final Boolean important;
 
     public NotificationTypeSyncEntry(String typeId, EnumNotificationTypeDisplayMode defaultDisplayIfAbsent) {
+        this(typeId, defaultDisplayIfAbsent, null);
+    }
+
+    public NotificationTypeSyncEntry(String typeId, EnumNotificationTypeDisplayMode defaultDisplayIfAbsent, Boolean important) {
         this.typeId = NotificationTypeKeys.normalizeOrDefault(typeId);
         this.defaultDisplayIfAbsent = defaultDisplayIfAbsent;
+        this.important = important;
+    }
+
+    public Boolean important() {
+        return important;
     }
 
     public String typeId() {

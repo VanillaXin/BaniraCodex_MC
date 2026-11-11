@@ -12,13 +12,11 @@ public class AuiBuildContractTest {
 
     @Test
     public void fallbackContractIsExplicitCompileOnlyAndNeverARuntimeDependency() throws Exception {
-        String build = Files.readString(Path.of("gradle/aui-contract.gradle"));
-        assertTrue(build.contains("requires an explicit compile-only AUI contract"));
-        assertTrue(build.contains("compileOnly files(configurations.auiContract)"));
-        assertFalse(build.contains("modCompileOnly"));
-        assertFalse(build.contains("modRuntimeOnly"));
-        assertFalse(build.contains("implementation files(configurations.auiContract)"));
-        assertTrue(build.contains("9F7A199D835EEC069E9C26D42AA8D65D2873ED219CA168750A69BD5408B42C53"));
+        Path contract = Path.of(System.getProperty("banira.aui.contractJar"));
+        assertTrue(Files.isRegularFile(contract));
+        assertEquals("9f7a199d835eec069e9c26d42aa8d65d2873ed219ca168750a69bd5408b42c53",
+                java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(contract))));
+        assertEquals("false", System.getProperty("banira.aui.contractOnRuntimeClasspath"));
     }
 
     @Test

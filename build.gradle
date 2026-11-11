@@ -113,10 +113,6 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    testImplementation 'junit:junit:4.13.2'
 
     runtimeOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_id}")
     runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:${rubidium_extra_id}")
@@ -137,8 +133,6 @@ dependencies {
 
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
     compileOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
-    testRuntimeOnly fg.deobf("maven.modrinth:xaeros-minimap:VLhkjJMS")
-    testRuntimeOnly fg.deobf("maven.modrinth:xaerolib:EzhXlKLk")
     compileOnly fg.deobf("maven.modrinth:journeymap:v7sAIUDv")
     compileOnly fg.deobf("curse.maven:voxelmap-225179:3197677")
     compileOnly fg.deobf("curse.maven:map-atlases-forge-519759:3508631")

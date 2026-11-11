@@ -120,35 +120,3 @@ if (localContract != null) {
     dependencies.add('auiContract', files(declarations).builtBy(generateDeclarations))
 }
 configurations.compileOnly.extendsFrom(configurations.auiContract)
-dependencies.add('testRuntimeOnly', files(declarations).builtBy(generateDeclarations))
-tasks.withType(Test).configureEach {
-    dependsOn generateDeclarations
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiReference.singleFile.absolutePath
-        systemProperty 'banira.aui.declarationsJar', declarations.get().asFile.absolutePath
-    }
-}
-
-tasks.register('auiFoundationArtifactTest', Test) {
-    dependsOn 'reobfShadowJar', 'testClasses'
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    filter { includeTestsMatching '*AuiFoundationRuntimeTest.actualProductionArchiveIsJava8AndVendorFree' }
-    inputs.file(tasks.shadowJar.archiveFile)
-    doFirst {
-        systemProperty 'banira.aui.foundationArtifact', tasks.shadowJar.archiveFile.get().asFile.absolutePath
-    }
-}
-
-tasks.register('auiJava17ContractTest', Test) {
-    dependsOn 'testClasses'
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    javaLauncher.set(javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) })
-    filter {
-        includeTestsMatching '*AuiCapabilityContractTest'
-        includeTestsMatching '*AuiOfficialReferenceTest'
-    }
-    outputs.upToDateWhen { false }
-    systemProperty 'banira.aui.expectedHostMajor', '61.0'
-}

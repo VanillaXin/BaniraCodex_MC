@@ -108,12 +108,38 @@ public class ConfigRegistryConcurrentRegistrationTest {
     }
 
     private static final class EmptyStore implements ConfigValueStore {
-        @Override public Set<String> paths() { return Collections.emptySet(); }
-        @Override public Object get(String path) { return null; }
-        @Override public void set(String path, Object value) { throw new UnsupportedOperationException(); }
-        @Override public Class<?> valueClass(String path) { return Object.class; }
-        @Override public Object defaultValue(String path) { return null; }
-        @Override public boolean validate(String path, Object value) { return false; }
-        @Override public void save() {}
+        @Override
+        public Set<String> paths() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Object get(String path) {
+            return null;
+        }
+
+        @Override
+        public void set(String path, Object value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Class<?> valueClass(String path) {
+            return Object.class;
+        }
+
+        @Override
+        public Object defaultValue(String path) {
+            return null;
+        }
+
+        @Override
+        public boolean validate(String path, Object value) {
+            return false;
+        }
+
+        @Override
+        public void save() {
+        }
     }
 }

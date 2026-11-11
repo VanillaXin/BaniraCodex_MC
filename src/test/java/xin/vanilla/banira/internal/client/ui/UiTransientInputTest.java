@@ -6,8 +6,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 
-import java.nio.charset.StandardCharsets;
-
 import static org.junit.Assert.*;
 
 public class UiTransientInputTest {

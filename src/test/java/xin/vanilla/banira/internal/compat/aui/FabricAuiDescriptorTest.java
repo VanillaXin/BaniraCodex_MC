@@ -21,9 +21,10 @@ public class FabricAuiDescriptorTest {
             new ClassReader(input).accept(node, 0);
         }
         boolean mapped = false;
-        for (var method : node.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call && call.owner.equals("org/objectweb/asm/Type") && call.name.equals("getDescriptor"))
-                mapped = true;
+        for (var method : node.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call && call.owner.equals("org/objectweb/asm/Type") && call.name.equals("getDescriptor"))
+                    mapped = true;
         assertTrue("The packaged descriptor must follow Loom's mapped class literal", mapped);
     }
 }

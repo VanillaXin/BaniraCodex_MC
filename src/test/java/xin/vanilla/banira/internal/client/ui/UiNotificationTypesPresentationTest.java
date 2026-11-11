@@ -10,8 +10,6 @@ import xin.vanilla.banira.internal.client.ui.page.NotificationUiSession;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
-import java.nio.charset.StandardCharsets;
-
 import static org.junit.Assert.*;
 
 public class UiNotificationTypesPresentationTest {

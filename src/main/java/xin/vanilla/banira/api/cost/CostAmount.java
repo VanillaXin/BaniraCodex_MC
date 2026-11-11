@@ -19,14 +19,29 @@ public final class CostAmount {
     }
 
     public static CostAmount failed(CostFailure failure) {
-        if (!Objects.requireNonNull(failure, "failure").isFailure()) throw new IllegalArgumentException("Failure required");
+        if (!Objects.requireNonNull(failure, "failure").isFailure())
+            throw new IllegalArgumentException("Failure required");
         return new CostAmount(0, 0, failure);
     }
 
-    public boolean isSuccess() { return !failure.isFailure(); }
-    public CostFailure failure() { return failure; }
-    public double rawAmount() { requireSuccess(); return raw; }
-    public int amount() { requireSuccess(); return amount; }
+    public boolean isSuccess() {
+        return !failure.isFailure();
+    }
+
+    public CostFailure failure() {
+        return failure;
+    }
+
+    public double rawAmount() {
+        requireSuccess();
+        return raw;
+    }
+
+    public int amount() {
+        requireSuccess();
+        return amount;
+    }
+
     private void requireSuccess() {
         if (!isSuccess()) throw new IllegalStateException("Cost calculation failed: " + failure);
     }

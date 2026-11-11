@@ -25,6 +25,7 @@ import java.util.UUID;
  */
 public final class BaniraClientRuntime {
     private static Field itemColorsField;
+
     private BaniraClientRuntime() {
     }
 

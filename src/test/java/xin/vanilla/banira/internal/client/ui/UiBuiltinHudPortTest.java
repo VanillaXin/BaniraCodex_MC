@@ -40,12 +40,13 @@ public class UiBuiltinHudPortTest {
                 .filter(value -> value.name.equals("drawText")).findFirst().orElseThrow();
         var calls = new ArrayList<String>();
         int restores = 0;
-        for (var instruction : method.instructions) if (instruction instanceof MethodInsnNode call) {
-            calls.add(call.name);
-            if (call.name.equals("drawString"))
-                assertEquals("(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I", call.desc);
-            if (call.name.equals("popPose")) restores++;
-        }
+        for (var instruction : method.instructions)
+            if (instruction instanceof MethodInsnNode call) {
+                calls.add(call.name);
+                if (call.name.equals("drawString"))
+                    assertEquals("(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I", call.desc);
+                if (call.name.equals("popPose")) restores++;
+            }
         assertTrue(calls.indexOf("pushPose") < calls.indexOf("translate"));
         assertTrue(calls.indexOf("translate") < calls.indexOf("drawString"));
         assertEquals("Normal and exceptional paths both restore the pose", 2, restores);
@@ -56,11 +57,12 @@ public class UiBuiltinHudPortTest {
         for (String owner : List.of("client/util/NotificationManager", "client/notification/NotificationUnreadHud",
                 "client/gui/quickaction/QuickActionOverlay", "client/gui/widget/MouseWidget")) {
             boolean shared = false, fallback = false;
-            for (var method : node(owner).methods) for (var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode call) {
-                    if (call.owner.endsWith("/SharedHudHosts") && call.name.equals("render")) shared = true;
-                    if (call.owner.endsWith("/HudDrawList") && call.name.equals("renderNative")) fallback = true;
-                }
+            for (var method : node(owner).methods)
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call) {
+                        if (call.owner.endsWith("/SharedHudHosts") && call.name.equals("render")) shared = true;
+                        if (call.owner.endsWith("/HudDrawList") && call.name.equals("renderNative")) fallback = true;
+                    }
             assertTrue(owner + " must use the owned HUD host", shared);
             assertTrue(owner + " must retain native drawing", fallback);
         }
@@ -84,11 +86,12 @@ public class UiBuiltinHudPortTest {
     public void unreadKeepsMinecraft21ResourceFactoriesAndOneChatReturnOwner() throws Exception {
         int factories = 0;
         var unread = node("client/notification/NotificationUnreadHud");
-        for (var method : unread.methods) for (var instruction : method.instructions)
-            if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/ResourceLocation")) {
-                assertNotEquals("<init>", call.name);
-                if (call.name.equals("fromNamespaceAndPath")) factories++;
-            }
+        for (var method : unread.methods)
+            for (var instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call && call.owner.equals("net/minecraft/resources/ResourceLocation")) {
+                    assertNotEquals("<init>", call.name);
+                    if (call.name.equals("fromNamespaceAndPath")) factories++;
+                }
         assertEquals(2, factories);
         var history = unread.methods.stream().filter(method -> method.name.equals("historyScreen")).findFirst().orElseThrow();
         assertTrue(java.util.stream.StreamSupport.stream(history.instructions.spliterator(), false)
@@ -115,15 +118,26 @@ public class UiBuiltinHudPortTest {
             views.add(view);
             return view;
         });
-        for (String id : ids) host.register(new UiHudSpec(id, "banira_codex/hud/overlay.html", new UiHudBinding() {
-            public boolean visible() { return true; }
-            public void bind(UiView view) { }
-            public void detach(UiDetachReason reason) { }
-        }, false, true));
+        for (String id : ids)
+            host.register(new UiHudSpec(id, "banira_codex/hud/overlay.html", new UiHudBinding() {
+                public boolean visible() {
+                    return true;
+                }
+
+                public void bind(UiView view) {
+                }
+
+                public void detach(UiDetachReason reason) {
+                }
+            }, false, true));
         backend.tick();
         host.tick(true);
-        for (String id : ids) assertTrue(host.render(id, view -> { }));
-        assertFalse(host.render(SharedHudHosts.NOTIFICATIONS, view -> { throw new LinkageError("fixture"); }));
+        for (String id : ids)
+            assertTrue(host.render(id, view -> {
+            }));
+        assertFalse(host.render(SharedHudHosts.NOTIFICATIONS, view -> {
+            throw new LinkageError("fixture");
+        }));
         assertTrue(views.get(0).closed());
         assertFalse(host.canRender(SharedHudHosts.NOTIFICATIONS));
         for (String id : ids.subList(1, ids.size())) assertTrue(host.canRender(id));
@@ -131,11 +145,15 @@ public class UiBuiltinHudPortTest {
         backend.tick();
         host.tick(true);
         assertTrue(views.stream().allMatch(NativeUiView::closed));
-        for (String id : ids) assertTrue(host.render(id, view -> { }));
+        for (String id : ids)
+            assertTrue(host.render(id, view -> {
+            }));
         host.tick(false);
         assertTrue(views.stream().allMatch(NativeUiView::closed));
         host.tick(true);
-        for (String id : ids) assertTrue(host.render(id, view -> { }));
+        for (String id : ids)
+            assertTrue(host.render(id, view -> {
+            }));
         host.tick(false);
         assertTrue(views.stream().allMatch(NativeUiView::closed));
     }

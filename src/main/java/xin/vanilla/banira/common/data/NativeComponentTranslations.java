@@ -29,11 +29,13 @@ final class NativeComponentTranslations {
                 result = MutableComponent.create(new TranslatableContents(translated.getKey(), translated.getFallback(), arguments));
             } else {
                 String template = VanillaComponentTranslations.serverTemplate(translated.getKey(), language);
-                if (template == null) template = translated.getFallback() == null ? translated.getKey() : translated.getFallback();
+                if (template == null)
+                    template = translated.getFallback() == null ? translated.getKey() : translated.getFallback();
                 Component formatted = Component.literal(arguments.length == 0 ? VanillaComponentTranslations.noArgumentTemplate(template) : template);
-                for (Object argument : arguments) formatted.appendArg(Component.object(
-                        argument instanceof net.minecraft.network.chat.Component ? argument
-                                : net.minecraft.network.chat.Component.literal(String.valueOf(argument))));
+                for (Object argument : arguments)
+                    formatted.appendArg(Component.object(
+                            argument instanceof net.minecraft.network.chat.Component ? argument
+                                    : net.minecraft.network.chat.Component.literal(String.valueOf(argument))));
                 result = formatted.toVanilla(language).copy().setStyle(Style.EMPTY);
             }
         } else if (vanillaOnly && contents instanceof KeybindContents keybind
@@ -51,9 +53,11 @@ final class NativeComponentTranslations {
         }
         Style style = source.getStyle();
         if (vanillaOnly && !"minecraft".equals(style.getFont().getNamespace())) style = style.withFont(null);
-        if (style.getHoverEvent() != null) style = style.withHoverEvent(prepareHover(style.getHoverEvent(), language, vanillaOnly));
+        if (style.getHoverEvent() != null)
+            style = style.withHoverEvent(prepareHover(style.getHoverEvent(), language, vanillaOnly));
         result.setStyle(result.getStyle().applyTo(style));
-        for (net.minecraft.network.chat.Component child : source.getSiblings()) result.append(prepare(child, language, vanillaOnly));
+        for (net.minecraft.network.chat.Component child : source.getSiblings())
+            result.append(prepare(child, language, vanillaOnly));
         return result;
     }
 

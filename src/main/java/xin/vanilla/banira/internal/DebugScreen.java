@@ -25,7 +25,6 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.util.NotificationManager;
 import xin.vanilla.banira.client.util.PlayerSkinTextureUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumMCColor;

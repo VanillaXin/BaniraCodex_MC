@@ -84,8 +84,10 @@ public class UiSelectorPortTest {
             new ClassReader(input).accept(node, 0);
         }
         int count = 0;
-        for (var member : node.methods) for (var instruction : member.instructions)
-            if (instruction instanceof MethodInsnNode call && call.owner.endsWith(owner) && call.name.equals(method)) count++;
+        for (var member : node.methods)
+            for (var instruction : member.instructions)
+                if (instruction instanceof MethodInsnNode call && call.owner.endsWith(owner) && call.name.equals(method))
+                    count++;
         return count;
     }
 

@@ -32,7 +32,9 @@ public final class FabricNetworkContext implements BaniraNetworkContext {
     }
 
     @Override
-    public Object connectionKey() { return connectionKey; }
+    public Object connectionKey() {
+        return connectionKey;
+    }
 
     @Override
     public void enqueueWork(Runnable work) {

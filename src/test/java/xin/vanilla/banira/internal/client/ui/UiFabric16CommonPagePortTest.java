@@ -17,7 +17,6 @@ import xin.vanilla.banira.internal.client.ui.page.NavigationUiSession;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;

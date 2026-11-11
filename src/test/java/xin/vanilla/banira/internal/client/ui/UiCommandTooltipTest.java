@@ -8,7 +8,6 @@ import xin.vanilla.banira.platform.TestBaniraPlatform;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.call;
 

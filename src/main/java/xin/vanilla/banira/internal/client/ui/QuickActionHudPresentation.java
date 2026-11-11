@@ -48,19 +48,24 @@ public final class QuickActionHudPresentation implements AutoCloseable {
             String accent = HudDrawList.css(part.accent());
             switch (part.kind()) {
                 case SLOT:
-                        style += "background:" + (part.empty() ? "transparent" : HudDrawList.css(part.background()))
-                                + ";border:" + units + "px " + (part.empty() ? "dashed " : "solid ")
-                                + (part.active() ? accent : HudDrawList.css(part.border())) + ";border-radius:" + 2 * units + "px;";
+                    style += "background:" + (part.empty() ? "transparent" : HudDrawList.css(part.background()))
+                            + ";border:" + units + "px " + (part.empty() ? "dashed " : "solid ")
+                            + (part.active() ? accent : HudDrawList.css(part.border())) + ";border-radius:" + 2 * units + "px;";
                     break;
-                case MENU: style += "background:" + HudDrawList.css(part.background()) + ";border:" + units
-                        + "px solid " + HudDrawList.css(part.border()) + ";border-radius:" + 3 * units + "px;";
+                case MENU:
+                    style += "background:" + HudDrawList.css(part.background()) + ";border:" + units
+                            + "px solid " + HudDrawList.css(part.border()) + ";border-radius:" + 3 * units + "px;";
                     break;
                 case ROW:
-                        style += "background:" + (part.active() ? HudDrawList.css((part.accent() & 0xffffff) | 0x22000000) : "transparent")
-                                + ";border-radius:" + 2 * units + "px;";
+                    style += "background:" + (part.active() ? HudDrawList.css((part.accent() & 0xffffff) | 0x22000000) : "transparent")
+                            + ";border-radius:" + 2 * units + "px;";
                     break;
-                case SCROLL: style += "background:" + accent + ";border-radius:" + units + "px;"; break;
-                case TITLE: style += "font-weight:600;"; break;
+                case SCROLL:
+                    style += "background:" + accent + ";border-radius:" + units + "px;";
+                    break;
+                case TITLE:
+                    style += "font-weight:600;";
+                    break;
             }
             style += "font-family:default;font-size:" + 7 * units + "px;line-height:" + b.height()
                     + "px;white-space:nowrap;color:" + HudDrawList.css(part.foreground()) + ";";

@@ -4,10 +4,8 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.UiHudFrame;
 
-import java.util.List;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class UiProgressCustomizationTest {

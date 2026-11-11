@@ -1,7 +1,7 @@
 package xin.vanilla.banira.internal.fabric.client;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.banira.internal.client.ui.SharedHudHosts;

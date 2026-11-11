@@ -17,12 +17,12 @@ import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.client.BaniraQuickActionScreenFactory;
 import xin.vanilla.banira.api.client.event.BaniraKeyboardEvent;
 import xin.vanilla.banira.api.quickaction.*;
+import xin.vanilla.banira.client.util.GLFWKeyUtils;
+import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.common.network.packet.QuickActionCommandsToServer;
 import xin.vanilla.banira.common.util.JsonUtils;
 import xin.vanilla.banira.common.util.PacketUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
-import xin.vanilla.banira.client.util.GLFWKeyUtils;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.internal.config.CustomConfig;
 import xin.vanilla.banira.internal.config.ManagedConfigFiles;
 

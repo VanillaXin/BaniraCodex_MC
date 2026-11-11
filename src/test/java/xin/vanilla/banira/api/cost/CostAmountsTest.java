@@ -3,7 +3,8 @@ package xin.vanilla.banira.api.cost;
 import org.junit.Test;
 import xin.vanilla.banira.common.cost.CostAmounts;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class CostAmountsTest {
     @Test
@@ -24,7 +25,8 @@ public class CostAmountsTest {
             try {
                 result.amount();
                 fail("Failed amount cannot be payable");
-            } catch (IllegalStateException expected) { }
+            } catch (IllegalStateException expected) {
+            }
         }
     }
 
@@ -41,7 +43,8 @@ public class CostAmountsTest {
             try {
                 CostAmounts.normalize(1, bounds[0], bounds[1]);
                 fail("Invalid bounds");
-            } catch (IllegalArgumentException expected) { }
+            } catch (IllegalArgumentException expected) {
+            }
         }
     }
 }

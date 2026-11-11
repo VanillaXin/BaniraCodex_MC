@@ -52,9 +52,10 @@ public final class SharedHudHosts {
     }
 
     public static void renderOthers(PoseStack graphics) {
-        if (host != null) host.renderOthers(com.google.common.collect.ImmutableSet.of(NOTIFICATIONS, UNREAD, QUICK_ACTIONS, POINTER), view -> {
-            if (!(view instanceof Renderer)) throw new IllegalStateException("HUD renderer unavailable");
-            ((Renderer) view).render(graphics, new HudDrawList());
-        });
+        if (host != null)
+            host.renderOthers(com.google.common.collect.ImmutableSet.of(NOTIFICATIONS, UNREAD, QUICK_ACTIONS, POINTER), view -> {
+                if (!(view instanceof Renderer)) throw new IllegalStateException("HUD renderer unavailable");
+                ((Renderer) view).render(graphics, new HudDrawList());
+            });
     }
 }

@@ -2,8 +2,10 @@ package xin.vanilla.banira.client.minimap;
 
 import org.junit.Test;
 import xin.vanilla.banira.internal.fabric.compat.minimap.XaeroNotificationInfo;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import static org.junit.Assert.*;
 
 public class XaeroInformationIdentityTest {

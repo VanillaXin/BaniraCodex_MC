@@ -1,7 +1,7 @@
 package xin.vanilla.banira.api.client.hud;
 
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
 
 import java.util.Objects;

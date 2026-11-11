@@ -6,7 +6,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.Assert.*;
 

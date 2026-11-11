@@ -10,8 +10,10 @@ import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;
+
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.Assert.*;
 import static xin.vanilla.banira.internal.client.ui.UiSessionHandoffTest.*;
 
@@ -23,10 +25,12 @@ public class UiCommonPagesTest {
             org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
             new org.objectweb.asm.ClassReader(input).accept(node, 0);
             boolean nativeConfig = false;
-            for (org.objectweb.asm.tree.MethodNode method : node.methods) if (method.name.equals("tick")) {
-                for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.TypeInsnNode && ((org.objectweb.asm.tree.TypeInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.INSTANCEOF && ((org.objectweb.asm.tree.TypeInsnNode) instruction).desc.equals("xin/vanilla/banira/client/gui/ConfigEditorScreen"))
-                    nativeConfig = true;
-            }
+            for (org.objectweb.asm.tree.MethodNode method : node.methods)
+                if (method.name.equals("tick")) {
+                    for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions)
+                        if (instruction instanceof org.objectweb.asm.tree.TypeInsnNode && ((org.objectweb.asm.tree.TypeInsnNode) instruction).getOpcode() == org.objectweb.asm.Opcodes.INSTANCEOF && ((org.objectweb.asm.tree.TypeInsnNode) instruction).desc.equals("xin/vanilla/banira/client/gui/ConfigEditorScreen"))
+                            nativeConfig = true;
+                }
             assertTrue("Native config sessions require the shared disconnect owner", nativeConfig);
         }
     }
@@ -37,8 +41,10 @@ public class UiCommonPagesTest {
             org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
             new org.objectweb.asm.ClassReader(input).accept(node, 0);
             boolean registered = false;
-            for (org.objectweb.asm.tree.MethodNode method : node.methods) for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions) if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).owner.equals("xin/vanilla/banira/client/event/BaniraClientEventHub$Player") && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("onClientLoggedOut"))
-                registered = true;
+            for (org.objectweb.asm.tree.MethodNode method : node.methods)
+                for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions)
+                    if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode && ((org.objectweb.asm.tree.MethodInsnNode) instruction).owner.equals("xin/vanilla/banira/client/event/BaniraClientEventHub$Player") && ((org.objectweb.asm.tree.MethodInsnNode) instruction).name.equals("onClientLoggedOut"))
+                        registered = true;
             assertTrue("Logout must not wait for an observed disconnected tick", registered);
         }
     }
@@ -72,7 +78,7 @@ public class UiCommonPagesTest {
         }).addWidget(new InputFormScreen.Widget().name("same").title(Text.literal("Same")).defaultValue("first")).addWidget(new InputFormScreen.Widget().name("same").title(Text.literal("Same")).defaultValue("second"));
         Object form = type("internal.client.ui.page.FormUiSession").getConstructor(InputFormScreen.Args.class).newInstance(args);
         NativeUiView root = new NativeUiView(new Object()), row = new NativeUiView(new Object());
-        call(form, "bind", new Class<?>[] { UiView.class }, root);
+        call(form, "bind", new Class<?>[]{UiView.class}, root);
         root.rowProviders.get("fields").bind(row, 1);
         row.inputDraft("input", "changed");
         InputFormScreen.Results result = (InputFormScreen.Results) call(form, "results");
@@ -86,7 +92,7 @@ public class UiCommonPagesTest {
         }).setCallback(result -> {
         }).addWidget(new InputFormScreen.Widget().name("key").title(Text.literal("Key")).type(InputFormScreen.WidgetType.KEY_CHORD).defaultValue("LeftControl+K"));
         Object form = type("internal.client.ui.page.FormUiSession").getConstructor(InputFormScreen.Args.class).newInstance(args);
-        UiValue value = (UiValue) call(form, "get", new Class<?>[] { String.class }, "key");
+        UiValue value = (UiValue) call(form, "get", new Class<?>[]{String.class}, "key");
         assertEquals(UiValue.Kind.KEY_CHORDS, value.kind());
         assertEquals(Arrays.asList("LeftControl", "K"), value.asKeyChords());
     }
@@ -96,12 +102,12 @@ public class UiCommonPagesTest {
         AtomicInteger confirm = new AtomicInteger(), cancel = new AtomicInteger();
         Object dialog = type("internal.client.ui.page.DialogUiSession").getConstructor(ConfirmDialogScreen.Args.class).newInstance(new ConfirmDialogScreen.Args().onConfirm(confirm::incrementAndGet).onCancel(cancel::incrementAndGet));
         NativeUiView old = new NativeUiView(new Object());
-        call(dialog, "bind", new Class<?>[] { UiView.class }, old);
-        call(dialog, "detach", new Class<?>[] { UiDetachReason.class }, UiDetachReason.SWITCH);
+        call(dialog, "bind", new Class<?>[]{UiView.class}, old);
+        call(dialog, "detach", new Class<?>[]{UiDetachReason.class}, UiDetachReason.SWITCH);
         old.activate("confirm");
         assertEquals(0, confirm.get());
-        call(dialog, "close", new Class<?>[] { UiCloseReason.class }, UiCloseReason.USER_CLOSE);
-        call(dialog, "close", new Class<?>[] { UiCloseReason.class }, UiCloseReason.USER_CLOSE);
+        call(dialog, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.USER_CLOSE);
+        call(dialog, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.USER_CLOSE);
         assertEquals(1, cancel.get());
         assertEquals(0, old.subscriptionCount());
     }
@@ -113,7 +119,7 @@ public class UiCommonPagesTest {
         NativeUiView view = new NativeUiView(new Object());
         AtomicInteger closes = new AtomicInteger();
         view.onClose(closes::incrementAndGet);
-        call(text, "bind", new Class<?>[] { UiView.class }, view);
+        call(text, "bind", new Class<?>[]{UiView.class}, view);
         assertTrue(view.texts.get("text").getString("en_us").contains("<script>last</script>"));
         view.activate("close");
         assertEquals(1, closes.get());
@@ -147,7 +153,7 @@ public class UiCommonPagesTest {
         NativeUiView view = new NativeUiView(new Object());
         AtomicInteger closes = new AtomicInteger();
         view.onClose(closes::incrementAndGet);
-        call(form, "bind", new Class<?>[] { UiView.class }, view);
+        call(form, "bind", new Class<?>[]{UiView.class}, view);
         requireMethod(form.getClass(), "tick");
         call(form, "tick");
         assertEquals(1, closes.get());
@@ -157,7 +163,7 @@ public class UiCommonPagesTest {
     public void disconnectDoesNotInvokeUserCancelCallback() throws Exception {
         AtomicInteger cancels = new AtomicInteger();
         Object dialog = type("internal.client.ui.page.DialogUiSession").getConstructor(ConfirmDialogScreen.Args.class).newInstance(new ConfirmDialogScreen.Args().onCancel(cancels::incrementAndGet));
-        call(dialog, "close", new Class<?>[] { UiCloseReason.class }, UiCloseReason.DISCONNECT);
+        call(dialog, "close", new Class<?>[]{UiCloseReason.class}, UiCloseReason.DISCONNECT);
         assertEquals(0, cancels.get());
     }
 
@@ -186,7 +192,7 @@ public class UiCommonPagesTest {
         Object session = type("internal.client.ui.page.TextUiSession").getConstructor(ReadOnlyTextScreen.Args.class).newInstance(new ReadOnlyTextScreen.Args().paragraphs(Arrays.asList(null, Text.literal("last").toComponent())));
         NativeUiView view = new NativeUiView(new Object());
         try {
-            call(session, "bind", new Class<?>[] { UiView.class }, view);
+            call(session, "bind", new Class<?>[]{UiView.class}, view);
         } catch (java.lang.reflect.InvocationTargetException failure) {
             fail("Native-compatible paragraph failed: " + failure.getCause());
         }
@@ -200,7 +206,7 @@ public class UiCommonPagesTest {
         UiViewState state = new UiViewState();
         state.rowPosition(40);
         state.selection("field:40/input", 6, 2);
-        call(fixture.host, "open", new Class<?>[] { UiPageSpec.class, Object.class, UiViewState.class }, fixture.page, null, state);
+        call(fixture.host, "open", new Class<?>[]{UiPageSpec.class, Object.class, UiViewState.class}, fixture.page, null, state);
         assertSame(state, call(call(fixture.host, "view"), "state"));
         assertEquals(40d, ((UiViewState) call(call(fixture.host, "view"), "state")).rowPosition(), .001);
     }

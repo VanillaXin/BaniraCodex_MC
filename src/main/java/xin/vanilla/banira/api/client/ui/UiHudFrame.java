@@ -20,7 +20,8 @@ public class UiHudFrame {
         if (this.parts.size() > 16) throw new IllegalArgumentException("HUD frame budget");
         Set<String> ids = new HashSet<>();
         for (Part part : this.parts) {
-            if (!(part instanceof Sprite) && !(part instanceof Text)) throw new IllegalArgumentException("Unknown HUD part");
+            if (!(part instanceof Sprite) && !(part instanceof Text))
+                throw new IllegalArgumentException("Unknown HUD part");
             if (!ids.add(part.id())) throw new IllegalArgumentException("Duplicate HUD part");
         }
     }

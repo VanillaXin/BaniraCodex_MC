@@ -3,8 +3,6 @@ package xin.vanilla.banira.internal.compat.aui;
 import org.junit.Test;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 
 public class AuiArtworkBoundsTest {

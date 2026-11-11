@@ -5,8 +5,10 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import xin.vanilla.banira.api.client.ui.*;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.Assert.*;
 
 public class UiRendererPortTest {
@@ -15,7 +17,8 @@ public class UiRendererPortTest {
     public void clientBootstrapInstallsAndDrivesTheSharedPageHost() throws Exception {
         ClassNode node = bytecode("internal/client/BaniraCodexClientBootstrap");
         assertTrue(calls(node, "api/client/ui/BaniraUi", "install"));
-        for (String operation : com.google.common.collect.ImmutableList.of("hudHost", "switchBackend", "reload", "tick")) assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
+        for (String operation : com.google.common.collect.ImmutableList.of("hudHost", "switchBackend", "reload", "tick"))
+            assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
         assertTrue(calls(node, "internal/client/ui/CommonUiPages", "tick"));
         assertTrue(calls(node, "internal/client/ui/CommonUiPages", "disconnect"));
         ClassNode pages = bytecode("internal/client/ui/CommonUiPages");
@@ -28,10 +31,13 @@ public class UiRendererPortTest {
     @Test
     public void installedDriverDelegatesPagesAndAppearanceWithoutReplacingNativeInventoryInput() throws Exception {
         ClassNode node = bytecode("internal/client/BaniraCodexClientBootstrap$1");
-        for (String operation : com.google.common.collect.ImmutableList.of("open", "registerHud")) assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
-        for (String operation : new String[]{"removed", "close"}) assertTrue(operation, calls(node, "internal/client/ui/CommonUiPages", operation));
+        for (String operation : com.google.common.collect.ImmutableList.of("open", "registerHud"))
+            assertTrue(operation, calls(node, "internal/client/ui/UiSessionHost", operation));
+        for (String operation : new String[]{"removed", "close"})
+            assertTrue(operation, calls(node, "internal/client/ui/CommonUiPages", operation));
         ClassNode pages = bytecode("internal/client/ui/CommonUiPages");
-        for (String operation : new String[]{"screenRemoved", "ownsScreen", "close"}) assertTrue(operation, calls(pages, "internal/client/ui/UiSessionHost", operation));
+        for (String operation : new String[]{"screenRemoved", "ownsScreen", "close"})
+            assertTrue(operation, calls(pages, "internal/client/ui/UiSessionHost", operation));
         assertTrue(calls(node, "internal/client/ui/UiContainerLayerHost", "create"));
         assertFalse(node.methods.stream().anyMatch(method -> method.name.equals("mouseClicked") || method.name.equals("slotClicked")));
         assertTrue(calls(node, "internal/client/ui/AuiHudHost", "renderManual"));
@@ -137,11 +143,13 @@ public class UiRendererPortTest {
                 new ClassReader(input).accept(node, 0);
             }
             int factories = 0;
-            for (lombok.var method : node.methods) for (lombok.var instruction : method.instructions) if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).owner.equals("net/minecraft/resources/ResourceLocation")) {
-                assertEquals("Legacy resource identity must use its public constructor", "<init>", ((MethodInsnNode) instruction).name);
-                if (((MethodInsnNode) instruction).name.equals("<init>"))
-                    factories++;
-            }
+            for (lombok.var method : node.methods)
+                for (lombok.var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).owner.equals("net/minecraft/resources/ResourceLocation")) {
+                        assertEquals("Legacy resource identity must use its public constructor", "<init>", ((MethodInsnNode) instruction).name);
+                        if (((MethodInsnNode) instruction).name.equals("<init>"))
+                            factories++;
+                    }
             assertEquals(type, 1, factories);
         }
     }

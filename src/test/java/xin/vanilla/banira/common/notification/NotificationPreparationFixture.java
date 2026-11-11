@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.notification;
 
-import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.common.data.Color;
 import xin.vanilla.banira.common.data.Component;

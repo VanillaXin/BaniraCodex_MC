@@ -4,10 +4,12 @@ import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.*;
 
 public class AuiInitialPresentationTest {
@@ -73,8 +75,9 @@ public class AuiInitialPresentationTest {
         }
         lombok.var render = type.methods.stream().filter(method -> method.name.equals("render")).findFirst().orElseThrow(java.util.NoSuchElementException::new);
         int guards = 0;
-        for (lombok.var instruction : render.instructions) if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("paintable"))
-            guards++;
+        for (lombok.var instruction : render.instructions)
+            if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("paintable"))
+                guards++;
         assertEquals("Rich text, option icons and game sprites must all respect the modal", 3, guards);
         lombok.var guard = type.methods.stream().filter(method -> method.name.equals("paintable")).findFirst();
         assertTrue("Retained drawing visibility guard required", guard.isPresent());

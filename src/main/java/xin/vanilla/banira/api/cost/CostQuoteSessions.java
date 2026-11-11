@@ -1,6 +1,9 @@
 package xin.vanilla.banira.api.cost;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
@@ -22,12 +25,24 @@ public final class CostQuoteSessions {
         Objects.requireNonNull(session, "session");
         if (!connected.test(player)) throw new IllegalArgumentException("Quote connection is not live");
         Connection old = connections.get(player);
-        if (old == null || !old.session.equals(session)) connections.put(player, new Connection(session, clock.getAsLong()));
+        if (old == null || !old.session.equals(session))
+            connections.put(player, new Connection(session, clock.getAsLong()));
     }
 
-    public void close(UUID player) { requireOwner(); connections.remove(player); }
-    public void clear() { requireOwner(); connections.clear(); }
-    public int connectionCount() { requireOwner(); return connections.size(); }
+    public void close(UUID player) {
+        requireOwner();
+        connections.remove(player);
+    }
+
+    public void clear() {
+        requireOwner();
+        connections.clear();
+    }
+
+    public int connectionCount() {
+        requireOwner();
+        return connections.size();
+    }
 
     public CostFailure accept(UUID player, UUID session, long requestId, long revision) {
         requireOwner();
@@ -44,14 +59,20 @@ public final class CostQuoteSessions {
     }
 
     private void requireOwner() {
-        if (Thread.currentThread() != owner) throw new IllegalStateException("Quote service requires its owning server thread");
+        if (Thread.currentThread() != owner)
+            throw new IllegalStateException("Quote service requires its owning server thread");
     }
 
     private static final class Connection {
         final UUID session;
         long updated, lastRequest;
         double tokens = 8;
-        Connection(UUID session, long now) { this.session = session; updated = now; }
+
+        Connection(UUID session, long now) {
+            this.session = session;
+            updated = now;
+        }
+
         boolean consume(long now) {
             long delta = now - updated;
             if (delta > 0) {

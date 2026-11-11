@@ -43,7 +43,8 @@ public class UiFabric16ManualHudPortTest {
         lombok.var render = node.methods.stream().filter(method -> method.name.equals("renderHud")).findFirst().orElseThrow(AssertionError::new);
         List<String> calls = new ArrayList<>();
         for (lombok.var instruction : render.instructions)
-            if (instruction instanceof MethodInsnNode) calls.add(((MethodInsnNode) instruction).owner + ":" + ((MethodInsnNode) instruction).name);
+            if (instruction instanceof MethodInsnNode)
+                calls.add(((MethodInsnNode) instruction).owner + ":" + ((MethodInsnNode) instruction).name);
         int context = calls.indexOf("com/sighs/apricityui/init/Document:withContext");
         int update = calls.indexOf("xin/vanilla/banira/internal/client/ui/ProgressDomPresentation:update");
         int style = calls.indexOf("com/sighs/apricityui/init/Document:commitPendingStyleRecalcForRender");

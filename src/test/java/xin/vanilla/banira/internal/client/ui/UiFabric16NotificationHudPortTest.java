@@ -9,7 +9,6 @@ import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.client.data.BaniraColorConfig;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -93,9 +92,15 @@ public class UiFabric16NotificationHudPortTest {
         AtomicInteger draws = new AtomicInteger();
         AuiHudHost host = new AuiHudHost(backend, spec -> new NativeUiView(null));
         UiHudBinding binding = new UiHudBinding() {
-            public boolean visible() { return true; }
-            public void bind(xin.vanilla.banira.api.client.ui.UiView view) { }
-            public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) { }
+            public boolean visible() {
+                return true;
+            }
+
+            public void bind(xin.vanilla.banira.api.client.ui.UiView view) {
+            }
+
+            public void detach(xin.vanilla.banira.api.client.ui.UiDetachReason reason) {
+            }
         };
         lombok.var spec = new UiHudSpec(SharedHudHosts.NOTIFICATIONS, "banira_codex/hud/overlay.html", binding, false, true);
         lombok.var old = host.register(spec);

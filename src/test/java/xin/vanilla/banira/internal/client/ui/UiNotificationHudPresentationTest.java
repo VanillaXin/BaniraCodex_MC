@@ -9,7 +9,6 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.component.Notification;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import static org.junit.Assert.*;
 

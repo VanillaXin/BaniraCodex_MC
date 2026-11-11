@@ -4,8 +4,8 @@ import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
 import xin.vanilla.banira.common.network.packet.NotificationToClient;
 import xin.vanilla.banira.common.network.packet.NotificationTypesSyncToClient;
 
-import java.util.function.Consumer;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Client packet callback registry used by common packet classes without loading GUI classes.
@@ -39,7 +39,8 @@ public final class BaniraClientPacketDispatch {
     }
 
     public static void registerPlayerPreferencesHandler(BiConsumer<ConfigSnapshotToClient, Object> handler) {
-        playerPreferencesHandler = handler != null ? handler : (packet, origin) -> { };
+        playerPreferencesHandler = handler != null ? handler : (packet, origin) -> {
+        };
     }
 
     public static void handlePlayerPreferences(ConfigSnapshotToClient packet, Object origin) {

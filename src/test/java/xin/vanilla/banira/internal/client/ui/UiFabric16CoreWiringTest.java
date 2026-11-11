@@ -3,7 +3,6 @@ package xin.vanilla.banira.internal.client.ui;
 import org.junit.Test;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.Assert.*;
 

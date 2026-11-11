@@ -1,10 +1,6 @@
 package xin.vanilla.banira.internal.config;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public final class PlayerPreferenceState {
     private Object connection;
@@ -26,7 +22,8 @@ public final class PlayerPreferenceState {
 
     public synchronized boolean apply(Object origin, String currentUuid, Map<String, String> snapshot) {
         if (origin == null || origin != connection || !Objects.equals(uuid, currentUuid)
-                || snapshot == null || snapshot.size() != 3 || !Objects.equals(uuid, snapshot.get("uuid"))) return false;
+                || snapshot == null || snapshot.size() != 3 || !Objects.equals(uuid, snapshot.get("uuid")))
+            return false;
         String language = snapshot.get("language"), mode = snapshot.get("notificationReceiveMode");
         if (language == null || !language.matches("[A-Za-z0-9_-]{1,256}")
                 || !("notification".equals(mode) || "vanilla_message".equals(mode))) return false;

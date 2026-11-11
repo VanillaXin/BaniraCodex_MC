@@ -5,9 +5,13 @@ import java.util.Locale;
 
 public final class EffectDurationModel {
     public static final int MAX_TICKS = 51_840_000;
-    private EffectDurationModel() { }
 
-    public static int parseTicks(String text) { return parseTicks(text, 0); }
+    private EffectDurationModel() {
+    }
+
+    public static int parseTicks(String text) {
+        return parseTicks(text, 0);
+    }
 
     public static int parseTicks(String text, int currentTicks) {
         if (currentTicks > 0 && Integer.toString(currentTicks).equals(text)) return currentTicks;
@@ -17,8 +21,14 @@ public final class EffectDurationModel {
         return ticks;
     }
 
-    public static int inputDigits(int currentTicks) { return Math.max(8, Integer.toString(currentTicks).length()); }
-    public static String ticksText(int ticks) { return ticks + "t"; }
+    public static int inputDigits(int currentTicks) {
+        return Math.max(8, Integer.toString(currentTicks).length());
+    }
+
+    public static String ticksText(int ticks) {
+        return ticks + "t";
+    }
+
     public static String nominalSeconds(int ticks) {
         return BigDecimal.valueOf(ticks).divide(BigDecimal.valueOf(20)).stripTrailingZeros().toPlainString();
     }
@@ -45,12 +55,14 @@ public final class EffectDurationModel {
                 seconds = seconds.multiply(BigDecimal.valueOf(60)).add(part);
             }
             int ticks = seconds.multiply(BigDecimal.valueOf(20)).intValueExact();
-            if (ticks < 1 || ticks > MAX_TICKS) throw new IllegalArgumentException("MobEffect duration is out of range");
+            if (ticks < 1 || ticks > MAX_TICKS)
+                throw new IllegalArgumentException("MobEffect duration is out of range");
             return ticks;
         } catch (ArithmeticException invalid) {
             throw new IllegalArgumentException("MobEffect duration is out of range or precision", invalid);
         }
     }
+
     public static float scaleToFit(int textWidth, int iconWidth) {
         return Math.min(0.75f, (float) Math.max(1, iconWidth - 2) / Math.max(1, textWidth));
     }

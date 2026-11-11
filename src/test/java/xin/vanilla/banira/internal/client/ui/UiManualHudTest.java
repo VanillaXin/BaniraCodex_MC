@@ -8,7 +8,6 @@ import xin.vanilla.banira.api.client.ui.UiHudSpec;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -62,7 +61,7 @@ public class UiManualHudTest {
         assertEquals(3, children.size());
     }
 
-@Test
+    @Test
     public void sameIdSpriteBecomingTextKeepsItsPaintPosition() throws Exception {
         for (int position = 0; position < 3; position++) {
             lombok.var dom = dom();

@@ -1,8 +1,6 @@
 package xin.vanilla.banira.internal.client.ui;
 
 import com.google.gson.JsonParser;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -11,7 +9,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import xin.vanilla.banira.client.gui.EffectDurationModel;
-import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.internal.DebugScreen;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.banira.platform.TestBaniraPlatform;

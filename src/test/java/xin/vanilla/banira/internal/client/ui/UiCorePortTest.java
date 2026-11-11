@@ -5,7 +5,6 @@ import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,9 +24,16 @@ public class UiCorePortTest {
 
     private static final class Session implements UiPageSession {
         int closes;
-        public void bind(UiView view) { }
-        public void detach(UiDetachReason reason) { }
-        public void close(UiCloseReason reason) { closes++; }
+
+        public void bind(UiView view) {
+        }
+
+        public void detach(UiDetachReason reason) {
+        }
+
+        public void close(UiCloseReason reason) {
+            closes++;
+        }
     }
 
     @Test
@@ -45,8 +51,14 @@ public class UiCorePortTest {
     public void invalidGeometryReleasesAppearanceWithoutPaintingOrClaimingOwnership() {
         class View extends NativeUiView implements UiContainerLayerHost.Renderer {
             int paints;
-            View() { super(new Object()); }
-            public void render(PoseStack graphics, Map<String, ScreenCoordinate> regions) { paints++; }
+
+            View() {
+                super(new Object());
+            }
+
+            public void render(PoseStack graphics, Map<String, ScreenCoordinate> regions) {
+                paints++;
+            }
         }
         UiBackendController backend = new UiBackendController(() -> true, () -> true);
         View view = new View();
@@ -71,9 +83,18 @@ public class UiCorePortTest {
     public void nativeSessionDisconnectIsIdempotentAndDoesNotCloseTransferredSessions() {
         class Source implements UiPageSource {
             final Session session = new Session();
-            public String uiSurfaceId() { return "banira_codex:test"; }
-            public UiPageSpec uiPage() { return page(session); }
-            public UiPageSession pageSession() { return session; }
+
+            public String uiSurfaceId() {
+                return "banira_codex:test";
+            }
+
+            public UiPageSpec uiPage() {
+                return page(session);
+            }
+
+            public UiPageSession pageSession() {
+                return session;
+            }
         }
         UiNativeSessions sessions = new UiNativeSessions();
         Source retained = new Source(), transferred = new Source();

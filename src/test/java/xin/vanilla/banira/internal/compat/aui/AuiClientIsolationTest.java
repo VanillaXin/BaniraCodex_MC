@@ -78,7 +78,8 @@ public class AuiClientIsolationTest {
                 }
                 if (!name.startsWith("xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract")
                         && !name.equals("xin.vanilla.banira.internal.compat.aui.AuiApiBindings")
-                        && !name.equals("xin.vanilla.banira.internal.client.ui.UiBackendController")) return super.loadClass(name, resolve);
+                        && !name.equals("xin.vanilla.banira.internal.client.ui.UiBackendController"))
+                    return super.loadClass(name, resolve);
                 synchronized (getClassLoadingLock(name)) {
                     Class<?> loaded = findLoadedClass(name);
                     if (loaded == null) {
@@ -95,6 +96,7 @@ public class AuiClientIsolationTest {
             }
         };
         for (String name : new String[]{"internal.compat.aui.AuiCapabilityContract", "internal.compat.aui.AuiApiBindings",
-                "internal.client.ui.UiBackendController"}) Class.forName("xin.vanilla.banira." + name, true, server).getDeclaredMethods();
+                "internal.client.ui.UiBackendController"})
+            Class.forName("xin.vanilla.banira." + name, true, server).getDeclaredMethods();
     }
 }

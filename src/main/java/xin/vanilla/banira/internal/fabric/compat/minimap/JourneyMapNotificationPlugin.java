@@ -10,14 +10,13 @@ import journeymap.api.v2.common.event.MinimapEventRegistry;
 import journeymap.client.ui.UIManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.api.client.hud.MinimapLine;
 import xin.vanilla.banira.client.notification.NotificationMinimapBridge;
 import xin.vanilla.banira.common.enums.EnumNotificationHudHost;
-import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineLayout;
+import xin.vanilla.banira.internal.client.minimap.MinimapLineRegistry;
 import xin.vanilla.banira.internal.client.minimap.MinimapLineSnapshot;
 
 @JourneyMapPlugin(apiVersion = "2.0.0")

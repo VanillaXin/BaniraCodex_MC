@@ -58,7 +58,7 @@ public class UiNotificationInteractionTest {
         f.history.append(new xin.vanilla.banira.client.data.NotificationLogEntry().id(1)
                 .componentJson(xin.vanilla.banira.common.data.AbstractComponent.serialize(
                         xin.vanilla.banira.BaniraComponent.get().literal("<b>literal</b>").clickEvent(
-                        new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/list"))).toString()), 10);
+                                new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.SUGGEST_COMMAND, "/list"))).toString()), 10);
         lombok.var session = (NotificationUiSession) f.session("HistoryPort");
         lombok.var old = new NativeUiView(new Object());
         session.bind(old);

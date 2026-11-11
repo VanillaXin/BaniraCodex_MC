@@ -7,8 +7,10 @@ import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+
 import java.lang.reflect.Field;
 import java.util.Map;
+
 import static org.junit.Assert.*;
 
 public class ClientPlayerPreferencesTest {
@@ -128,7 +130,8 @@ public class ClientPlayerPreferencesTest {
             for (org.objectweb.asm.tree.AbstractInsnNode instruction : method.instructions)
                 if (instruction instanceof MethodInsnNode) {
                     MethodInsnNode call = (MethodInsnNode) instruction;
-                    if (call.owner.equals("xin/vanilla/banira/internal/config/CustomConfig") && call.name.equals(target)) found = true;
+                    if (call.owner.equals("xin/vanilla/banira/internal/config/CustomConfig") && call.name.equals(target))
+                        found = true;
                 }
         assertTrue("Missing preference lifecycle wiring: " + owner, found);
     }

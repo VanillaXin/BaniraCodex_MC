@@ -1,11 +1,14 @@
 package xin.vanilla.banira.internal.fabric.network;
 
 import org.junit.Test;
+
 import java.lang.reflect.Method;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertSame;
 
 public class FabricConnectionIdentityTest {
-    @Test public void callbacksCaptureTheConnectionBeforeEnqueueing() throws Exception {
+    @Test
+    public void callbacksCaptureTheConnectionBeforeEnqueueing() throws Exception {
         Object first = new Object(), second = new Object();
         Method create = FabricNetworkContext.class.getMethod("client", Object.class);
         Object old = create.invoke(null, first);

@@ -33,7 +33,10 @@ public final class FabricBaniraPlatform implements BaniraPlatform {
 
     @Nonnull
     @Override
-    public BaniraCostService costService() { return costs; }
+    public BaniraCostService costService() {
+        return costs;
+    }
+
     private final Map<String, Class<?>> mainClassesByModId = new ConcurrentHashMap<>();
     private final Map<Class<?>, String> modIdsByMainClass = new ConcurrentHashMap<>();
     private final BaniraPathService path = new FabricBaniraPathService(this::configDir);

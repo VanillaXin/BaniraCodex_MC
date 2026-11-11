@@ -1,7 +1,7 @@
 package xin.vanilla.banira.client.gui.widget;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.api.client.ui.UiTextCompletion;
 import xin.vanilla.banira.api.client.ui.UiTextCompletionProvider;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -11,8 +11,8 @@ import xin.vanilla.banira.client.gui.event.KeyEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.internal.client.ui.TextCompletionState;
 import xin.vanilla.banira.internal.client.ui.TextCompletionLayout;
+import xin.vanilla.banira.internal.client.ui.TextCompletionState;
 
 public final class CompletionInputWidget extends InputWidget {
     private final TextCompletionState completion;

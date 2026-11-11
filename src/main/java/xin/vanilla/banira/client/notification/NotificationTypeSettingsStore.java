@@ -34,6 +34,16 @@ public final class NotificationTypeSettingsStore {
     private static final NotificationTypeSettingsStore INSTANCE = new NotificationTypeSettingsStore();
 
     private final Map<String, TypeSettings> byType = new ConcurrentHashMap<>();
+    private final java.util.concurrent.atomic.AtomicLong revision = new java.util.concurrent.atomic.AtomicLong();
+
+    public void invalidateImportance() {
+        revision.incrementAndGet();
+    }
+
+    public long revision() {
+        return revision.get();
+    }
+
     private final CoalescingAsyncTask saveTask = new CoalescingAsyncTask(
             "BaniraCodex-NotificationTypeSettingsSave",
             this::saveSnapshot,
@@ -74,6 +84,9 @@ public final class NotificationTypeSettingsStore {
                     }
                     JsonObject o = e.getValue().getAsJsonObject();
                     TypeSettings s = new TypeSettings()
+                            .important(o.has("important") && o.get("important").isJsonPrimitive()
+                                    && o.getAsJsonPrimitive("important").isBoolean()
+                                    ? o.get("important").getAsBoolean() : null)
                             .hidden(JsonUtils.getBoolean(o, "hidden", false))
                             .durationMs(JsonUtils.getLong(o, "durationMs", 0))
                             .positionName(JsonUtils.getString(o, "positionName", ""))
@@ -92,6 +105,7 @@ public final class NotificationTypeSettingsStore {
 
     private void markSettingsLoadedAndApplyRegistryDefaults() {
         settingsLoadedFromDisk = true;
+        revision.incrementAndGet();
         NotificationTypeRegistry.applyAllResolvedDefaultsAfterStoreLoad();
     }
 
@@ -121,6 +135,7 @@ public final class NotificationTypeSettingsStore {
     }
 
     public void saveAsync() {
+        revision.incrementAndGet();
         saveTask.request();
     }
 
@@ -137,6 +152,7 @@ public final class NotificationTypeSettingsStore {
         for (Map.Entry<String, TypeSettings> e : snapshot.entrySet()) {
             TypeSettings s = e.getValue();
             JsonObject o = new JsonObject();
+            if (s.important() != null) o.addProperty("important", s.important());
             o.addProperty("hidden", s.hidden());
             o.addProperty("durationMs", s.durationMs());
             o.addProperty("positionName", s.positionName() != null ? s.positionName() : "");
@@ -195,6 +211,7 @@ public final class NotificationTypeSettingsStore {
     public static TypeSettings copyOf(TypeSettings settings) {
         TypeSettings source = settings != null ? settings : new TypeSettings();
         return new TypeSettings()
+                .important(source.important())
                 .hidden(source.hidden())
                 .durationMs(source.durationMs())
                 .positionName(source.positionName() != null ? source.positionName() : "")
@@ -214,6 +231,29 @@ public final class NotificationTypeSettingsStore {
     @Data
     @Accessors(chain = true, fluent = true)
     public static class TypeSettings {
+        /**
+         * Null follows the registered type default, then severity for unknown types.
+         */
+        private Boolean important;
+
+        public boolean tracksUnread(String styleName) {
+            return important != null ? important : "WARNING".equals(styleName) || "ERROR".equals(styleName);
+        }
+
+        public boolean tracksUnread(String typeId, String styleName) {
+            if (important != null) return important;
+            Boolean fallback = NotificationTypeRegistry.importanceDefault(typeId);
+            return fallback != null ? fallback : tracksUnread(styleName);
+        }
+
+        public boolean tracksUnread(xin.vanilla.banira.client.data.NotificationLogEntry entry) {
+            // Retain the sending server's default across disconnects and restarts.
+            if (entry.defaultImportant() == null) {
+                entry.defaultImportant(new TypeSettings().tracksUnread(entry.notificationType(), entry.styleName()));
+            }
+            return important != null ? important : entry.defaultImportant();
+        }
+
         private boolean hidden;
         /**
          * 0 表示使用本次通知携带的时长

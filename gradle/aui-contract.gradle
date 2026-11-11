@@ -129,11 +129,3 @@ if (localContract != null) {
     dependencies.add('auiContract', files(declarations).builtBy(generateDeclarations))
 }
 configurations.compileOnly.extendsFrom(configurations.auiContract)
-dependencies.add('testRuntimeOnly', files(declarations).builtBy(generateDeclarations))
-tasks.withType(Test).configureEach {
-    dependsOn generateDeclarations
-    doFirst {
-        systemProperty 'banira.aui.contractJar', configurations.auiReference.singleFile.absolutePath
-        systemProperty 'banira.aui.declarationsJar', declarations.get().asFile.absolutePath
-    }
-}

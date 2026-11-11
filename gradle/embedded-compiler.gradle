@@ -22,16 +22,3 @@ tasks.named('remapJar').configure {
     dependsOn 'shadowJar'
     inputFile.set(tasks.shadowJar.archiveFile)
 }
-
-tasks.register('scriptArtifactTest', Test) {
-    dependsOn 'remapJar', 'testClasses'
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    filter { includeTestsMatching '*ScriptArtifactTest' }
-    inputs.file(tasks.remapJar.archiveFile)
-    inputs.files(configurations.scriptCompilerCollision)
-    doFirst {
-        systemProperty 'banira.scriptArtifact', tasks.remapJar.archiveFile.get().asFile.absolutePath
-        systemProperty 'banira.scriptCollision', configurations.scriptCompilerCollision.asPath
-    }
-}

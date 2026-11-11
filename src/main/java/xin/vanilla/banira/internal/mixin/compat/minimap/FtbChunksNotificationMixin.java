@@ -1,9 +1,9 @@
 package xin.vanilla.banira.internal.mixin.compat.minimap;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.network.chat.Component;
-import net.minecraft.client.Minecraft;
 import dev.ftb.mods.ftbchunks.client.FTBChunksClientConfig;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;

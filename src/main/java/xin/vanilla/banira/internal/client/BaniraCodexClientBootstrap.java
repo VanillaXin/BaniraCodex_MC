@@ -17,12 +17,12 @@ import xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContext;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.internal.config.ClientConfig;
-import xin.vanilla.banira.internal.config.ClientConfigView;
-import xin.vanilla.banira.internal.client.ui.UiBackendController;
 import xin.vanilla.banira.internal.client.ui.AuiUiBackend;
+import xin.vanilla.banira.internal.client.ui.UiBackendController;
 import xin.vanilla.banira.internal.client.ui.UiSessionHost;
 import xin.vanilla.banira.internal.compat.aui.AuiCapabilityContract;
+import xin.vanilla.banira.internal.config.ClientConfig;
+import xin.vanilla.banira.internal.config.ClientConfigView;
 
 import java.util.function.Consumer;
 

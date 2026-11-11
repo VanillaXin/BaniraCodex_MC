@@ -137,7 +137,9 @@ public class NetworkHandlerTest {
         }
     }
 
-    private record RecordingRegistrar(List<Registration> registrations) implements NetworkPacketRegistrar {
+    private record RecordingRegistrar(List<Registration> registrations) implements
+
+            NetworkPacketRegistrar {
         @Override
         public <MSG extends INetworkPacket> void register(int packetId,
                                                           Class<MSG> packetClass,

@@ -28,14 +28,22 @@ public class QuickActionStartupLayoutTest {
         }
     }
 
-    @Test public void partialRegistrationsCannotPruneOrSaveAnUnreadLayout() throws Exception {
+    @Test
+    public void partialRegistrationsCannotPruneOrSaveAnUnreadLayout() throws Exception {
         QuickActionOverlay overlay = freshOverlay();
         JsonObject saved = new JsonObject();
-        JsonArray grid = new JsonArray(); grid.add(""); grid.add("later:entry");
-        JsonArray hidden = new JsonArray(); hidden.add("later:entry");
-        JsonArray menu = new JsonArray(); menu.add("entry:later:entry");
-        saved.add("userSlotGrid", grid); saved.add("hiddenIconIds", hidden); saved.add("hiddenMenuItemIds", menu);
-        saved.addProperty("anchorX", 0.37); saved.addProperty("cellSize", 22);
+        JsonArray grid = new JsonArray();
+        grid.add("");
+        grid.add("later:entry");
+        JsonArray hidden = new JsonArray();
+        hidden.add("later:entry");
+        JsonArray menu = new JsonArray();
+        menu.add("entry:later:entry");
+        saved.add("userSlotGrid", grid);
+        saved.add("hiddenIconIds", hidden);
+        saved.add("hiddenMenuItemIds", menu);
+        saved.addProperty("anchorX", 0.37);
+        saved.addProperty("cellSize", 22);
         overlay.layout().fromJson(saved);
         JsonObject before = overlay.layout().toJson();
         for (int i = 0; i < 4; i++) overlay.onRegistryChanged();
@@ -45,11 +53,13 @@ public class QuickActionStartupLayoutTest {
         assertTrue(overlay.layout().hiddenMenuItemIds().contains("entry:later:entry"));
     }
 
-    @Test public void aNewOverlayHasNoPendingWrite() throws Exception {
+    @Test
+    public void aNewOverlayHasNoPendingWrite() throws Exception {
         assertNoPendingSave(freshOverlay());
     }
 
-    @Test public void freshStartupDoesNotScheduleDefaultLayoutReplacement() throws Exception {
+    @Test
+    public void freshStartupDoesNotScheduleDefaultLayoutReplacement() throws Exception {
         QuickActionOverlay overlay = freshOverlay();
         overlay.onRegistryChanged();
         assertNoPendingSave(overlay);

@@ -5,8 +5,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -31,12 +29,15 @@ public class UiFabric18VersionBoundaryTest {
 
     @Test
     public void runtimeMetadataAndCompileContractKeepSeparatePlatforms() throws Exception {
-        String metadata = Files.readString(Path.of("src/main/resources/fabric.mod.json"));
-        String contract = Files.readString(Path.of("gradle/aui-contract.gradle"));
-        assertTrue(metadata.contains("\"fabricloader\""));
-        assertFalse(metadata.contains("ApricityUI-forge"));
-        assertTrue(contract.contains("ApricityUI-fabric-1.18.2"));
-        assertTrue(contract.contains("no runtime artifact is configured"));
-        assertFalse(contract.contains("modRuntimeOnly"));
+        try (var input = getClass().getResourceAsStream("/fabric.mod.json")) {
+            assertNotNull(input);
+            var metadata = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(input,
+                    java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            var dependencies = metadata.getAsJsonObject("depends");
+            assertTrue(dependencies.has("fabricloader"));
+            assertFalse(dependencies.has("forge"));
+            assertFalse(dependencies.has("apricityui"));
+        }
+        assertEquals("false", System.getProperty("banira.aui.contractOnRuntimeClasspath"));
     }
 }

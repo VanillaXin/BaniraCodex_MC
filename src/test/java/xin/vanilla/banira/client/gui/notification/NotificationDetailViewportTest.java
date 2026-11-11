@@ -2,10 +2,11 @@ package xin.vanilla.banira.client.gui.notification;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class NotificationDetailViewportTest {
-    @Test public void clippedLinesCannotBeClicked() {
+    @Test
+    public void clippedLinesCannotBeClicked() {
         NotificationDetailViewport view = view(60);
         assertEquals(0, view.visibleLineAt(11, 21));
         assertEquals(-1, view.visibleLineAt(11, 80));
@@ -16,7 +17,8 @@ public class NotificationDetailViewportTest {
         assertEquals(20, view.lineY(3));
     }
 
-    @Test public void resizingClampsScrollWithoutLosingTheLastLine() {
+    @Test
+    public void resizingClampsScrollWithoutLosingTheLastLine() {
         NotificationDetailViewport view = view(65);
         view.scrollBy(1000);
         assertEquals(99, view.visibleLineAt(11, 84));
@@ -26,13 +28,16 @@ public class NotificationDetailViewportTest {
         assertEquals(-1, view.visibleLineAt(11, 1100));
     }
 
-    @Test public void resetReturnsToTheFirstLine() {
+    @Test
+    public void resetReturnsToTheFirstLine() {
         NotificationDetailViewport view = view(60);
-        view.scrollBy(3); view.reset();
+        view.scrollBy(3);
+        view.reset();
         assertEquals(0, view.visibleLineAt(11, 21));
     }
 
-    @Test public void partialTopLineUsesTheSameOffsetAsRendering() {
+    @Test
+    public void partialTopLineUsesTheSameOffsetAsRendering() {
         NotificationDetailViewport view = view(65);
         view.scrollBy(1000);
         assertEquals(93, view.visibleLineAt(11, 20));
@@ -40,7 +45,8 @@ public class NotificationDetailViewportTest {
         assertEquals(94, view.visibleLineAt(11, 25));
     }
 
-    @Test public void emptyAndZeroSizedAreasDoNotAcceptInput() {
+    @Test
+    public void emptyAndZeroSizedAreasDoNotAcceptInput() {
         NotificationDetailViewport view = view(0);
         assertEquals(-1, view.visibleLineAt(11, 20));
         view.layout(10, 20, 0, 60, 10, 100);
@@ -49,9 +55,12 @@ public class NotificationDetailViewportTest {
         assertEquals(-1, view.visibleLineAt(11, 21));
     }
 
-    @Test public void invalidScrollDeltaDoesNotCorruptTheViewport() {
+    @Test
+    public void invalidScrollDeltaDoesNotCorruptTheViewport() {
         NotificationDetailViewport view = view(60);
-        view.scrollBy(3); view.scrollBy(Double.NaN); view.scrollBy(Double.POSITIVE_INFINITY);
+        view.scrollBy(3);
+        view.scrollBy(Double.NaN);
+        view.scrollBy(Double.POSITIVE_INFINITY);
         assertEquals(3, view.visibleLineAt(11, 21));
         view.scrollBy(-1000);
         assertEquals(0, view.visibleLineAt(11, 21));

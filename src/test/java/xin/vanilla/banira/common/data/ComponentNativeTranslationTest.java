@@ -1,8 +1,8 @@
 package xin.vanilla.banira.common.data;
 
 import com.google.gson.JsonObject;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import org.junit.Test;
 import xin.vanilla.banira.BaniraComponent;
@@ -49,7 +49,7 @@ public class ComponentNativeTranslationTest {
     @Test
     public void modTemplateKeepsNativeArgumentAndTranslatesOnlyModText() {
         Component value = BaniraComponent.get().transAuto("config_editor_sync_server_ok",
-                new TranslatableComponent("item.minecraft.diamond"))
+                        new TranslatableComponent("item.minecraft.diamond"))
                 .languageCode("zh_cn");
         net.minecraft.network.chat.Component result = value.toVanilla("zh_cn");
         assertTrue(result.getString().startsWith("服务端已应用并保存 "));

@@ -62,7 +62,7 @@ public class UiManualHudTest {
         assertEquals(3, children.size());
     }
 
-@Test
+    @Test
     public void sameIdSpriteBecomingTextKeepsItsPaintPosition() throws Exception {
         for (int position = 0; position < 3; position++) {
             var dom = dom();

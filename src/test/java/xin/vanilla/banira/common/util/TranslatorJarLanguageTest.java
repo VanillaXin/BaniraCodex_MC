@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import static org.junit.Assert.assertEquals;
-
 public class TranslatorJarLanguageTest {
     private static final String MOD_ID = "jar_language_test";
     private static final String ANCHOR_RESOURCE =

@@ -3,7 +3,7 @@ import java.util.zip.ZipFile
 
 repositories.exclusiveContent {
     forRepository { project.repositories.maven { url = 'https://maven.sighs.cc/repository/maven-public/' } }
-    filter { includeModule('com.sighs', 'ApricityUI-fabric-1.18.2') }
+    filter { includeModule('com.sighs', 'ApricityUI-forge-1.18.2') }
 }
 configurations.create('auiContract') {
     canBeConsumed = false
@@ -16,7 +16,10 @@ dependencies {
         if (!artifact.isAbsolute() || !artifact.isFile()) throw new GradleException('AUI contract must be an existing absolute file')
         auiContract files(artifact)
     } else {
-        throw new GradleException('Fabric 1.18.2 requires an explicit compile-only AUI contract; no runtime artifact is configured')
+        // The pinned Forge binary supplies declarations only, never a Fabric runtime.
+        auiContract('com.sighs:ApricityUI-forge-1.18.2:1.3.0') {
+            version { strictly('1.3.0') }
+        }
     }
     compileOnly files(configurations.auiContract)
     compileOnly 'org.joml:joml:1.10.5'
@@ -39,5 +42,6 @@ tasks.withType(Test).configureEach {
         }
         if (contracts.size() != 1) throw new GradleException('Expected one compile-only AUI contract')
         systemProperty 'banira.aui.contractJar', contracts[0].absolutePath
+        systemProperty 'banira.aui.contractOnRuntimeClasspath', configurations.runtimeClasspath.files.contains(contracts[0])
     }
 }

@@ -13,7 +13,7 @@ import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
  * 只屏蔽被接管的 BookmarkButton，不影响 JEI 其他图标按钮。
  */
 @Pseudo
-@Mixin(targets = "mezz.jei.common.gui.elements.GuiIconToggleButton", remap = false)
+@Mixin(targets = {"mezz.jei.common.gui.elements.GuiIconToggleButton", "mezz.jei.gui.elements.GuiIconToggleButton"}, remap = false)
 public abstract class GuiIconToggleButtonMixin {
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true, require = 0)
     private void banira$draw(PoseStack stack, int mouseX, int mouseY,

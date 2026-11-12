@@ -15,8 +15,12 @@ public final class NeoForgeExternalInventoryCompatibility {
 
     public static void init() {
         ModList mods = ModList.get();
+        initialize(mods, "ftblibrary",
+                "xin.vanilla.banira.internal.neoforge.compat.ftblibrary.FtbLibraryCompatibility");
         initialize(mods, "jei",
                 "xin.vanilla.banira.internal.neoforge.compat.jei.JeiCompatibility");
+        initialize(mods, "inventoryprofilesnext",
+                "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         // 各兼容桥注册完成后再统一刷新，避免首个背包界面仍沿用初始化前的宿主状态。
         xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager.get()
                 .refreshCurrentScreen();

@@ -17,6 +17,8 @@ public final class FabricExternalInventoryCompatibility {
 
     public static void init() {
         FabricLoader loader = FabricLoader.getInstance();
+        initialize(loader, "inventoryprofilesnext",
+                "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         initialize(loader, "ftblibrary",
                 "xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibility");
         initialize(loader, "jei",

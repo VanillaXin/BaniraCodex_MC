@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import xin.vanilla.banira.internal.compat.FtbLibraryContract;
+import xin.vanilla.banira.internal.client.compat.ipn.IpnContract;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,17 @@ import java.util.Set;
 public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.contains(".compat.ipn.")) {
+            if (!FabricLoader.getInstance().isModLoaded("inventoryprofilesnext")) return false;
+            try (InputStream input = getClass().getClassLoader().getResourceAsStream(targetClassName.replace('.', '/') + ".class")) {
+                if (input == null) return false;
+                ClassNode node = new ClassNode();
+                new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
+                return IpnContract.matches(mixinClassName, node);
+            } catch (IOException | RuntimeException unavailable) {
+                return false;
+            }
+        }
         if (mixinClassName.contains(".compat.ftblibrary.")) {
             return FabricLoader.getInstance().isModLoaded("ftblibrary")
                     && FtbLibraryContract.appliesTo(targetClassName, mixinClassName);
@@ -166,6 +178,7 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        if (mixinClassName.contains(".compat.ipn.")) IpnContract.applied(mixinClassName);
         if (mixinClassName.contains(".compat.ftblibrary.")) {
             FtbLibraryContract.recordApplied(targetClassName, targetClass);
         }

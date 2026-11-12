@@ -262,22 +262,20 @@ public final class SelectorUiSession implements UiPageSession {
         } else if (kind == Kind.ITEM && operation.equals("nbt")) {
             widget.wideInput(true);
             widget.completion(xin.vanilla.banira.internal.compat.nbtac.NbtAutocomplete.item(ItemUtils.getItemRegistryString(item)));
-            widget.title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt")).defaultValue(ItemUtils.serializeItemStackTag(item)).validator(input -> {
+            widget.title(Text.transAuto(Banira.MOD_ID, "enter_item_nbt")).defaultValue(ItemComponentEditor.serialize(item)).validator(input -> {
                 try {
-                    var data = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.value()).get(DataComponents.CUSTOM_DATA);
-                    if (data != null && !data.isEmpty())
-                        return null;
+                    ItemComponentEditor.parse(item, input.value());
+                    return null;
                 } catch (Exception invalid) {
                 }
                 return failure("enter_item_nbt_error", input.value());
             });
             apply = input -> {
-                ItemStack parsed = ItemUtils.deserializeItemStack(ItemUtils.getItemRegistry(item.getItem()) + input.firstValue());
-                ItemStack next = item();
-                var data = parsed.get(DataComponents.CUSTOM_DATA);
-                if (data == null) next.remove(DataComponents.CUSTOM_DATA);
-                else next.set(DataComponents.CUSTOM_DATA, data);
-                item = next;
+                try {
+                    item = ItemComponentEditor.parse(item, input.firstValue());
+                } catch (com.mojang.brigadier.exceptions.CommandSyntaxException invalid) {
+                    throw new IllegalArgumentException("Invalid item components", invalid);
+                }
             };
         } else if (kind == Kind.EFFECT && operation.equals("effect")) {
             widget.title(Text.transAuto(Banira.MOD_ID, "enter_effect_id")).defaultValue(EffectUtils.getEffectRegistryString(effect))

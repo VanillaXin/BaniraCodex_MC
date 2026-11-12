@@ -20,6 +20,8 @@ public final class ForgeExternalInventoryCompatibility {
                 "xin.vanilla.banira.internal.forge.compat.ftblibrary.FtbLibraryCompatibility");
         initialize(mods, "jei",
                 "xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility");
+        initialize(mods, "inventoryprofilesnext",
+                "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         // 各兼容桥注册完成后再统一刷新，避免首个背包界面仍沿用初始化前的宿主状态。
         xin.vanilla.banira.client.gui.quickaction.ExternalInventoryButtonManager.get()
                 .refreshCurrentScreen();

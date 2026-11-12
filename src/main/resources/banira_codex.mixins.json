@@ -28,6 +28,9 @@
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.jei.LookupHistoryButtonAccessor",
     "compat.jei.LookupHistoryButtonMixin",
+    "compat.ipn.IpnScreenMixin",
+    "compat.ipn.IpnSortButtonMixin",
+    "compat.ipn.IpnTexturedButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.MinecraftClientMixin"
   ],

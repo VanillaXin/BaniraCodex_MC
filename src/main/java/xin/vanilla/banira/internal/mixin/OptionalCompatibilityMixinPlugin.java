@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import xin.vanilla.banira.internal.client.compat.ipn.IpnContract;
 import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 import xin.vanilla.banira.internal.compat.aui.AuiOptionalServerChannels;
 
@@ -26,6 +27,15 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
                 && !mixinClassName.contains(".compat.aui.")) return true;
         URL target = OptionalCompatibilityMixinPlugin.class.getClassLoader().getResource(targetClassName.replace('.', '/') + ".class");
         if (target == null) return false;
+        if (mixinClassName.contains(".compat.ipn.")) {
+            try (InputStream input = target.openStream()) {
+                ClassNode node = new ClassNode();
+                new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
+                return IpnContract.matches(mixinClassName, node);
+            } catch (IOException | RuntimeException | LinkageError error) {
+                return false;
+            }
+        }
         if (mixinClassName.contains(".compat.ftblibrary.")) return FtbLibraryContract.matches();
         boolean aui = mixinClassName.contains(".compat.aui.");
         if (!mixinClassName.contains(".compat.minimap.") && !aui) return true;
@@ -106,6 +116,7 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        if (mixinClassName.contains(".compat.ipn.")) IpnContract.applied(mixinClassName);
         if (mixinClassName.contains(".compat.ftblibrary.")) {
             FtbLibraryContract.recordApplied(targetClassName, targetClass);
         }

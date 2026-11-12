@@ -21,6 +21,8 @@ public final class FabricExternalInventoryCompatibility {
                 "xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibility");
         initialize(loader, "jei",
                 "xin.vanilla.banira.internal.fabric.compat.jei.JeiCompatibility");
+        initialize(loader, "inventoryprofilesnext",
+                "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         ExternalInventoryButtonManager.get().refreshCurrentScreen();
     }
 

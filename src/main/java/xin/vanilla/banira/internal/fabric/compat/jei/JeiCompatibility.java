@@ -142,6 +142,7 @@ public final class JeiCompatibility {
                 y + (size - height) / 2.0F, 0.0F);
         graphics.pose().scale(scale, scale, 1.0F);
         icon.draw(graphics, 0, 0);
+        graphics.flush();
         graphics.pose().popPose();
     }
 

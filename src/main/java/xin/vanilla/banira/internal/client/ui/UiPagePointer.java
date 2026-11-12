@@ -46,7 +46,8 @@ final class UiPagePointer implements AutoCloseable {
             state.themeChanged();
             lastTheme = colors;
         }
-        HudDrawList frame = state.frame(colors, x, y, EnumRenderDepth.MOUSE.depth());
+        // The enclosing pose supplies the pointer depth for both renderers.
+        HudDrawList frame = state.frame(colors, x, y, 0);
         graphics.flush();
         graphics.pose().pushPose();
         try {

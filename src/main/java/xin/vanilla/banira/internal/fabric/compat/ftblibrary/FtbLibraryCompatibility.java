@@ -83,7 +83,7 @@ public final class FtbLibraryCompatibility implements ExternalInventoryButtonMan
             if (action == null || action.onActivate() == null && action.contextMenuItems().isEmpty()) continue;
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("banira_codex",
                     BUTTON_PATH_PREFIX + safePath(action.sourceId() + "/" + action.id()));
-            SidebarButtonData data = new SidebarButtonData(
+            SidebarButtonData data = FtbLibraryContract.createButtonData(SidebarButtonData.class,
                     new QuickActionFtbIcon(action.icon()), true, Collections.emptyList(), Optional.empty(),
                     false, Optional.of(Collections.singletonList(action.label().toVanilla())), Optional.empty(),
                     false, Optional.empty(), 300 + order);

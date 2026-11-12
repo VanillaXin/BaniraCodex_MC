@@ -30,7 +30,7 @@ public final class JeiRuntimeAccess {
                             || factory.getReturnType() != Optional.class || parameters.length != 4
                             || parameters[0] != double.class || parameters[1] != double.class
                             || parameters[2] != int.class || !parameters[3].isEnum()) continue;
-                    Object execute = parameters[3].getField("EXECUTE").get(null);
+                    Object execute = executionPhase(parameters[3]);
                     return Optional.of(new InputFactory(factory, execute));
                 }
                 return Optional.empty();
@@ -41,6 +41,14 @@ public final class JeiRuntimeAccess {
     };
 
     private JeiRuntimeAccess() {
+    }
+
+    static Object executionPhase(Class<?> type) throws ReflectiveOperationException {
+        try {
+            return type.getField("EXECUTE").get(null);
+        } catch (NoSuchFieldException newerPhase) {
+            return type.getField("RELEASE").get(null);
+        }
     }
 
     public static boolean supportsConfig(Class<?> type) {
@@ -76,7 +84,9 @@ public final class JeiRuntimeAccess {
             Object result = input.get().factory.invoke(null, 0.0D, 0.0D, 0, input.get().execute);
             Object value = result instanceof Optional<?> ? ((Optional<?>) result).orElse(null) : null;
             Class<?> api = Class.forName(INPUT_API, false, loader);
-            return api.isInstance(value) ? value : null;
+            if (!api.isInstance(value)) return null;
+            // Never turn a simulated mouse press into a hosted action.
+            return Boolean.FALSE.equals(api.getMethod("isSimulate").invoke(value)) ? value : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             return null;
         }

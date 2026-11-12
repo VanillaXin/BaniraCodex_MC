@@ -65,6 +65,29 @@ public final class FtbLibraryContract {
         return matches() && buttonHooks && widgetHooks;
     }
 
+    public static <T> T createButtonData(Class<T> dataType, Object... arguments) {
+        if (arguments.length != 10) throw new IllegalArgumentException("Expected ten sidebar data arguments");
+        try {
+            Class<?> icon = Class.forName(ICON.replace('/', '.'), false, dataType.getClassLoader());
+            Class<?>[] types = {icon, boolean.class, java.util.List.class, java.util.Optional.class,
+                    boolean.class, java.util.Optional.class, java.util.Optional.class,
+                    boolean.class, java.util.Optional.class, int.class};
+            java.lang.reflect.Constructor<T> constructor;
+            try {
+                constructor = dataType.getConstructor(types);
+            } catch (NoSuchMethodException legacyMissing) {
+                types = java.util.Arrays.copyOf(types, 11);
+                types[10] = String.class;
+                constructor = dataType.getConstructor(types);
+                arguments = java.util.Arrays.copyOf(arguments, 11);
+                arguments[10] = "";
+            }
+            return constructor.newInstance(arguments);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Unable to create hosted FTB sidebar data", failure);
+        }
+    }
+
     public static void recordApplied(String targetClassName, ClassNode target) {
         if (!matches()) return;
         if (!targetClassName.replace('.', '/').equals(target.name)) {
@@ -127,8 +150,13 @@ public final class FtbLibraryContract {
         requireMethod(button, "clickButton", "(Z)V");
         requireMethod(button, "canSee", "()Z");
         requireMethod(button, "setTooltipOverride", "(Ljava/util/function/Supplier;)V");
-        requireMethod(data, "<init>", "(L" + ICON + ";ZLjava/util/List;Ljava/util/Optional;Z"
-                + "Ljava/util/Optional;Ljava/util/Optional;ZLjava/util/Optional;I)V");
+        String dataArguments = "(L" + ICON + ";ZLjava/util/List;Ljava/util/Optional;Z"
+                + "Ljava/util/Optional;Ljava/util/Optional;ZLjava/util/Optional;I";
+        boolean dataConstructor = data.methods.stream().anyMatch(method -> method.name.equals("<init>")
+                && (method.desc.equals(dataArguments + ")V")
+                || method.desc.equals(dataArguments + "Ljava/lang/String;)V"))
+                && (method.access & Opcodes.ACC_PUBLIC) != 0);
+        if (!dataConstructor) throw new IllegalArgumentException(DATA + " supported constructor missing");
         requireMethod(data, "icon", "()L" + ICON + ";");
         requireMethod(grid, "<init>", "(II)V");
         requireMethod(gui, "<init>", "(L" + GRID + ";ZL" + BUTTON + ";)V");

@@ -23,6 +23,7 @@
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "compat.jei.BookmarkButtonAccessor",
     "compat.jei.BookmarkButtonMixin",
+    "compat.jei.LookupHistoryButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.jei.VanillaClientRecipeLoaderMixin",
     "injections.CreativeScreenQuickActionMixin",

@@ -46,7 +46,8 @@ final class UiPagePointer implements AutoCloseable {
             state.themeChanged();
             lastTheme = colors;
         }
-        HudDrawList frame = state.frame(colors, x, y, EnumRenderDepth.MOUSE.depth());
+        // The enclosing pose supplies the cursor depth for both rendering backends.
+        HudDrawList frame = state.frame(colors, x, y, 0);
         xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.flush();
         graphics.pushPose();
         try {

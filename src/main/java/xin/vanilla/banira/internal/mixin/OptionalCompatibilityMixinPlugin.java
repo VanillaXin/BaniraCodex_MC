@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import xin.vanilla.banira.internal.compat.FtbLibraryContract;
 import xin.vanilla.banira.internal.compat.aui.AuiOptionalServerChannels;
+import xin.vanilla.banira.internal.forge.compat.jei.JeiButtonContract;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,10 +34,12 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
         if (mixinClassName.contains(".compat.ftblibrary.")) return FtbLibraryContract.matches();
         boolean vanillaPacks = mixinClassName.endsWith(".compat.jei.VanillaClientRecipeLoaderMixin");
         boolean aui = mixinClassName.contains(".compat.aui.");
-        if (!mixinClassName.contains(".compat.minimap.") && !vanillaPacks && !aui) return true;
+        boolean jeiButton = mixinClassName.contains(".compat.jei.") && !vanillaPacks;
+        if (!mixinClassName.contains(".compat.minimap.") && !vanillaPacks && !aui && !jeiButton) return true;
         try (InputStream input = target.openStream()) {
             ClassNode node = new ClassNode();
             new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
+            if (jeiButton) return JeiButtonContract.matches(mixinClassName, node);
             return aui ? mixinClassName.endsWith("AuiNetworkManagerMixin") && AuiOptionalServerChannels.matches(node)
                     : vanillaPacks ? matchesJeiVanillaPacks(node) : matchesMinimap(mixinClassName, node);
         } catch (IOException | RuntimeException exception) {
@@ -119,6 +122,7 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        if (mixinClassName.contains(".compat.jei.")) JeiButtonContract.applied(mixinClassName);
         if (mixinClassName.contains(".compat.ftblibrary.")) {
             FtbLibraryContract.recordApplied(targetClassName, targetClass);
         }

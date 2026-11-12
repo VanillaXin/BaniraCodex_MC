@@ -27,6 +27,14 @@ public final class FabricExternalInventoryCompatibility {
                 LOGGER.error("Failed to initialize FTB Library inventory button compatibility", exception);
             }
         }
+        if (FabricLoader.getInstance().isModLoaded("inventoryprofilesnext")) {
+            try {
+                Class.forName("xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility")
+                        .getMethod("init").invoke(null);
+            } catch (ReflectiveOperationException | LinkageError exception) {
+                LOGGER.error("Failed to initialize IPN inventory button compatibility", exception);
+            }
+        }
         ExternalInventoryButtonManager.get().refreshCurrentScreen();
     }
 }

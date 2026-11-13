@@ -5,13 +5,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xin.vanilla.banira.common.util.AdvancementUtils;
 import xin.vanilla.banira.common.util.PlayerUtils;
 import xin.vanilla.banira.internal.client.BaniraClientEventHub;
 
 @Mixin({Minecraft.class})
-public class MinecraftClientMixin {
+public class ClientDisconnectMixin {
     // World teardown runs on the client thread, even when the task queue is discarded.
     @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V", at = @At("HEAD"))
     private void banira$beforePlayerLogout(CallbackInfo callbackInfo) {
@@ -23,23 +22,4 @@ public class MinecraftClientMixin {
         }
     }
 
-    @Inject(
-            at = {@At("HEAD")},
-            method = {"allowsMultiplayer"},
-            cancellable = true
-    )
-    public void banira$multiplayer(CallbackInfoReturnable<Boolean> callbackInfo) {
-        callbackInfo.setReturnValue(true);
-        callbackInfo.cancel();
-    }
-
-    @Inject(
-            at = {@At("HEAD")},
-            method = {"getChatStatus"},
-            cancellable = true
-    )
-    public void banira$chat(CallbackInfoReturnable<Minecraft.ChatStatus> callbackInfo) {
-        callbackInfo.setReturnValue(Minecraft.ChatStatus.ENABLED);
-        callbackInfo.cancel();
-    }
 }

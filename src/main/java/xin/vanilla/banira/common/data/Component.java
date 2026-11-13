@@ -505,9 +505,10 @@ public final class Component implements Cloneable, Serializable {
                 .withItalic(this.italic())
                 .withClickEvent(this.clickEvent)
                 .withHoverEvent(this.hoverEvent);
-        if (this.underlined()) style = style.applyFormat(net.minecraft.ChatFormatting.UNDERLINE);
-        if (this.strikethrough()) style = style.applyFormat(net.minecraft.ChatFormatting.STRIKETHROUGH);
-        if (this.obfuscated()) style = style.applyFormat(net.minecraft.ChatFormatting.OBFUSCATED);
+        if (this.underlined()) style = ColorUtils.applyLegacyFormat(style, net.minecraft.ChatFormatting.UNDERLINE);
+        if (this.strikethrough())
+            style = ColorUtils.applyLegacyFormat(style, net.minecraft.ChatFormatting.STRIKETHROUGH);
+        if (this.obfuscated()) style = ColorUtils.applyLegacyFormat(style, net.minecraft.ChatFormatting.OBFUSCATED);
         return style;
     }
 
@@ -684,7 +685,7 @@ public final class Component implements Cloneable, Serializable {
             if (segment.charAt(index) == '\u00a7') {
                 net.minecraft.ChatFormatting formatting = ColorUtils.formattingByCode(segment.charAt(++index));
                 if (formatting != null) {
-                    style = formatting == net.minecraft.ChatFormatting.RESET ? Style.EMPTY : style.applyLegacyFormat(formatting);
+                    style = ColorUtils.applyLegacyFormat(style, formatting);
                 }
             }
         }

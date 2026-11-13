@@ -30,6 +30,35 @@ public final class ColorUtils {
         return null;
     }
 
+    public static Style applyLegacyFormat(Style style, ChatFormatting formatting) {
+        if (formatting == ChatFormatting.RESET) return Style.EMPTY;
+        com.google.gson.JsonObject flags = new com.google.gson.JsonObject();
+        switch (formatting) {
+            case BOLD:
+                flags.addProperty("bold", true);
+                break;
+            case ITALIC:
+                flags.addProperty("italic", true);
+                break;
+            case UNDERLINE:
+                flags.addProperty("underlined", true);
+                break;
+            case STRIKETHROUGH:
+                flags.addProperty("strikethrough", true);
+                break;
+            case OBFUSCATED:
+                flags.addProperty("obfuscated", true);
+                break;
+            default:
+                flags.addProperty("color", formatting.name().toLowerCase(java.util.Locale.ROOT));
+                for (String flag : new String[]{"bold", "italic", "underlined", "strikethrough", "obfuscated"}) {
+                    flags.addProperty(flag, false);
+                }
+        }
+        // Use the common-side codec; legacy Style mutators are stripped on dedicated servers.
+        return new Style.Serializer().deserialize(flags, Style.class, null).applyTo(style);
+    }
+
     /**
      * 解析ARGB颜色字符串
      * 支持格式：#AARRGGBB、#RRGGBB、0xAARRGGBB、0xRRGGBB
@@ -288,7 +317,7 @@ public final class ColorUtils {
                 currentStyle = baseStyle;
                 continue;
             }
-            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            currentStyle = applyLegacyFormat(currentStyle, formatting);
             Integer legacyColor = legacyColorArgb(code);
             if (legacyColor != null) {
                 int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
@@ -321,7 +350,7 @@ public final class ColorUtils {
                 currentStyle = baseStyle;
                 continue;
             }
-            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            currentStyle = applyLegacyFormat(currentStyle, formatting);
             Integer legacyColor = legacyColorArgb(code);
             if (legacyColor != null) {
                 int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);

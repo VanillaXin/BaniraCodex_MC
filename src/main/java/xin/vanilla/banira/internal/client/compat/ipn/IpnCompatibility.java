@@ -114,7 +114,7 @@ public final class IpnCompatibility {
         if (widget == null || !visited.add(widget)) return;
         if (visited.size() > 512) throw new IllegalStateException("IPN widget tree exceeds traversal limit");
         if (!Boolean.TRUE.equals(call(widget, "getVisible")) || !Boolean.TRUE.equals(call(widget, "getActive"))) return;
-        if (sortButton.isInstance(widget) && !Boolean.TRUE.equals(call(widget, "getUnderManagement"))) {
+        if (("settings".equals(path) || "gui_editor".equals(path)) && sortButton.isInstance(widget) && !Boolean.TRUE.equals(call(widget, "getUnderManagement"))) {
             Object holder = call(widget, "getTexture");
             Object point = call(widget, "getTexturePt");
             Object id = call(holder, "getId");
@@ -127,15 +127,21 @@ public final class IpnCompatibility {
             if (call(widget, "getClickEvent") == null)
                 throw new IllegalStateException("Missing IPN button action " + key);
             String label = (String) call(widget, "getTooltipText");
-            // IPN reuses element IDs; structural paths distinguish roles without screen coordinates.
-            out.add(new Button(root, widget, key + "/" + path, label == null || label.isEmpty() ? key : label,
+            // Only the two configuration owners may contribute hosted buttons.
+            out.add(new Button(root, widget, path, label == null || label.isEmpty() ? key : label,
                     (ResourceLocation) id, (int) call(point, "getX"), (int) call(point, "getY"),
                     (int) call(widget, "getWidth"), (int) call(widget, "getHeight")));
         }
         Object children = call(widget, "getChildren");
         if (!(children instanceof Iterable<?>)) throw new IllegalStateException("Unsupported IPN widget children");
-        int childIndex = 0;
-        for (Object child : (Iterable<?>) children) collect(root, child, out, visited, path + "/" + childIndex++);
+        String childRole = configurationRole(widget.getClass().getName());
+        for (Object child : (Iterable<?>) children) collect(root, child, out, visited, childRole);
+    }
+
+    private static String configurationRole(String ownerClass) {
+        if ("org.anti_ad.mc.ipnext.gui.inject.base.SettingsWidget".equals(ownerClass)) return "settings";
+        if ("org.anti_ad.mc.ipnext.gui.inject.EditorWidget".equals(ownerClass)) return "gui_editor";
+        return "";
     }
 
     private static Object call(Object target, String name) throws ReflectiveOperationException {

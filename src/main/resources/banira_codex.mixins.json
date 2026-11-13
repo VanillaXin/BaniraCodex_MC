@@ -29,8 +29,7 @@
     "compat.jei.LookupHistoryButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.jei.VanillaClientRecipeLoaderMixin",
-    "injections.CreativeScreenQuickActionMixin",
-    "injections.MinecraftClientMixin"
+    "injections.CreativeScreenQuickActionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

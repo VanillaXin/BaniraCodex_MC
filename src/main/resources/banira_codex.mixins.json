@@ -28,7 +28,7 @@
     "compat.ipn.IpnTexturedButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.GuiExperienceMixin",
-    "injections.MinecraftClientMixin",
+    "injections.ClientDisconnectMixin",
     "injections.NetworkSmokeChatMixin",
     "compat.minimap.XaeroInfoDisplayManagerMixin",
     "compat.minimap.JourneyMapTextBoundsMixin"

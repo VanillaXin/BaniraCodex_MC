@@ -14,6 +14,48 @@ public final class ColorUtils {
     private ColorUtils() {
     }
 
+    @Nullable
+    public static TextFormatting formattingByCode(char code) {
+        char normalized = Character.toLowerCase(code);
+        // The vanilla char lookup is client-only in 1.16.5.
+        for (TextFormatting formatting : TextFormatting.values()) {
+            String sequence = formatting.toString();
+            if (sequence.length() == 2 && sequence.charAt(1) == normalized) {
+                return formatting;
+            }
+        }
+        return null;
+    }
+
+    public static Style applyLegacyFormat(Style style, TextFormatting formatting) {
+        if (formatting == TextFormatting.RESET) return Style.EMPTY;
+        com.google.gson.JsonObject flags = new com.google.gson.JsonObject();
+        switch (formatting) {
+            case BOLD:
+                flags.addProperty("bold", true);
+                break;
+            case ITALIC:
+                flags.addProperty("italic", true);
+                break;
+            case UNDERLINE:
+                flags.addProperty("underlined", true);
+                break;
+            case STRIKETHROUGH:
+                flags.addProperty("strikethrough", true);
+                break;
+            case OBFUSCATED:
+                flags.addProperty("obfuscated", true);
+                break;
+            default:
+                flags.addProperty("color", formatting.name().toLowerCase(java.util.Locale.ROOT));
+                for (String flag : new String[]{"bold", "italic", "underlined", "strikethrough", "obfuscated"}) {
+                    flags.addProperty(flag, false);
+                }
+        }
+        // Use the common-side codec; legacy Style mutators are stripped on dedicated servers.
+        return new Style.Serializer().deserialize(flags, Style.class, null).applyTo(style);
+    }
+
     /**
      * 解析ARGB颜色字符串
      * 支持格式：#AARRGGBB、#RRGGBB、0xAARRGGBB、0xRRGGBB
@@ -263,7 +305,7 @@ public final class ColorUtils {
             }
             appendVanillaSegment(target, segment, currentStyle);
             char code = Character.toLowerCase(text.charAt(++i));
-            TextFormatting formatting = TextFormatting.getByCode(code);
+            TextFormatting formatting = formattingByCode(code);
             if (formatting == null) {
                 segment.append('\u00A7').append(code);
                 continue;
@@ -272,7 +314,7 @@ public final class ColorUtils {
                 currentStyle = baseStyle;
                 continue;
             }
-            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            currentStyle = applyLegacyFormat(currentStyle, formatting);
             Integer legacyColor = legacyColorArgb(code);
             if (legacyColor != null) {
                 int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
@@ -296,7 +338,7 @@ public final class ColorUtils {
             }
             appendVanillaSegment(target, segment, currentStyle);
             char code = Character.toLowerCase(text.charAt(++i));
-            TextFormatting formatting = TextFormatting.getByCode(code);
+            TextFormatting formatting = formattingByCode(code);
             if (formatting == null) {
                 segment.append('\u00A7').append(code);
                 continue;
@@ -305,7 +347,7 @@ public final class ColorUtils {
                 currentStyle = baseStyle;
                 continue;
             }
-            currentStyle = currentStyle.applyLegacyFormat(formatting);
+            currentStyle = applyLegacyFormat(currentStyle, formatting);
             Integer legacyColor = legacyColorArgb(code);
             if (legacyColor != null) {
                 int readable = ensureReadableTextArgb(legacyColor, backgroundArgb);
@@ -691,7 +733,6 @@ public final class ColorUtils {
 
     /**
      * 将Color对象转换为Minecraft颜色代码字符串
-     *
      */
     public static String colorToMinecraftColorString(Color color) {
         if (color == null || color.isEmpty()) {
@@ -702,7 +743,6 @@ public final class ColorUtils {
 
     /**
      * 柔化Color对象的颜色
-     *
      */
     public static Color softenColor(Color color) {
         if (color == null) {

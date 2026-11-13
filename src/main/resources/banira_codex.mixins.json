@@ -31,8 +31,7 @@
     "compat.ipn.IpnScreenMixin",
     "compat.ipn.IpnSortButtonMixin",
     "compat.ipn.IpnTexturedButtonMixin",
-    "injections.CreativeScreenQuickActionMixin",
-    "injections.MinecraftClientMixin"
+    "injections.CreativeScreenQuickActionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -14,27 +14,23 @@ public abstract class ServerPlayerMixin {
     @Inject(
             method = "updateOptions",
             at = @At("TAIL"),
-            require = 0
+            require = 1
     )
     private void banira$afterUpdateOptions(ServerboundClientInformationPacket packet, CallbackInfo ci) {
-        try {
-            ServerPlayer player = (ServerPlayer) (Object) this;
-            PlayerOptionsManager.set(player, packet.language(), packet.chatVisibility(),
-                    packet.chatColors(), packet.mainHand(), packet.allowsListing());
-        } catch (Throwable ignored) {
-        }
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        PlayerOptionsManager.set(player, packet.language(), player.getChatVisibility(),
+                player.canChatInColor(), player.getMainArm(), player.allowsListing());
+        // Rebuild both the status and Forge's serialized status cache on the next tick.
+        player.server.invalidateStatus();
     }
 
     @Inject(
             method = "restoreFrom",
             at = @At("TAIL"),
-            require = 0
+            require = 1
     )
     private void banira$afterRestoreFrom(ServerPlayer originalPlayer, boolean keepEverything, CallbackInfo ci) {
-        try {
-            ServerPlayer player = (ServerPlayer) (Object) this;
-            PlayerUtils.cloneClientSettings(originalPlayer, player);
-        } catch (Throwable ignored) {
-        }
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        PlayerUtils.cloneClientSettings(originalPlayer, player);
     }
 }

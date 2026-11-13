@@ -60,24 +60,22 @@ public final class PlayerUtils {
      * @param targetPlayer   目标玩家
      */
     public static void cloneClientSettings(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        try {
-            ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
-            UUID uuid = originalPlayer.getUUID();
-            String language = PlayerOptionsManager.getLanguage(uuid);
-            ChatVisiblity chatVisibility = PlayerOptionsManager.getChatVisibility(uuid);
-            boolean chatColors = PlayerOptionsManager.getChatColors(uuid);
-            HumanoidArm mainHand = PlayerOptionsManager.getMainHand(uuid);
-            boolean allowsListing = PlayerOptionsManager.getAllowsListing(uuid);
+        ServerPlayerAccessor target = (ServerPlayerAccessor) targetPlayer;
+        // The live player is authoritative; the language cache can be stale or absent.
+        String language = ((ServerPlayerAccessor) originalPlayer).banira$language();
+        ChatVisiblity chatVisibility = originalPlayer.getChatVisibility();
+        boolean chatColors = originalPlayer.canChatInColor();
+        HumanoidArm mainHand = originalPlayer.getMainArm();
+        boolean allowsListing = originalPlayer.allowsListing();
 
-            target.banira$setChatVisibility(chatVisibility);
-            target.banira$setChatColors(chatColors);
-            target.banira$language(language);
-            target.banira$allowsListing(allowsListing);
-            targetPlayer.setMainArm(mainHand);
-            PlayerOptionsManager.set(targetPlayer, language, chatVisibility,
-                    chatColors, mainHand, allowsListing);
-        } catch (Throwable ignored) {
-        }
+        target.banira$setChatVisibility(chatVisibility);
+        target.banira$setChatColors(chatColors);
+        target.banira$language(language);
+        target.banira$allowsListing(allowsListing);
+        targetPlayer.setMainArm(mainHand);
+        PlayerOptionsManager.set(targetPlayer, language, chatVisibility,
+                chatColors, mainHand, allowsListing);
+        targetPlayer.server.invalidateStatus();
     }
 
     // region 玩家信息

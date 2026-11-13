@@ -30,7 +30,7 @@
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.IngameGuiExperienceMixin",
-    "injections.MinecraftClientMixin",
+    "injections.ClientDisconnectMixin",
     "injections.NetworkSmokeChatMixin"
   ],
   "injectors": {

@@ -72,9 +72,7 @@ public final class IpnCompatibility {
             Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
             int[] remaining = {512};
             if (screen != null) {
-                Object roots = currentWidgets.invoke(handler);
-                if (!(roots instanceof Iterable<?> widgets)) throw new IllegalStateException("Unsupported IPN roots");
-                for (Object root : widgets) {
+                for (Object root : roots(currentWidgets.invoke(handler))) {
                     if (--remaining[0] < 0) throw new IllegalStateException("IPN widget tree exceeds traversal limit");
                     if (call(root, "getScreen") == screen) collect(root, next, visited, remaining, 0);
                 }
@@ -106,6 +104,13 @@ public final class IpnCompatibility {
         } catch (ReflectiveOperationException | RuntimeException | LinkageError error) {
             disable(error);
         }
+    }
+
+    private static Iterable<?> roots(Object value) {
+        // IPN clears its roots outside containers and while a new screen is initializing.
+        if (value == null) return Collections.emptyList();
+        if (value instanceof Iterable<?> widgets) return widgets;
+        throw new IllegalStateException("Unsupported IPN roots");
     }
 
     private static void collect(Object widget, List<Button> out, Set<Object> visited,

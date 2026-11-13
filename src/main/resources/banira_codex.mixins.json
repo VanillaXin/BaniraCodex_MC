@@ -26,8 +26,7 @@
     "compat.ftblibrary.SidebarGroupGuiButtonMixin",
     "compat.jei.BookmarkButtonMixin",
     "compat.jei.GuiIconToggleButtonMixin",
-    "injections.CreativeScreenQuickActionMixin",
-    "injections.MinecraftClientMixin"
+    "injections.CreativeScreenQuickActionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

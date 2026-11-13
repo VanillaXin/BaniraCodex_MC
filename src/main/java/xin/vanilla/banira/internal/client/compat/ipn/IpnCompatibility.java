@@ -73,11 +73,14 @@ public final class IpnCompatibility {
         try {
             List<Button> next = new ArrayList<>();
             Object roots = currentWidgets.invoke(handler);
+            if (roots == null) roots = Collections.emptyList();
             if (!(roots instanceof Iterable<?>)) throw new IllegalStateException("Unsupported IPN widget list");
             Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
             if (screen != null) {
+                int rootIndex = 0;
                 for (Object root : (Iterable<?>) roots) {
-                    if (call(root, "getScreen") == screen) collect(root, root, next, visited);
+                    String path = "root" + rootIndex++;
+                    if (call(root, "getScreen") == screen) collect(root, root, next, visited, path);
                 }
             }
             if (owner == screen && next.equals(buttons)) return;
@@ -106,7 +109,7 @@ public final class IpnCompatibility {
         }
     }
 
-    private static void collect(Object root, Object widget, List<Button> out, Set<Object> visited)
+    private static void collect(Object root, Object widget, List<Button> out, Set<Object> visited, String path)
             throws ReflectiveOperationException {
         if (widget == null || !visited.add(widget)) return;
         if (visited.size() > 512) throw new IllegalStateException("IPN widget tree exceeds traversal limit");
@@ -124,13 +127,15 @@ public final class IpnCompatibility {
             if (call(widget, "getClickEvent") == null)
                 throw new IllegalStateException("Missing IPN button action " + key);
             String label = (String) call(widget, "getTooltipText");
-            out.add(new Button(root, widget, key, label == null || label.isEmpty() ? key : label,
+            // IPN reuses element IDs; structural paths distinguish roles without screen coordinates.
+            out.add(new Button(root, widget, key + "/" + path, label == null || label.isEmpty() ? key : label,
                     (ResourceLocation) id, (int) call(point, "getX"), (int) call(point, "getY"),
                     (int) call(widget, "getWidth"), (int) call(widget, "getHeight")));
         }
         Object children = call(widget, "getChildren");
         if (!(children instanceof Iterable<?>)) throw new IllegalStateException("Unsupported IPN widget children");
-        for (Object child : (Iterable<?>) children) collect(root, child, out, visited);
+        int childIndex = 0;
+        for (Object child : (Iterable<?>) children) collect(root, child, out, visited, path + "/" + childIndex++);
     }
 
     private static Object call(Object target, String name) throws ReflectiveOperationException {

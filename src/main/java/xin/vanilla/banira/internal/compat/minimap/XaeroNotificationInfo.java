@@ -61,7 +61,11 @@ public final class XaeroNotificationInfo {
     }
 
     public static void attach(Object target) {
-        InfoDisplayManager manager = (InfoDisplayManager) target;
+        // Forge may construct the manager on a loading worker while registrations arrive on the client.
+        Minecraft.getInstance().execute(() -> attachOnClient((InfoDisplayManager) target));
+    }
+
+    private static void attachOnClient(InfoDisplayManager manager) {
         synchronized (MANAGERS) {
             MANAGERS.add(manager);
         }

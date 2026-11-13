@@ -13,6 +13,9 @@
     "injections.ServerPlayerMixin"
   ],
   "client": [
+    "compat.ipn.IpnScreenMixin",
+    "compat.ipn.IpnSortButtonMixin",
+    "compat.ipn.IpnTexturedButtonMixin",
     "compat.aui.AuiNetworkManagerMixin",
     "compat.minimap.XaeroInfoDisplaysMixin",
     "compat.minimap.XaeroInfoDisplayManagerMixin",

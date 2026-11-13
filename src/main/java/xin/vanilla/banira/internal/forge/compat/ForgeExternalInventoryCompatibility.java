@@ -16,6 +16,8 @@ public final class ForgeExternalInventoryCompatibility {
 
     public static void init() {
         ModList mods = ModList.get();
+        initialize(mods, "inventoryprofilesnext",
+                "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         initialize(mods, "ftblibrary",
                 "xin.vanilla.banira.internal.forge.compat.ftblibrary.FtbLibraryCompatibility");
         initialize(mods, "jei",

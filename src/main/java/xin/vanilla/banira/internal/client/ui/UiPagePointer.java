@@ -46,14 +46,16 @@ final class UiPagePointer implements AutoCloseable {
             state.themeChanged();
             lastTheme = colors;
         }
-        // The enclosing pose supplies the cursor depth for both rendering backends.
+        // AUI installs its own overlay projection; only native drawing uses Minecraft's depth.
         HudDrawList frame = state.frame(colors, x, y, 0);
         xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.flush();
         graphics.pushPose();
         try {
-            graphics.translate(0, 0, EnumRenderDepth.MOUSE.depth());
             auiPainted = SharedHudHosts.render(SharedHudHosts.POINTER, graphics, frame);
-            if (!auiPainted) frame.renderNative(graphics);
+            if (!auiPainted) {
+                graphics.translate(0, 0, EnumRenderDepth.MOUSE.depth());
+                frame.renderNative(graphics);
+            }
             xin.vanilla.banira.internal.compat.aui.LegacyUiGraphics.flush();
         } finally {
             graphics.popPose();

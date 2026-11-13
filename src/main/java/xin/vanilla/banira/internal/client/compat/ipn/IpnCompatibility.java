@@ -66,8 +66,10 @@ public final class IpnCompatibility {
             Object roots = currentWidgets.invoke(handler);
             Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
             if (screen != null && roots instanceof Iterable<?> widgets) {
+                int rootIndex = 0;
                 for (Object root : widgets) {
-                    if (call(root, "getScreen") == screen) collect(root, next, visited);
+                    String path = "root" + rootIndex++;
+                    if (call(root, "getScreen") == screen) collect(root, next, visited, path);
                 }
             }
             if (owner == screen && next.equals(buttons)) return;
@@ -93,7 +95,7 @@ public final class IpnCompatibility {
         }
     }
 
-    private static void collect(Object widget, List<Button> out, Set<Object> visited) throws ReflectiveOperationException {
+    private static void collect(Object widget, List<Button> out, Set<Object> visited, String path) throws ReflectiveOperationException {
         if (widget == null || !visited.add(widget)) return;
         if (visited.size() > 512) throw new IllegalStateException("IPN widget tree exceeds traversal limit");
         if (!Boolean.TRUE.equals(call(widget, "getVisible"))) return;
@@ -106,12 +108,16 @@ public final class IpnCompatibility {
                 throw new IllegalStateException("Unsupported IPN texture identifier");
             String label = String.valueOf(call(widget, "getTooltipText"));
             String key = String.valueOf(call(widget, "getId"));
-            out.add(new Button(widget, key, label.isEmpty() ? key : label, texture,
+            // IPN reuses element IDs; structural paths distinguish roles without screen coordinates.
+            out.add(new Button(widget, key + "/" + path, label.isEmpty() ? key : label, texture,
                     (int) call(point, "getX"), (int) call(point, "getY"),
                     (int) call(widget, "getWidth"), (int) call(widget, "getHeight")));
         }
         Object children = call(widget, "getChildren");
-        if (children instanceof Iterable<?> entries) for (Object child : entries) collect(child, out, visited);
+        if (children instanceof Iterable<?> entries) {
+            int childIndex = 0;
+            for (Object child : entries) collect(child, out, visited, path + "/" + childIndex++);
+        }
     }
 
     private static Object call(Object target, String name) throws ReflectiveOperationException {

@@ -7,17 +7,18 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 
 final class AuiTransientTooltip implements AutoCloseable {
     private final Element root;
+    private final Element body;
     private Element owner;
     private String text = "", style = "";
     private long entered;
 
     AuiTransientTooltip(Document document, Element body) {
+        this.body = body;
         root = Element.init(document.createElement("div"));
         root.setAttribute("class", "banira-tooltip");
         root.setAttribute("role", "tooltip");
         root.setTopLayer(true);
         hide();
-        body.appendChild(root);
     }
 
     boolean owns(Element element) {
@@ -48,10 +49,13 @@ final class AuiTransientTooltip implements AutoCloseable {
         ScreenCoordinate bounds = AuiTransientLayout.tooltip(value, point.x, point.y, width, height);
         css("position:fixed;pointer-events:none;z-index:10001;display:block;left:" + bounds.x() + "px;top:" + bounds.y()
                 + "px;width:" + bounds.width() + "px;max-height:" + Math.max(0, height - 8) + "px");
+        if (root.parentElement == null) body.appendChild(root);
     }
 
     void hide() {
         owner = null;
+        // Hidden overflow nodes can invalidate AUI's incremental hit-test clipping.
+        if (root.parentElement != null) root.remove();
         css("position:fixed;pointer-events:none;z-index:10001;display:none");
     }
 

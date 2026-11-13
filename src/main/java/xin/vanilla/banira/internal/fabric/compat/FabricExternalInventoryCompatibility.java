@@ -16,6 +16,7 @@ public final class FabricExternalInventoryCompatibility {
     }
 
     public static void init() {
+        initialize("jei", "xin.vanilla.banira.internal.fabric.compat.jei.JeiCompatibility");
         initialize("ftblibrary", "xin.vanilla.banira.internal.fabric.compat.ftblibrary.FtbLibraryCompatibility");
         initialize("inventoryprofilesnext", "xin.vanilla.banira.internal.client.compat.ipn.IpnCompatibility");
         ExternalInventoryButtonManager.get().refreshCurrentScreen();

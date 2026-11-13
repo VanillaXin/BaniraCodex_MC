@@ -27,6 +27,16 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
                 && !mixinClassName.contains(".compat.minimap.")) return true;
         URL target = FabricMixinConfigPlugin.class.getClassLoader().getResource(targetClassName.replace('.', '/') + ".class");
         if (target == null) return false;
+        if (mixinClassName.contains(".compat.jei.")) {
+            if (!FabricLoader.getInstance().isModLoaded("jei")) return false;
+            try (InputStream input = target.openStream()) {
+                ClassNode node = new ClassNode();
+                new ClassReader(input).accept(node, ClassReader.SKIP_DEBUG);
+                return xin.vanilla.banira.internal.fabric.compat.jei.JeiButtonContract.matches(mixinClassName, node);
+            } catch (IOException | RuntimeException | LinkageError error) {
+                return false;
+            }
+        }
         if (mixinClassName.contains(".compat.ipn.")) {
             if (!FabricLoader.getInstance().isModLoaded("inventoryprofilesnext")) return false;
             try (InputStream input = target.openStream()) {
@@ -126,6 +136,8 @@ public final class FabricMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        if (mixinClassName.contains(".compat.jei."))
+            xin.vanilla.banira.internal.fabric.compat.jei.JeiButtonContract.applied(mixinClassName);
         if (mixinClassName.contains(".compat.ipn.")) IpnContract.applied(mixinClassName);
         if (mixinClassName.contains(".compat.ftblibrary.")) {
             FtbLibraryContract.recordApplied(targetClassName, targetClass);

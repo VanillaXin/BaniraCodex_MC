@@ -11,6 +11,10 @@
     "injections.ConnectionReadOrderMixin"
   ],
   "client": [
+    "compat.jei.BookmarkButtonAccessor",
+    "compat.jei.BookmarkButtonMixin",
+    "compat.jei.GuiIconToggleButtonMixin",
+    "compat.jei.LookupHistoryButtonMixin",
     "injections.AuiPointerInputMixin",
     "compat.minimap.XaeroInfoDisplaysMixin",
     "compat.minimap.FtbChunksNotificationMixin",

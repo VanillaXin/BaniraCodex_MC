@@ -20,7 +20,6 @@
     "compat.jei.LookupHistoryButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
     "injections.GuiHudLayerMixin",
-    "injections.MinecraftClientMixin",
     "injections.SmokeScreenshotFrameMixin",
     "compat.minimap.JourneyMapTextBoundsMixin",
     "compat.minimap.XaeroInfoDisplayManagerMixin"

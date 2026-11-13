@@ -682,7 +682,7 @@ public final class Component implements Cloneable, Serializable {
     private static Style templateArgumentStyle(String segment, Style style) {
         for (int index = 0; index + 1 < segment.length(); index++) {
             if (segment.charAt(index) == '\u00a7') {
-                net.minecraft.ChatFormatting formatting = net.minecraft.ChatFormatting.getByCode(segment.charAt(++index));
+                net.minecraft.ChatFormatting formatting = ColorUtils.formattingByCode(segment.charAt(++index));
                 if (formatting != null) {
                     style = formatting == net.minecraft.ChatFormatting.RESET ? Style.EMPTY : style.applyLegacyFormat(formatting);
                 }

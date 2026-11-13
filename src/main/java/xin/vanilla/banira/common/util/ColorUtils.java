@@ -17,6 +17,19 @@ public final class ColorUtils {
     private ColorUtils() {
     }
 
+    @Nullable
+    public static ChatFormatting formattingByCode(char code) {
+        char normalized = Character.toLowerCase(code);
+        // The vanilla char lookup is client-only in 1.16.5.
+        for (ChatFormatting formatting : ChatFormatting.values()) {
+            String sequence = formatting.toString();
+            if (sequence.length() == 2 && sequence.charAt(1) == normalized) {
+                return formatting;
+            }
+        }
+        return null;
+    }
+
     /**
      * 解析ARGB颜色字符串
      * 支持格式：#AARRGGBB、#RRGGBB、0xAARRGGBB、0xRRGGBB
@@ -266,7 +279,7 @@ public final class ColorUtils {
             }
             appendVanillaSegment(target, segment, currentStyle);
             char code = Character.toLowerCase(text.charAt(++i));
-            ChatFormatting formatting = ChatFormatting.getByCode(code);
+            ChatFormatting formatting = formattingByCode(code);
             if (formatting == null) {
                 segment.append('\u00A7').append(code);
                 continue;
@@ -299,7 +312,7 @@ public final class ColorUtils {
             }
             appendVanillaSegment(target, segment, currentStyle);
             char code = Character.toLowerCase(text.charAt(++i));
-            ChatFormatting formatting = ChatFormatting.getByCode(code);
+            ChatFormatting formatting = formattingByCode(code);
             if (formatting == null) {
                 segment.append('\u00A7').append(code);
                 continue;
@@ -694,7 +707,6 @@ public final class ColorUtils {
 
     /**
      * 将Color对象转换为Minecraft颜色代码字符串
-     *
      */
     public static String colorToMinecraftColorString(Color color) {
         if (color == null || color.isEmpty()) {
@@ -705,7 +717,6 @@ public final class ColorUtils {
 
     /**
      * 柔化Color对象的颜色
-     *
      */
     public static Color softenColor(Color color) {
         if (color == null) {

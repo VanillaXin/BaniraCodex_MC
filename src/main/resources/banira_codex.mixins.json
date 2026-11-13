@@ -17,8 +17,7 @@
     "compat.jei.GuiIconToggleButtonMixin",
     "compat.jei.LookupHistoryButtonMixin",
     "injections.CreativeScreenQuickActionMixin",
-    "injections.GuiHudLayerMixin",
-    "injections.MinecraftClientMixin"
+    "injections.GuiHudLayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

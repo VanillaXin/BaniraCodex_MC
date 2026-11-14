@@ -30,7 +30,12 @@ public final class JeiRuntimeAccess {
                             || factory.getReturnType() != Optional.class || parameters.length != 4
                             || parameters[0] != double.class || parameters[1] != double.class
                             || parameters[2] != int.class || !parameters[3].isEnum()) continue;
-                    Object execute = parameters[3].getField("EXECUTE").get(null);
+                    Object execute;
+                    try {
+                        execute = parameters[3].getField("EXECUTE").get(null);
+                    } catch (NoSuchFieldException modernInput) {
+                        execute = parameters[3].getField("RELEASE").get(null);
+                    }
                     return Optional.of(new InputFactory(factory, execute));
                 }
                 return Optional.empty();

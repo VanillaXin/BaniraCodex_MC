@@ -17,6 +17,10 @@ import java.util.Set;
 public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.contains(".compat.jei.")
+                && !mixinClassName.endsWith("VanillaClientRecipeLoaderMixin")
+                && !xin.vanilla.banira.internal.client.compat.jei.JeiMixinSafety.appliesTo(targetClassName, mixinClassName))
+            return false;
         if (!mixinClassName.contains(".compat.jei.")
                 && !mixinClassName.contains(".compat.ftblibrary.")
                 && !mixinClassName.contains(".compat.ipn.")
@@ -61,13 +65,13 @@ public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugi
         String input = "Lmezz/jei/api/gui/inputs/IJeiUserInput;";
         if (mixin.endsWith("LookupHistoryButtonMixin"))
             return field(target, "offIcon", drawable) && field(target, "onIcon", drawable)
-                    && field(target, "clientConfig", config) && method(target, "<init>", "(" + config + ")V")
+                    && field(target, "clientConfig", config)
+                    && method(target, "updateState", "(Lmezz/jei/api/gui/buttons/IButtonState;)V")
                     && method(target, "onPress", "(" + input + ")Z");
         if (mixin.endsWith("BookmarkButtonMixin"))
             return field(target, "offIcon", drawable) && field(target, "onIcon", drawable)
                     && field(target, "toggleState", toggles)
-                    && method(target, "<init>", "(Lmezz/jei/gui/overlay/bookmarks/BookmarkOverlay;Lmezz/jei/gui/bookmarks/BookmarkList;"
-                    + toggles + "Lmezz/jei/common/input/IInternalKeyMappings;)V")
+                    && method(target, "updateState", "(Lmezz/jei/api/gui/buttons/IButtonState;)V")
                     && method(target, "onPress", "(" + input + ")Z");
         if (mixin.endsWith("GuiIconToggleButtonMixin"))
             return field(target, "controller", "Lmezz/jei/api/gui/buttons/IIconButtonController;")

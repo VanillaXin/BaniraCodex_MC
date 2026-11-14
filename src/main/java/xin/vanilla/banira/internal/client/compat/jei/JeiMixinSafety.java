@@ -85,7 +85,13 @@ public final class JeiMixinSafety {
         int count = 0;
         while (count < captured.length && !captured[count].getClassName().startsWith(
                 "org.spongepowered.asm.mixin.injection.callback.CallbackInfo")) count++;
-        if (count == captured.length || count > actual.length) return false;
+        if (count == captured.length || count + 1 != captured.length
+                || count != 0 && count != actual.length) return false;
+        boolean returnsValue = Type.getReturnType(target.desc).getSort() != Type.VOID;
+        String callback = returnsValue
+                ? "org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable"
+                : "org.spongepowered.asm.mixin.injection.callback.CallbackInfo";
+        if (!captured[count].getClassName().equals(callback)) return false;
         for (int i = 0; i < count; i++) {
             if (captured[i].equals(actual[i])) continue;
             if (!captured[i].getDescriptor().equals("Ljava/lang/Object;")
@@ -104,7 +110,8 @@ public final class JeiMixinSafety {
         for (int depth = 0; target != null && depth < 32; depth++, target = read(target.superName)) {
             for (FieldNode field : target.fields) {
                 if (field.name.equals(name) && field.desc.equals(descriptor)
-                        && ((field.access ^ access) & Opcodes.ACC_STATIC) == 0) return true;
+                        && ((field.access ^ access) & Opcodes.ACC_STATIC) == 0)
+                    return depth == 0 || (field.access & Opcodes.ACC_PRIVATE) == 0;
             }
         }
         return false;
@@ -114,7 +121,8 @@ public final class JeiMixinSafety {
         for (int depth = 0; target != null && depth < 32; depth++, target = read(target.superName)) {
             for (MethodNode method : target.methods) {
                 if (method.name.equals(name) && method.desc.equals(descriptor)
-                        && ((method.access ^ access) & Opcodes.ACC_STATIC) == 0) return true;
+                        && ((method.access ^ access) & Opcodes.ACC_STATIC) == 0)
+                    return depth == 0 || (method.access & Opcodes.ACC_PRIVATE) == 0;
             }
         }
         return false;

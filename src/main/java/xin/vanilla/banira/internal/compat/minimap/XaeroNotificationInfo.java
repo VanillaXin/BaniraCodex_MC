@@ -41,52 +41,67 @@ public final class XaeroNotificationInfo {
                 .setCodec(InfoDisplayCommonStateCodecs.BOOLEAN)
                 .setWidgetFactory(InfoDisplayCommonWidgetFactories.OFF_ON)
                 .setCompiler((display, compiler, session, width, pos) -> {
-                    if (!Boolean.TRUE.equals(display.getState())) return;
-                    for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.XAERO)) {
-                        if (!row.id().equals(line.id())) continue;
-                        net.minecraft.network.chat.Component text = row.text();
-                        for (net.minecraft.network.chat.Component part : MinimapTextLayout.wrap(text,
-                                Minecraft.getInstance().font.getSplitter(), width)) {
-                            compiler.addLine(part);
+                    xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+                        if (!Boolean.TRUE.equals(display.getState())) return;
+                        for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.XAERO)) {
+                            if (!row.id().equals(line.id())) continue;
+                            net.minecraft.network.chat.Component text = row.text();
+                            for (net.minecraft.network.chat.Component part : MinimapTextLayout.wrap(text,
+                                    Minecraft.getInstance().font.getSplitter(), width)) {
+                                compiler.addLine(part);
+                            }
+                            break;
                         }
-                        break;
-                    }
+
+                    });
                 }).build();
         DISPLAYS.put(line.id(), result);
         return result;
     }
 
     public static void append(Consumer<Object> destination) {
-        for (MinimapLine line : NotificationMinimapBridge.registrations()) destination.accept(display(line));
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+            for (MinimapLine line : NotificationMinimapBridge.registrations()) destination.accept(display(line));
+
+        });
     }
 
     public static void attach(Object target) {
-        // Forge may construct the manager on a loading worker while registrations arrive on the client.
-        Minecraft.getInstance().execute(() -> attachOnClient((InfoDisplayManager) target));
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+            // Forge may construct the manager on a loading worker while registrations arrive on the client.
+            Minecraft.getInstance().execute(() -> attachOnClient((InfoDisplayManager) target));
+
+        });
     }
 
     private static void attachOnClient(InfoDisplayManager manager) {
-        synchronized (MANAGERS) {
-            MANAGERS.add(manager);
-        }
-        synchronized (XaeroNotificationInfo.class) {
-            if (!listening) {
-                listening = true;
-                MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> {
-                    ArrayList<InfoDisplayManager> managers;
-                    synchronized (MANAGERS) {
-                        managers = new ArrayList<>(MANAGERS);
-                    }
-                    for (InfoDisplayManager current : managers) add(current, line);
-                }));
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+            synchronized (MANAGERS) {
+                if (!MANAGERS.add(manager)) return;
             }
-        }
-        for (MinimapLine line : NotificationMinimapBridge.registrations()) add(manager, line);
+            synchronized (XaeroNotificationInfo.class) {
+                if (!listening) {
+                    listening = true;
+                    MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> {
+                        ArrayList<InfoDisplayManager> managers;
+                        synchronized (MANAGERS) {
+                            managers = new ArrayList<>(MANAGERS);
+                        }
+                        for (InfoDisplayManager current : managers) add(current, line);
+                    }));
+                }
+            }
+            for (MinimapLine line : NotificationMinimapBridge.registrations()) add(manager, line);
+
+        });
     }
 
     private static void add(InfoDisplayManager manager, MinimapLine line) {
-        if (manager.get(nativeId(line.id())) != null) return;
-        manager.add(display(line));
-        manager.applyLocalConfig();
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+            if (manager.get(nativeId(line.id())) != null) return;
+            manager.add(display(line));
+            manager.applyLocalConfig();
+
+        });
     }
 }

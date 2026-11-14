@@ -31,11 +31,11 @@ public abstract class BookmarkButtonMixin {
     @Final
     private IClientToggleState toggleState;
 
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0)
-    private void banira$capture(BookmarkOverlay overlay, BookmarkList bookmarks,
-                                IClientToggleState toggleState, IInternalKeyMappings keyBindings,
-                                CallbackInfo callback) {
-        JeiCompatibility.capture(this, offIcon, onIcon, this.toggleState);
+    @Inject(method = "updateState", at = @At("HEAD"), require = 0)
+    private void banira$capture(CallbackInfo callback) {
+        if (!JeiCompatibility.isManagedBookmark(this)) {
+            JeiCompatibility.capture(this, offIcon, onIcon, toggleState);
+        }
     }
 
     @Inject(method = "onPress", at = @At("HEAD"), cancellable = true, require = 0)

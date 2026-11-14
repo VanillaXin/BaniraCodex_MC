@@ -40,6 +40,14 @@ public final class JeiCompatibility {
     private static volatile IDrawable lookupHistoryOnIcon;
     private static volatile IClientConfig lookupHistoryConfig;
 
+    private static volatile boolean failed;
+
+    private static void disableCompatibility(Throwable failure) {
+        if (failed) return;
+        failed = true;
+        org.apache.logging.log4j.LogManager.getLogger().warn("JEI shortcut integration disabled; native buttons retained", failure);
+    }
+
     private JeiCompatibility() {
     }
 
@@ -53,22 +61,34 @@ public final class JeiCompatibility {
 
     public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
                                IClientToggleState toggleState) {
-        if (!(value instanceof BookmarkButtonController)) return;
-        bookmarkController = (BookmarkButtonController) value;
-        bookmarkOffIcon = offIcon;
-        bookmarkOnIcon = onIcon;
-        bookmarkToggleState = toggleState;
-        if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
+        if (failed) return;
+        try {
+            if (!(value instanceof BookmarkButtonController)) return;
+            bookmarkController = (BookmarkButtonController) value;
+            bookmarkOffIcon = offIcon;
+            bookmarkOnIcon = onIcon;
+            bookmarkToggleState = toggleState;
+            if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     public static void captureLookupHistory(Object value, IDrawable offIcon,
                                             IDrawable onIcon, IClientConfig clientConfig) {
-        if (!(value instanceof LookupHistoryButtonController)) return;
-        lookupHistoryController = (LookupHistoryButtonController) value;
-        lookupHistoryOffIcon = offIcon;
-        lookupHistoryOnIcon = onIcon;
-        lookupHistoryConfig = clientConfig;
-        if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
+        if (failed) return;
+        try {
+            if (!(value instanceof LookupHistoryButtonController)) return;
+            lookupHistoryController = (LookupHistoryButtonController) value;
+            lookupHistoryOffIcon = offIcon;
+            lookupHistoryOnIcon = onIcon;
+            lookupHistoryConfig = clientConfig;
+            if (registered) ExternalInventoryButtonManager.get().refreshCurrentScreen();
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     public static boolean isManagedBookmark(Object value) {
@@ -80,6 +100,7 @@ public final class JeiCompatibility {
     }
 
     public static boolean shouldSuppress(Object value) {
+        if (failed) return false;
         return registered && (isManagedBookmark(value) || isManagedLookupHistory(value))
                 && ExternalInventoryButtonManager.get().suppressesNativeButtons(SOURCE_ID);
     }
@@ -89,19 +110,31 @@ public final class JeiCompatibility {
     }
 
     private static void activateBookmark() {
-        BookmarkButtonController controller = bookmarkController;
-        Screen screen = Minecraft.getInstance().screen;
-        if (controller == null || screen == null) return;
-        Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
-        if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
+        if (failed) return;
+        try {
+            BookmarkButtonController controller = bookmarkController;
+            Screen screen = Minecraft.getInstance().screen;
+            if (controller == null || screen == null) return;
+            Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
+            if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void activateLookupHistory() {
-        LookupHistoryButtonController controller = lookupHistoryController;
-        Screen screen = Minecraft.getInstance().screen;
-        if (controller == null || screen == null) return;
-        Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
-        if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
+        if (failed) return;
+        try {
+            LookupHistoryButtonController controller = lookupHistoryController;
+            Screen screen = Minecraft.getInstance().screen;
+            if (controller == null || screen == null) return;
+            Object input = JeiRuntimeAccess.mouseInput(JeiCompatibility.class.getClassLoader());
+            if (input instanceof IJeiUserInput) forwardClick(() -> controller.onPress((IJeiUserInput) input));
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void forwardClick(Runnable action) {
@@ -114,17 +147,29 @@ public final class JeiCompatibility {
     }
 
     private static void drawBookmarkIcon(Matrix3x2fStack stack, int x, int y, int size) {
-        IClientToggleState state = bookmarkToggleState;
-        IDrawable icon = state != null && state.isBookmarkOverlayEnabled()
-                ? bookmarkOnIcon : bookmarkOffIcon;
-        drawNativeIcon(stack, x, y, size, icon);
+        if (failed) return;
+        try {
+            IClientToggleState state = bookmarkToggleState;
+            IDrawable icon = state != null && state.isBookmarkOverlayEnabled()
+                    ? bookmarkOnIcon : bookmarkOffIcon;
+            drawNativeIcon(stack, x, y, size, icon);
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void drawLookupHistoryIcon(Matrix3x2fStack stack, int x, int y, int size) {
-        IClientConfig config = lookupHistoryConfig;
-        IDrawable icon = JeiRuntimeAccess.lookupHistoryEnabled(config)
-                ? lookupHistoryOnIcon : lookupHistoryOffIcon;
-        drawNativeIcon(stack, x, y, size, icon);
+        if (failed) return;
+        try {
+            IClientConfig config = lookupHistoryConfig;
+            IDrawable icon = JeiRuntimeAccess.lookupHistoryEnabled(config)
+                    ? lookupHistoryOnIcon : lookupHistoryOffIcon;
+            drawNativeIcon(stack, x, y, size, icon);
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void drawNativeIcon(Matrix3x2fStack stack, int x, int y, int size,
@@ -154,6 +199,7 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (failed) return java.util.Collections.emptyList();
             List<ExternalInventoryAction> actions = new ArrayList<>();
             if (bookmarkController != null) actions.add(new ExternalInventoryAction(
                     "bookmarks",

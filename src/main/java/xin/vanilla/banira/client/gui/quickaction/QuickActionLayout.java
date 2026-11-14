@@ -145,20 +145,14 @@ public class QuickActionLayout {
         while (userSlotGrid.size() > target) {
             userSlotGrid.remove(userSlotGrid.size() - 1);
         }
-        for (int i = 0; i < userSlotGrid.size(); i++) {
-            String id = userSlotGrid.get(i);
-            if (id != null && !id.isEmpty() && !registeredIconEntryIds.contains(id)) {
-                userSlotGrid.set(i, "");
-            }
-        }
+        // Screen-local providers unregister while inventories reopen; keep their saved slots.
         for (String id : registeredIconEntryIds) {
-            if (indexOfIdInUserGrid(id) >= 0) {
+            if (indexOfIdInUserGrid(id) >= 0 || hiddenIconIds.contains(id)) {
                 continue;
             }
             int empty = firstEmptyUserSlotIndex();
             if (empty >= 0) {
                 userSlotGrid.set(empty, id);
-                hiddenIconIds.remove(id);
             }
         }
         rebuildIconBarOrderFromGrid();

@@ -35,6 +35,40 @@ public final class JeiCompatibility {
     private static volatile IDrawable bookmarkOnIcon;
     private static volatile IWorldConfig bookmarkWorldConfig;
 
+    public static void captureCreated(Object value, boolean historyAction) {
+        if (failed || value == null) return;
+        try {
+            if (historyAction) {
+                return;
+            } else {
+                capture(value);
+            }
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
+    }
+
+    private static Object nativeField(Object value, String name) throws ReflectiveOperationException {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                java.lang.reflect.Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(value);
+            } catch (NoSuchFieldException next) {
+                // Native toggle icons may be declared on a superclass.
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
+    private static volatile boolean failed;
+
+    private static void disableCompatibility(Throwable failure) {
+        if (failed) return;
+        failed = true;
+        org.apache.logging.log4j.LogManager.getLogger().warn("JEI shortcut integration disabled; native buttons retained", failure);
+    }
+
     private JeiCompatibility() {
     }
 
@@ -44,30 +78,36 @@ public final class JeiCompatibility {
     }
 
     public static void capture(Object value) {
-        bookmarkButton = null;
-        publishedBookmark = null;
+        if (failed) return;
         try {
-            IDrawable off = (IDrawable) field(value, "offIcon");
-            IDrawable on = (IDrawable) field(value, "onIcon");
-            IWorldConfig config = (IWorldConfig) field(value, "worldConfig");
-            Method click = null;
-            for (Method method : value.getClass().getDeclaredMethods()) {
-                if (method.getName().equals("onMouseClicked") && method.getParameterCount() == 1
-                        && method.getReturnType() == boolean.class) click = method;
-            }
-            if (click == null || off == null || on == null || config == null) return;
-            Object input = mouseInput(click.getParameterTypes()[0]);
-            if (input == null || !click.trySetAccessible()) return;
-            bookmarkOffIcon = off;
-            bookmarkOnIcon = on;
-            bookmarkWorldConfig = config;
-            clickMethod = click;
-            clickInput = input;
-            bookmarkButton = value;
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
             bookmarkButton = null;
-        } finally {
-            refreshHost();
+            publishedBookmark = null;
+            try {
+                IDrawable off = (IDrawable) field(value, "offIcon");
+                IDrawable on = (IDrawable) field(value, "onIcon");
+                IWorldConfig config = (IWorldConfig) field(value, "worldConfig");
+                Method click = null;
+                for (Method method : value.getClass().getDeclaredMethods()) {
+                    if (method.getName().equals("onMouseClicked") && method.getParameterCount() == 1
+                            && method.getReturnType() == boolean.class) click = method;
+                }
+                if (click == null || off == null || on == null || config == null) return;
+                Object input = mouseInput(click.getParameterTypes()[0]);
+                if (input == null || !click.trySetAccessible()) return;
+                bookmarkOffIcon = off;
+                bookmarkOnIcon = on;
+                bookmarkWorldConfig = config;
+                clickMethod = click;
+                clickInput = input;
+                bookmarkButton = value;
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+                bookmarkButton = null;
+            } finally {
+                refreshHost();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
@@ -119,6 +159,7 @@ public final class JeiCompatibility {
     }
 
     public static boolean shouldSuppress(Object value) {
+        if (failed) return false;
         return JeiBookmarkContract.ready() && isManagedBookmark(value) && value == publishedBookmark
                 && ExternalInventoryButtonManager.get().suppressesNativeButtons(SOURCE_ID);
     }
@@ -128,25 +169,37 @@ public final class JeiCompatibility {
     }
 
     private static void activate() {
-        Object button = bookmarkButton;
-        Screen screen = Minecraft.getInstance().screen;
-        if (button == null || screen == null) return;
-        FORWARDING_CLICK.set(true);
+        if (failed) return;
         try {
-            clickMethod.invoke(button, clickInput);
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
-            releaseBookmark();
-        } finally {
-            FORWARDING_CLICK.remove();
+            Object button = bookmarkButton;
+            Screen screen = Minecraft.getInstance().screen;
+            if (button == null || screen == null) return;
+            FORWARDING_CLICK.set(true);
+            try {
+                clickMethod.invoke(button, clickInput);
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+                releaseBookmark();
+            } finally {
+                FORWARDING_CLICK.remove();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
     private static void drawBookmarkIcon(PoseStack stack, int x, int y, int size) {
-        if (size <= 0) return;
+        if (failed) return;
         try {
-            drawCapturedBookmarkIcon(stack, x, y, size);
+            if (size <= 0) return;
+            try {
+                drawCapturedBookmarkIcon(stack, x, y, size);
+            } catch (RuntimeException | LinkageError unavailable) {
+                releaseBookmark();
+            }
+
         } catch (RuntimeException | LinkageError unavailable) {
-            releaseBookmark();
+            disableCompatibility(unavailable);
         }
     }
 
@@ -179,6 +232,7 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (failed) return java.util.Collections.emptyList();
             Object button = bookmarkButton;
             if (button == null || !JeiBookmarkContract.ready()) {
                 publishedBookmark = null;

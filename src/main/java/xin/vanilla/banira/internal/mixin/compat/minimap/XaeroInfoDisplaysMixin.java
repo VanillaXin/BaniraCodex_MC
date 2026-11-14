@@ -14,10 +14,6 @@ import java.util.function.Consumer;
 public abstract class XaeroInfoDisplaysMixin {
     @Inject(method = "forEach", at = @At("TAIL"), require = 0, remap = false)
     private static void banira$registerUnread(Consumer<Object> destination, CallbackInfo ci) {
-        try {
-            XaeroNotificationInfo.append(destination);
-        } catch (LinkageError error) {
-            org.apache.logging.log4j.LogManager.getLogger().warn("Xaero notification information display is incompatible", error);
-        }
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> XaeroNotificationInfo.append(destination));
     }
 }

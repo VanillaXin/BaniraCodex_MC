@@ -12,6 +12,9 @@ import xin.vanilla.banira.internal.compat.minimap.FtbNotificationInfo;
 public abstract class FtbChunksNotificationMixin {
     @Inject(method = "setupComponents", at = @At("HEAD"), require = 0, remap = false)
     private void banira$registerUnread(CallbackInfo ci) {
-        FtbNotificationInfo.register();
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+            FtbNotificationInfo.register();
+
+        });
     }
 }

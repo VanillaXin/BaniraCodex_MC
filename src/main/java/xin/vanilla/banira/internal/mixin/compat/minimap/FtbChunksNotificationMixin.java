@@ -31,22 +31,28 @@ public abstract class FtbChunksNotificationMixin {
             slice = @Slice(from = @At(value = "FIELD", target = "Ldev/ftb/mods/ftbchunks/client/FTBChunksClient;MINIMAP_TEXT_LIST:Ljava/util/List;", ordinal = 0)),
             at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0))
     private void banira$appendUnread(PoseStack stack, float partialTicks, CallbackInfo ci) {
-        Minecraft mc = Minecraft.getInstance();
-        double mapScale = FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale();
-        double textScale = mapScale / 2;
-        int width = Math.max(1, (int) (Math.min((int) (64 * mapScale), mc.getWindow().getGuiScaledWidth()) / textScale));
-        for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
-            MINIMAP_TEXT_LIST.addAll(MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width));
-        }
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+            Minecraft mc = Minecraft.getInstance();
+            double mapScale = FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale();
+            double textScale = mapScale / 2;
+            int width = Math.max(1, (int) (Math.min((int) (64 * mapScale), mc.getWindow().getGuiScaledWidth()) / textScale));
+            for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
+                MINIMAP_TEXT_LIST.addAll(MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width));
+            }
+
+        });
     }
 
     @ModifyArg(method = "renderHud", require = 0, remap = false, index = 1,
             slice = @Slice(from = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z")),
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 0, remap = true))
     private double banira$placeNativeText(double y) {
-        Minecraft mc = Minecraft.getInstance();
-        double mapScale = FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale();
-        double textHeight = (Math.max(0, MINIMAP_TEXT_LIST.size() - 1) * 11 + mc.font.lineHeight + 1) * mapScale / 2;
-        return MinimapTextLayout.nativeY(y, (int) (64 * mapScale), textHeight, mc.getWindow().getGuiScaledHeight());
+        return xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.call("ftb-information", () -> {
+            Minecraft mc = Minecraft.getInstance();
+            double mapScale = FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale();
+            double textHeight = (Math.max(0, MINIMAP_TEXT_LIST.size() - 1) * 11 + mc.font.lineHeight + 1) * mapScale / 2;
+            return MinimapTextLayout.nativeY(y, (int) (64 * mapScale), textHeight, mc.getWindow().getGuiScaledHeight());
+
+        }, y);
     }
 }

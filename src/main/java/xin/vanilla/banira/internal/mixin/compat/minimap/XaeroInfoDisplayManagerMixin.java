@@ -10,8 +10,11 @@ import xin.vanilla.banira.internal.fabric.compat.minimap.XaeroNotificationInfo;
 @Pseudo
 @Mixin(targets = "xaero.hud.minimap.info.InfoDisplayManager", remap = false)
 public abstract class XaeroInfoDisplayManagerMixin {
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0, remap = false)
+    @Inject(method = "applyLocalConfig", at = @At("RETURN"), require = 0, remap = false)
     private void banira$attachInformationRows(CallbackInfo ci) {
-        XaeroNotificationInfo.attach(this);
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("xaero-information", () -> {
+            XaeroNotificationInfo.attach(this);
+
+        });
     }
 }

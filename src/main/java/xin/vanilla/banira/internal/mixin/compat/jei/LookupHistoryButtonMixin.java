@@ -30,9 +30,12 @@ public abstract class LookupHistoryButtonMixin {
     @Final
     private IClientConfig clientConfig;
 
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0)
-    private void banira$capture(IClientConfig clientConfig, CallbackInfo callback) {
-        JeiCompatibility.captureLookupHistory(this, offIcon, onIcon, this.clientConfig);
+    // Optimized JEI constructors can reuse local slot zero before returning.
+    @Inject(method = "updateState", at = @At("HEAD"), require = 0)
+    private void banira$capture(CallbackInfo callback) {
+        if (!JeiCompatibility.isManagedLookupHistory(this)) {
+            JeiCompatibility.captureLookupHistory(this, offIcon, onIcon, clientConfig);
+        }
     }
 
     @Inject(method = "onPress", at = @At("HEAD"), cancellable = true, require = 0)

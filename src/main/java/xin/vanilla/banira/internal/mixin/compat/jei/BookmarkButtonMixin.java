@@ -3,9 +3,6 @@ package xin.vanilla.banira.internal.mixin.compat.jei;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.inputs.IJeiUserInput;
 import mezz.jei.common.config.IClientToggleState;
-import mezz.jei.common.input.IInternalKeyMappings;
-import mezz.jei.gui.bookmarks.BookmarkList;
-import mezz.jei.gui.overlay.bookmarks.BookmarkOverlay;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -32,11 +29,12 @@ public abstract class BookmarkButtonMixin {
     @Final
     private IClientToggleState toggleState;
 
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0)
-    private void banira$capture(BookmarkOverlay overlay, BookmarkList bookmarks,
-                                IClientToggleState toggleState,
-                                IInternalKeyMappings keyBindings, CallbackInfo callback) {
-        JeiCompatibility.capture(this, offIcon, onIcon, this.toggleState);
+    // Optimized JEI constructors can reuse local slot zero before returning.
+    @Inject(method = "updateState", at = @At("HEAD"), require = 0)
+    private void banira$capture(CallbackInfo callback) {
+        if (!JeiCompatibility.isManagedBookmark(this)) {
+            JeiCompatibility.capture(this, offIcon, onIcon, toggleState);
+        }
     }
 
     @Inject(method = "onPress", at = @At("HEAD"), cancellable = true, require = 0)

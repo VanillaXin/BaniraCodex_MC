@@ -252,7 +252,6 @@ public final class QuickActionOverlay {
     private void syncLayoutWithRegistry() {
         LinkedHashSet<String> iconIds = QuickActionRegistry.get().registeredIconEntryIds();
         layout.syncIconBarWithRegistry(iconIds);
-        layout.hiddenIconIds().removeIf(id -> !iconIds.contains(id));
     }
 
     private void ensureLoaded() {

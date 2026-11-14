@@ -30,16 +30,22 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
     }
 
     public static synchronized void register() {
-        NotificationMinimapBridge.registrations();
-        if (listening) return;
-        listening = true;
-        MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> {
-            FtbNotificationInfo component = new FtbNotificationInfo(line);
-            if (FTBChunksAPI.clientApi().getMinimapComponents().stream().noneMatch(c -> component.id().equals(c.id()))) {
-                FTBChunksAPI.clientApi().registerMinimapComponent(component);
-                FTBChunksClient.INSTANCE.setupComponents();
-            }
-        }));
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+            NotificationMinimapBridge.registrations();
+            if (listening) return;
+            listening = true;
+            MinimapLineRegistry.shared().onRegistration(line -> Minecraft.getInstance().execute(() -> {
+                xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+                    FtbNotificationInfo component = new FtbNotificationInfo(line);
+                    if (FTBChunksAPI.clientApi().getMinimapComponents().stream().noneMatch(c -> component.id().equals(c.id()))) {
+                        FTBChunksAPI.clientApi().registerMinimapComponent(component);
+                        FTBChunksClient.INSTANCE.setupComponents();
+                    }
+
+                });
+            }));
+
+        });
     }
 
     @Override
@@ -55,29 +61,39 @@ public final class FtbNotificationInfo implements MinimapInfoComponent {
 
     @Override
     public boolean shouldRender(MinimapContext context) {
-        text = Collections.emptyList();
-        for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
-            if (!row.id().equals(line.id())) continue;
-            Minecraft mc = context.minecraft();
-            float mapScale = FTBChunksClientConfig.MINIMAP_PROPORTIONAL.get()
-                    ? mc.getWindow().getGuiScaledWidth() / 10f / 64f * FTBChunksClientConfig.MINIMAP_SCALE.get().floatValue()
-                    : (float) (FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale());
-            float fontScale = FTBChunksClientConfig.MINIMAP_FONT_SCALE.get().floatValue();
-            int width = Math.max(1, (int) (Math.min(64 * mapScale, mc.getWindow().getGuiScaledWidth())
-                    / Math.max(.01f, fontScale)));
-            text = MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width);
-            break;
-        }
-        return !text.isEmpty();
+        return xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.call("ftb-information", () -> {
+            text = Collections.emptyList();
+            for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
+                if (!row.id().equals(line.id())) continue;
+                Minecraft mc = context.minecraft();
+                float mapScale = FTBChunksClientConfig.MINIMAP_PROPORTIONAL.get()
+                        ? mc.getWindow().getGuiScaledWidth() / 10f / 64f * FTBChunksClientConfig.MINIMAP_SCALE.get().floatValue()
+                        : (float) (FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale());
+                float fontScale = FTBChunksClientConfig.MINIMAP_FONT_SCALE.get().floatValue();
+                int width = Math.max(1, (int) (Math.min(64 * mapScale, mc.getWindow().getGuiScaledWidth())
+                        / Math.max(.01f, fontScale)));
+                text = MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width);
+                break;
+            }
+            return !text.isEmpty();
+
+        }, false);
     }
 
     @Override
     public int height(MinimapContext context) {
-        return computeLineHeight(context.minecraft(), text.size()) + 1;
+        return xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.call("ftb-information", () -> {
+            return computeLineHeight(context.minecraft(), text.size()) + 1;
+
+        }, 0);
     }
 
     @Override
     public void render(MinimapContext context, GuiGraphics graphics, Font font) {
-        for (int i = 0; i < text.size(); i++) drawCenteredText(font, graphics, text.get(i), i * (font.lineHeight + 2));
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+            for (int i = 0; i < text.size(); i++)
+                drawCenteredText(font, graphics, text.get(i), i * (font.lineHeight + 2));
+
+        });
     }
 }

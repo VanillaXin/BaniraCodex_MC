@@ -37,6 +37,40 @@ public final class JeiCompatibility {
     private static volatile CapturedButton history;
     private static boolean initialized;
 
+    public static void captureCreated(Object value, boolean historyAction) {
+        if (failed || value == null) return;
+        try {
+            if (historyAction) {
+                captureHistory(value);
+            } else {
+                capture(value, (IDrawable) nativeField(value, "offIcon"), (IDrawable) nativeField(value, "onIcon"));
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
+    }
+
+    private static Object nativeField(Object value, String name) throws ReflectiveOperationException {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                java.lang.reflect.Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(value);
+            } catch (NoSuchFieldException next) {
+                // Native toggle icons may be declared on a superclass.
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
+    private static volatile boolean failed;
+
+    private static void disableCompatibility(Throwable failure) {
+        if (failed) return;
+        failed = true;
+        org.apache.logging.log4j.LogManager.getLogger().warn("JEI shortcut integration disabled; native buttons retained", failure);
+    }
+
     private JeiCompatibility() {
     }
 
@@ -55,16 +89,22 @@ public final class JeiCompatibility {
     }
 
     public static synchronized void capture(Object value, IDrawable offIcon, IDrawable onIcon) {
-        CapturedButton next = null;
+        if (failed) return;
         try {
-            if (value != null && offIcon != null && onIcon != null) {
-                next = new CapturedButton(value, offIcon, onIcon, JeiBookmarkClick.bind(value), null);
+            CapturedButton next = null;
+            try {
+                if (value != null && offIcon != null && onIcon != null) {
+                    next = new CapturedButton(value, offIcon, onIcon, JeiBookmarkClick.bind(value), null);
+                }
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+                LOGGER.warn("Unsupported JEI bookmark input contract; retaining native button", exception);
+            } finally {
+                bookmark = next;
+                REFRESH_PENDING.set(true);
             }
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
-            LOGGER.warn("Unsupported JEI bookmark input contract; retaining native button", exception);
-        } finally {
-            bookmark = next;
-            REFRESH_PENDING.set(true);
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
@@ -106,6 +146,7 @@ public final class JeiCompatibility {
     }
 
     public static boolean shouldSuppress(Object value) {
+        if (failed) return false;
         CapturedButton captured = bookmark;
         if (captured != null && value == captured.button && JeiButtonContract.ready(false)) return hosted(captured);
         captured = history;
@@ -125,15 +166,21 @@ public final class JeiCompatibility {
     }
 
     private static void activate(CapturedButton captured, boolean historyAction) {
-        if (!current(captured, historyAction) || !hosted(captured)
-                || !JeiButtonContract.ready(historyAction) || Minecraft.getInstance().screen == null) return;
-        FORWARDING_CLICK.set(true);
+        if (failed) return;
         try {
-            captured.click.run();
+            if (!current(captured, historyAction) || !hosted(captured)
+                    || !JeiButtonContract.ready(historyAction) || Minecraft.getInstance().screen == null) return;
+            FORWARDING_CLICK.set(true);
+            try {
+                captured.click.run();
+            } catch (RuntimeException | LinkageError unavailable) {
+                disable(captured, historyAction, unavailable);
+            } finally {
+                FORWARDING_CLICK.remove();
+            }
+
         } catch (RuntimeException | LinkageError unavailable) {
-            disable(captured, historyAction, unavailable);
-        } finally {
-            FORWARDING_CLICK.remove();
+            disableCompatibility(unavailable);
         }
     }
 
@@ -212,6 +259,7 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (failed) return java.util.Collections.emptyList();
             List<ExternalInventoryAction> actions = new ArrayList<>();
             CapturedButton captured = bookmark;
             if (captured != null && JeiButtonContract.ready(false)) actions.add(captured.action(false));

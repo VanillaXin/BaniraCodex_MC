@@ -16,12 +16,9 @@ import xin.vanilla.banira.internal.forge.compat.jei.JeiCompatibility;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.overlay.bookmarks.BookmarkButton", remap = false)
 public abstract class BookmarkButtonMixin {
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0)
-    private void banira$capture(IDrawable offIcon, IDrawable onIcon,
-                                @Coerce Object overlay, @Coerce Object bookmarks,
-                                @Coerce Object worldConfig, @Coerce Object keyBindings,
-                                CallbackInfo callback) {
-        JeiCompatibility.capture(this, offIcon, onIcon);
+    @Inject(method = "create", at = @At("RETURN"), require = 0)
+    private static void banira$capture(CallbackInfoReturnable<Object> callback) {
+        JeiCompatibility.captureCreated(callback.getReturnValue(), false);
     }
 
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true, require = 0)

@@ -20,17 +20,20 @@ import java.util.List;
 public abstract class FtbChunksNotificationMixin {
     @Inject(method = "buildMinimapTextData", at = @At("RETURN"), require = 0, remap = false)
     private void banira$appendUnread(CallbackInfoReturnable<List<Component>> ci) {
-        List<Component> lines = ci.getReturnValue();
-        if (lines == null) return;
-        Minecraft mc = Minecraft.getInstance();
-        float mapScale = (float) (FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale());
-        if (FTBChunksClientConfig.MINIMAP_PROPORTIONAL.get()) {
-            mapScale = (float) (mc.getWindow().getGuiScaledWidth() / 10F / 64 * FTBChunksClientConfig.MINIMAP_SCALE.get());
-        }
-        float textScale = Math.max(1F, Math.round(mapScale)) / 2F;
-        int width = Math.max(1, (int) (Math.min((int) (64 * mapScale), mc.getWindow().getGuiScaledWidth()) / textScale));
-        for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
-            lines.addAll(MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width));
-        }
+        xin.vanilla.banira.internal.compat.OptionalIntegrationGuard.run("ftb-information", () -> {
+            List<Component> lines = ci.getReturnValue();
+            if (lines == null) return;
+            Minecraft mc = Minecraft.getInstance();
+            float mapScale = (float) (FTBChunksClientConfig.MINIMAP_SCALE.get() * 4 / mc.getWindow().getGuiScale());
+            if (FTBChunksClientConfig.MINIMAP_PROPORTIONAL.get()) {
+                mapScale = (float) (mc.getWindow().getGuiScaledWidth() / 10F / 64 * FTBChunksClientConfig.MINIMAP_SCALE.get());
+            }
+            float textScale = Math.max(1F, Math.round(mapScale)) / 2F;
+            int width = Math.max(1, (int) (Math.min((int) (64 * mapScale), mc.getWindow().getGuiScaledWidth()) / textScale));
+            for (MinimapLineSnapshot row : NotificationMinimapBridge.rows(EnumNotificationHudHost.FTB_CHUNKS)) {
+                lines.addAll(MinimapTextLayout.wrap(row.text(), mc.font.getSplitter(), width));
+            }
+
+        });
     }
 }

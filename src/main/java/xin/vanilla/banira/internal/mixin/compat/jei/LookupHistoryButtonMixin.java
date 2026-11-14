@@ -11,9 +11,9 @@ import xin.vanilla.banira.internal.fabric.compat.jei.JeiCompatibility;
 @Pseudo
 @Mixin(targets = "mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButton", remap = false)
 public abstract class LookupHistoryButtonMixin {
-    @Inject(method = "<init>", at = @At("RETURN"), require = 0)
-    private void banira$capture(CallbackInfo callback) {
-        JeiCompatibility.captureHistory(this);
+    @Inject(method = "create", at = @At("RETURN"), require = 0)
+    private static void banira$capture(CallbackInfoReturnable<Object> callback) {
+        JeiCompatibility.captureCreated(callback.getReturnValue(), true);
     }
 
     @Inject(method = "onMouseClicked", at = @At("HEAD"), cancellable = true, require = 0)

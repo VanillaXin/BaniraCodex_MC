@@ -41,6 +41,40 @@ public final class JeiCompatibility {
     private static volatile IDrawable lookupHistoryOnIcon;
     private static volatile IClientConfig lookupHistoryConfig;
 
+    public static void captureCreated(Object value, boolean historyAction) {
+        if (failed || value == null) return;
+        try {
+            if (historyAction) {
+                captureLookupHistory(value, (IDrawable) nativeField(value, "offIcon"), (IDrawable) nativeField(value, "onIcon"), (IClientConfig) nativeField(value, "clientConfig"));
+            } else {
+                capture(value, (IDrawable) nativeField(value, "offIcon"), (IDrawable) nativeField(value, "onIcon"), (IClientToggleState) nativeField(value, "toggleState"));
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
+    }
+
+    private static Object nativeField(Object value, String name) throws ReflectiveOperationException {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                java.lang.reflect.Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(value);
+            } catch (NoSuchFieldException next) {
+                // Native toggle icons may be declared on a superclass.
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
+    private static volatile boolean failed;
+
+    private static void disableCompatibility(Throwable failure) {
+        if (failed) return;
+        failed = true;
+        org.apache.logging.log4j.LogManager.getLogger().warn("JEI shortcut integration disabled; native buttons retained", failure);
+    }
+
     private JeiCompatibility() {
     }
 
@@ -51,35 +85,44 @@ public final class JeiCompatibility {
 
     public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
                                IClientToggleState toggleState) {
-        if (!(value instanceof BookmarkButton)) return;
-        bookmarkButton = (BookmarkButton) value;
-        bookmarkOffIcon = offIcon;
-        bookmarkOnIcon = onIcon;
-        bookmarkToggleState = toggleState;
+        if (failed) return;
+        try {
+            if (!(value instanceof BookmarkButton)) return;
+            bookmarkButton = (BookmarkButton) value;
+            bookmarkOffIcon = offIcon;
+            bookmarkOnIcon = onIcon;
+            bookmarkToggleState = toggleState;
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     public static void captureLookupHistory(Object value, IDrawable offIcon,
                                             IDrawable onIcon, IClientConfig clientConfig) {
-        if (!(value instanceof LookupHistoryButton)) return;
-        lookupHistoryButton = (LookupHistoryButton) value;
-        lookupHistoryOffIcon = offIcon;
-        lookupHistoryOnIcon = onIcon;
-        lookupHistoryConfig = clientConfig;
+        if (failed) return;
+        try {
+            if (!(value instanceof LookupHistoryButton)) return;
+            lookupHistoryButton = (LookupHistoryButton) value;
+            lookupHistoryOffIcon = offIcon;
+            lookupHistoryOnIcon = onIcon;
+            lookupHistoryConfig = clientConfig;
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     public static boolean isManagedBookmark(Object value) {
-        return value == bookmarkButton || value != null
-                && "mezz.jei.gui.overlay.bookmarks.BookmarkButton".equals(
-                value.getClass().getName());
+        return value != null && value == bookmarkButton;
     }
 
     public static boolean isManagedLookupHistory(Object value) {
-        return value == lookupHistoryButton || value != null
-                && "mezz.jei.gui.overlay.bookmarks.history.LookupHistoryButton".equals(
-                value.getClass().getName());
+        return value != null && value == lookupHistoryButton;
     }
 
     public static boolean shouldSuppress(Object value) {
+        if (failed) return false;
         return (isManagedBookmark(value) || isManagedLookupHistory(value))
                 && ExternalInventoryButtonManager.get().suppressesNativeButtons(SOURCE_ID);
     }
@@ -89,43 +132,67 @@ public final class JeiCompatibility {
     }
 
     private static void activate() {
-        BookmarkButton button = bookmarkButton;
-        Screen screen = Minecraft.getInstance().screen;
-        if (button == null || screen == null) return;
-        FORWARDING_CLICK.set(true);
+        if (failed) return;
         try {
-            ((BookmarkButtonAccessor) (Object) button).banira$invokeMouseClicked(
-                    UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE));
-        } finally {
-            FORWARDING_CLICK.remove();
+            BookmarkButton button = bookmarkButton;
+            Screen screen = Minecraft.getInstance().screen;
+            if (button == null || screen == null) return;
+            FORWARDING_CLICK.set(true);
+            try {
+                ((BookmarkButtonAccessor) (Object) button).banira$invokeMouseClicked(
+                        UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE));
+            } finally {
+                FORWARDING_CLICK.remove();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
     private static void activateLookupHistory() {
-        LookupHistoryButton button = lookupHistoryButton;
-        Screen screen = Minecraft.getInstance().screen;
-        if (button == null || screen == null) return;
-        FORWARDING_CLICK.set(true);
+        if (failed) return;
         try {
-            ((LookupHistoryButtonAccessor) (Object) button).banira$invokeMouseClicked(
-                    UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE));
-        } finally {
-            FORWARDING_CLICK.remove();
+            LookupHistoryButton button = lookupHistoryButton;
+            Screen screen = Minecraft.getInstance().screen;
+            if (button == null || screen == null) return;
+            FORWARDING_CLICK.set(true);
+            try {
+                ((LookupHistoryButtonAccessor) (Object) button).banira$invokeMouseClicked(
+                        UserInput.fromVanilla(0, 0, 0, InputType.EXECUTE));
+            } finally {
+                FORWARDING_CLICK.remove();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
     private static void drawBookmarkIcon(PoseStack stack, int x, int y, int size) {
-        IClientToggleState toggleState = bookmarkToggleState;
-        IDrawable icon = toggleState != null && toggleState.isBookmarkOverlayEnabled()
-                ? bookmarkOnIcon : bookmarkOffIcon;
-        drawNativeIcon(stack, x, y, size, icon);
+        if (failed) return;
+        try {
+            IClientToggleState toggleState = bookmarkToggleState;
+            IDrawable icon = toggleState != null && toggleState.isBookmarkOverlayEnabled()
+                    ? bookmarkOnIcon : bookmarkOffIcon;
+            drawNativeIcon(stack, x, y, size, icon);
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void drawLookupHistoryIcon(PoseStack stack, int x, int y, int size) {
-        IClientConfig config = lookupHistoryConfig;
-        IDrawable icon = config != null && config.isLookupHistoryEnabled()
-                ? lookupHistoryOnIcon : lookupHistoryOffIcon;
-        drawNativeIcon(stack, x, y, size, icon);
+        if (failed) return;
+        try {
+            IClientConfig config = lookupHistoryConfig;
+            IDrawable icon = config != null && config.isLookupHistoryEnabled()
+                    ? lookupHistoryOnIcon : lookupHistoryOffIcon;
+            drawNativeIcon(stack, x, y, size, icon);
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     private static void drawNativeIcon(PoseStack stack, int x, int y, int size,
@@ -139,11 +206,15 @@ public final class JeiCompatibility {
         float width = icon.getWidth() * scale;
         float height = icon.getHeight() * scale;
         graphics.pose().pushPose();
-        graphics.pose().translate(x + (size - width) / 2.0F,
-                y + (size - height) / 2.0F, 0.0F);
-        graphics.pose().scale(scale, scale, 1.0F);
-        icon.draw(graphics, 0, 0);
-        graphics.pose().popPose();
+        try {
+            graphics.pose().translate(x + (size - width) / 2.0F,
+                    y + (size - height) / 2.0F, 0.0F);
+            graphics.pose().scale(scale, scale, 1.0F);
+            icon.draw(graphics, 0, 0);
+
+        } finally {
+            graphics.pose().popPose();
+        }
     }
 
     private static final class BookmarkProvider implements ExternalInventoryActionProvider {
@@ -154,14 +225,15 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (failed) return java.util.Collections.emptyList();
             List<ExternalInventoryAction> actions = new ArrayList<>();
-            actions.add(new ExternalInventoryAction(
+            if (bookmarkButton != null) actions.add(new ExternalInventoryAction(
                     "bookmarks",
                     BaniraComponent.get().literal(I18n.get("jei.tooltip.bookmarks")),
                     QuickIcon.custom((stack, minecraft, x, y, size) ->
                             drawBookmarkIcon(stack, x, y, size)),
                     context -> activate()));
-            actions.add(new ExternalInventoryAction(
+            if (lookupHistoryButton != null) actions.add(new ExternalInventoryAction(
                     "lookup_history",
                     BaniraComponent.get().literal(I18n.get(
                             "word.banira_codex.jei_lookup_history")),

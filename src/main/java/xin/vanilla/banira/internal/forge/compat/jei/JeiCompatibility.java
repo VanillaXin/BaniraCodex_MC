@@ -32,6 +32,40 @@ public final class JeiCompatibility {
     private static volatile IDrawable bookmarkOnIcon;
     private static volatile IWorldConfig bookmarkWorldConfig;
 
+    public static void captureCreated(Object value, boolean historyAction) {
+        if (failed || value == null) return;
+        try {
+            if (historyAction) {
+                return;
+            } else {
+                capture(value, (IDrawable) nativeField(value, "offIcon"), (IDrawable) nativeField(value, "onIcon"), (IWorldConfig) nativeField(value, "worldConfig"));
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
+    }
+
+    private static Object nativeField(Object value, String name) throws ReflectiveOperationException {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                java.lang.reflect.Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(value);
+            } catch (NoSuchFieldException next) {
+                // Native toggle icons may be declared on a superclass.
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
+    private static volatile boolean failed;
+
+    private static void disableCompatibility(Throwable failure) {
+        if (failed) return;
+        failed = true;
+        org.apache.logging.log4j.LogManager.getLogger().warn("JEI shortcut integration disabled; native buttons retained", failure);
+    }
+
     private JeiCompatibility() {
     }
 
@@ -42,20 +76,25 @@ public final class JeiCompatibility {
 
     public static void capture(Object value, IDrawable offIcon, IDrawable onIcon,
                                IWorldConfig worldConfig) {
-        if (!(value instanceof BookmarkButton)) return;
-        bookmarkButton = (BookmarkButton) value;
-        bookmarkOffIcon = offIcon;
-        bookmarkOnIcon = onIcon;
-        bookmarkWorldConfig = worldConfig;
+        if (failed) return;
+        try {
+            if (!(value instanceof BookmarkButton)) return;
+            bookmarkButton = (BookmarkButton) value;
+            bookmarkOffIcon = offIcon;
+            bookmarkOnIcon = onIcon;
+            bookmarkWorldConfig = worldConfig;
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
+        }
     }
 
     public static boolean isManagedBookmark(Object value) {
-        return value == bookmarkButton || value != null
-                && "mezz.jei.gui.overlay.bookmarks.BookmarkButton".equals(
-                value.getClass().getName());
+        return value != null && value == bookmarkButton;
     }
 
     public static boolean shouldSuppress(Object value) {
+        if (failed) return false;
         return isManagedBookmark(value)
                 && ExternalInventoryButtonManager.get().suppressesNativeButtons(SOURCE_ID);
     }
@@ -65,36 +104,48 @@ public final class JeiCompatibility {
     }
 
     private static void activate() {
-        BookmarkButton button = bookmarkButton;
-        Screen screen = Minecraft.getInstance().screen;
-        if (button == null || screen == null) return;
-        FORWARDING_CLICK.set(true);
+        if (failed) return;
         try {
-            ((BookmarkButtonAccessor) (Object) button).banira$invokeMouseClicked(
-                    screen, 0, 0, 0, MouseClickState.EXECUTE);
-        } finally {
-            FORWARDING_CLICK.remove();
+            BookmarkButton button = bookmarkButton;
+            Screen screen = Minecraft.getInstance().screen;
+            if (button == null || screen == null) return;
+            FORWARDING_CLICK.set(true);
+            try {
+                ((BookmarkButtonAccessor) (Object) button).banira$invokeMouseClicked(
+                        screen, 0, 0, 0, MouseClickState.EXECUTE);
+            } finally {
+                FORWARDING_CLICK.remove();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
     private static void drawBookmarkIcon(MatrixStack stack, int x, int y, int size) {
-        IWorldConfig worldConfig = bookmarkWorldConfig;
-        IDrawable icon = worldConfig != null && worldConfig.isBookmarkOverlayEnabled()
-                ? bookmarkOnIcon : bookmarkOffIcon;
-        if (icon == null || size <= 0) return;
-
-        int sourceWidth = Math.max(1, icon.getWidth());
-        int sourceHeight = Math.max(1, icon.getHeight());
-        float scale = Math.min(size / (float) sourceWidth, size / (float) sourceHeight);
-        float offsetX = (size - sourceWidth * scale) / 2f;
-        float offsetY = (size - sourceHeight * scale) / 2f;
-        stack.pushPose();
+        if (failed) return;
         try {
-            stack.translate(x + offsetX, y + offsetY, 0);
-            stack.scale(scale, scale, 1f);
-            icon.draw(stack, 0, 0);
-        } finally {
-            stack.popPose();
+            IWorldConfig worldConfig = bookmarkWorldConfig;
+            IDrawable icon = worldConfig != null && worldConfig.isBookmarkOverlayEnabled()
+                    ? bookmarkOnIcon : bookmarkOffIcon;
+            if (icon == null || size <= 0) return;
+
+            int sourceWidth = Math.max(1, icon.getWidth());
+            int sourceHeight = Math.max(1, icon.getHeight());
+            float scale = Math.min(size / (float) sourceWidth, size / (float) sourceHeight);
+            float offsetX = (size - sourceWidth * scale) / 2f;
+            float offsetY = (size - sourceHeight * scale) / 2f;
+            stack.pushPose();
+            try {
+                stack.translate(x + offsetX, y + offsetY, 0);
+                stack.scale(scale, scale, 1f);
+                icon.draw(stack, 0, 0);
+            } finally {
+                stack.popPose();
+            }
+
+        } catch (RuntimeException | LinkageError unavailable) {
+            disableCompatibility(unavailable);
         }
     }
 
@@ -106,6 +157,8 @@ public final class JeiCompatibility {
 
         @Override
         public List<ExternalInventoryAction> actions(@Nullable Screen screen) {
+            if (failed) return java.util.Collections.emptyList();
+            if (bookmarkButton == null) return Collections.emptyList();
             return Collections.singletonList(new ExternalInventoryAction(
                     "bookmarks",
                     BaniraComponent.get().literal(I18n.get("jei.tooltip.bookmarks")),

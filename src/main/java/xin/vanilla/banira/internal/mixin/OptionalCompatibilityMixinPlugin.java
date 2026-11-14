@@ -19,6 +19,10 @@ import java.util.Set;
 public final class OptionalCompatibilityMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.contains(".compat.jei.")
+                && !mixinClassName.endsWith("VanillaClientRecipeLoaderMixin")
+                && !xin.vanilla.banira.internal.client.compat.jei.JeiMixinSafety.appliesTo(targetClassName, mixinClassName))
+            return false;
         if (!mixinClassName.contains(".compat.jei.")
                 && !mixinClassName.contains(".compat.ftblibrary.")
                 && !mixinClassName.contains(".compat.ipn.")

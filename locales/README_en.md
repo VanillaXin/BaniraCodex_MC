@@ -33,8 +33,7 @@
 
 ## Meaning
 
-- **Vanilla (香草)**: Refers to unmodified Minecraft and reflects the project's aim to preserve vanilla style and
-  compatibility.
+- **Vanilla (香草)**: Derived from the meaning of “Vanilla” (the original version), it extends to signify “Origin,” symbolizing the source of all plants and representing the foundation of all creation and its infinite possibilities.
 - **Codex (志)**: A record that collects and organizes knowledge.
 - **Banira Codex (香草志)**: A collection of shared cross-version modding capabilities that lets dependent mods use a
   stable interface across loaders.

@@ -11,8 +11,10 @@ import xin.vanilla.banira.common.util.JsonUtils;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -97,6 +99,29 @@ public class QuickActionLayout {
      */
     @Getter
     private final List<String> menuItemOrder = new ArrayList<>();
+
+    public static final int MAX_MENU_LABEL_LENGTH = 80;
+    private final Map<String, String> menuItemLabels = new LinkedHashMap<>();
+
+    public String menuItemLabel(String key) {
+        return menuItemLabels.getOrDefault(key, "");
+    }
+
+    public String menuItemLabel(String key, String fallback) {
+        return menuItemLabels.getOrDefault(key, fallback);
+    }
+
+    public void setMenuItemLabel(String key, String label) {
+        if (key == null || key.trim().isEmpty()) return;
+        StringBuilder text = new StringBuilder();
+        if (label != null) {
+            label.trim().codePoints().filter(cp -> !Character.isISOControl(cp))
+                    .limit(MAX_MENU_LABEL_LENGTH).forEach(text::appendCodePoint);
+        }
+        String normalized = text.toString().trim();
+        if (normalized.isEmpty()) menuItemLabels.remove(key);
+        else menuItemLabels.put(key, normalized);
+    }
 
     public void syncMenuItemOrder(@Nonnull List<String> availableKeys) {
         LinkedHashSet<String> available = new LinkedHashSet<>();
@@ -221,6 +246,9 @@ public class QuickActionLayout {
         JsonArray menuOrder = new JsonArray();
         for (String key : menuItemOrder) menuOrder.add(key);
         o.add("menuItemOrder", menuOrder);
+        JsonObject labels = new JsonObject();
+        menuItemLabels.forEach(labels::addProperty);
+        o.add("menuItemLabels", labels);
         return o;
     }
 
@@ -284,6 +312,15 @@ public class QuickActionLayout {
         if (o.has("menuItemOrder") && o.get("menuItemOrder").isJsonArray()) {
             for (JsonElement el : o.getAsJsonArray("menuItemOrder")) {
                 if (el.isJsonPrimitive()) menuItemOrder.add(el.getAsString());
+            }
+        }
+        menuItemLabels.clear();
+        if (o.has("menuItemLabels") && o.get("menuItemLabels").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : o.getAsJsonObject("menuItemLabels").entrySet()) {
+                JsonElement value = entry.getValue();
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                    setMenuItemLabel(entry.getKey(), value.getAsString());
+                }
             }
         }
         finalizeUserSlotGridAfterLoad();

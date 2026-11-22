@@ -1382,7 +1382,7 @@ public final class QuickActionOverlay {
             if (layout.hiddenMenuItemIds().contains(hiddenKey)) {
                 continue;
             }
-            L.add(new CtxRow(it.getLabel().toVanilla().getString(), false, () -> {
+            L.add(new CtxRow(layout.menuItemLabel(hiddenKey, it.getLabel().toVanilla().getString()), false, () -> {
                 if (it.getOnActivate() != null) {
                     QuickActionContext ctx = new QuickActionContext()
                             .minecraft(mc())
@@ -1415,7 +1415,7 @@ public final class QuickActionOverlay {
             }
             boolean hasSecondary = !ent.contextMenuItems.isEmpty();
             boolean menuOnly = ent.onActivate() == null && hasSecondary;
-            L.add(new CtxRow(ent.label().toVanilla().getString(), menuOnly, () -> {
+            L.add(new CtxRow(layout.menuItemLabel(hiddenKey, ent.label().toVanilla().getString()), menuOnly, () -> {
                 if (menuOnly) {
                     contextEntrySubmenuId = ent.id();
                     contextEntryItemOffset = ent.primaryMenuItemOffset();
@@ -1435,15 +1435,15 @@ public final class QuickActionOverlay {
         QuickIcon icon = null;
         for (QuickActionEntry entry : QuickActionRegistry.get().allEntriesInOrder()) {
             if (entryMenuKey(entry).equals(hiddenKey)) {
-                display = entry.label().toVanilla().getString();
+                display = layout.menuItemLabel(hiddenKey, entry.label().toVanilla().getString());
                 icon = entry.quickIcon();
                 break;
             }
             for (int index = 0; index < entry.contextMenuItems.size(); index++) {
                 QuickActionContextMenuItem item = entry.contextMenuItems.get(index);
                 if (item != null && itemMenuKey(entry, item, index).equals(hiddenKey)) {
-                    display = entry.label().toVanilla().getString() + " > "
-                            + item.getLabel().toVanilla().getString();
+                    display = layout.menuItemLabel(entryMenuKey(entry), entry.label().toVanilla().getString()) + " > "
+                            + layout.menuItemLabel(hiddenKey, item.getLabel().toVanilla().getString());
                     icon = item.getMenuIcon() != null ? item.getMenuIcon() : entry.quickIcon();
                     break;
                 }
@@ -1611,6 +1611,23 @@ public final class QuickActionOverlay {
             rows.add(new CtxRow(trWord("quick_action.move_down"), true, () -> {
                 if (session.move(layout, 1)) markSave();
             }, selected.menuIcon));
+        }
+
+        rows.add(new CtxRow(trWord("quick_action.rename_menu_item"), false, () -> {
+            Screen parent = mc().screen;
+            if (parent == null) return;
+            resetInteractionState();
+            CustomQuickActionEditor.openMenuLabel(parent, layout.menuItemLabel(session.targetKey()), label -> {
+                session.rename(layout, label);
+                markSave();
+                flushSaveIfNeeded();
+            });
+        }));
+        if (!layout.menuItemLabel(session.targetKey()).isEmpty()) {
+            rows.add(new CtxRow(trWord("quick_action.restore_menu_item_name"), true, () -> {
+                session.rename(layout, null);
+                markSave();
+            }));
         }
 
         String visibilityKey;

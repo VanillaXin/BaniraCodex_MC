@@ -21,6 +21,21 @@ final class CustomQuickActionEditor {
     private CustomQuickActionEditor() {
     }
 
+    static void openMenuLabel(Screen parent, String label, Consumer<String> accepted) {
+        InputFormScreen.Args args = new InputFormScreen.Args()
+                .setParentScreen(parent)
+                .setHeaderTitle(t("quick_action.rename_menu_item"))
+                .addWidget(text("label", "quick_action.menu_item_name", label, true, ".{0,80}")
+                        .maxLength(QuickActionLayout.MAX_MENU_LABEL_LENGTH)
+                        .hint(t("quick_action.menu_item_name_hint"))
+                        .tooltip(t("quick_action.menu_item_name_hint")))
+                .setCallback(result -> {
+                    accepted.accept(result.value("label"));
+                    result.runningResult("");
+                });
+        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+    }
+
     static void openDefinition(Screen parent, CustomQuickActionDefinition source,
                                Consumer<CustomQuickActionDefinition> accepted) {
         Minecraft.getInstance().setScreen(new InputFormScreen(definitionArgs(parent, source, accepted)));

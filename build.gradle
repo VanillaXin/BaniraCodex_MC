@@ -126,6 +126,7 @@ configurations.create('baniraJeiContract') {
 }
 configurations.compileOnly.extendsFrom(configurations.baniraJeiContract)
 dependencies {
+
     baniraMinimapLibraries xaeroCompileReference
     baniraMinimapLibraries journeyMapContract
 }
@@ -151,6 +152,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
+
     compileOnly files(minimapCompilerLibraries)
     // Xaero, FTB and Atlas currently publish NeoForge 26.1.2 references, not 26.1 runtime inputs.
     compileOnly(xaeroCompileReference) { transitive = false }
@@ -176,6 +178,7 @@ dependencies {
 }
 
 dependencies {
+
     implementation "net.neoforged:neoforge:${neo_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.48'
@@ -288,3 +291,7 @@ apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/embedded-compiler.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

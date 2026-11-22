@@ -96,6 +96,15 @@ public final class AuiGameElements {
                             Math.max(0, bounds.widthInt() - 8), Math.max(0, bounds.heightInt() - 8), theme == null ? 0xff24272c : theme.textPrimary(), 1);
                     break;
             }
+            String badge = element.badge();
+            if (badge == null && element.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.OPTION
+                    && element.option().hasIcon() && !element.option().hasTexture())
+                badge = String.valueOf(element.option().icon().getCount());
+            if (badge != null) {
+                ScreenCoordinate icon = element.kind() == xin.vanilla.banira.api.client.ui.UiGameElement.Kind.SPRITE ? bounds : compactIcon(bounds);
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(graphics, Minecraft.getInstance().font, badge,
+                        icon.xInt(), icon.yInt(), Math.min(icon.widthInt(), icon.heightInt()));
+            }
         } finally {
             graphics.disableScissor();
         }

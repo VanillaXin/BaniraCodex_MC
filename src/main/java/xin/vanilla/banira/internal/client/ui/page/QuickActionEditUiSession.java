@@ -16,6 +16,8 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
     private List<DropdownOption> icons;
     private Supplier<String> currentIcon;
     private Consumer<String> selectedIcon;
+    private Component selectionTitle;
+    private Component searchHint;
     private final Component heading;
     private Supplier<Component> context;
     private UiView currentView;
@@ -98,19 +100,27 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
         selectedIcon = Objects.requireNonNull(selected, "selected");
     }
 
+    public void selectionTitle(Component title) {
+        selectionTitle = title;
+    }
+
+    public void searchHint(Component hint) {
+        searchHint = hint;
+    }
+
     @Override
     public void bind(UiView view) {
         super.bind(view);
         if (!boundTo(view)) return;
         currentView = view;
-        for (String id : Arrays.asList("details", "icon", "add_command", "add_screen", "add_menu", "save", "cancel", "add")) {
+        for (String id : Arrays.asList("details", "icon", "add_step", "add_menu", "save", "cancel", "add")) {
             view.enabled(id, toolIds.contains(id));
         }
         if (icons != null) {
             view.enabled("icon", true);
             view.control("icon", new UiControlSpec(UiControlSpec.Kind.SELECT, 128, "", false, icons, DropdownInputMode.SELECTION_ONLY));
             view.value("icon", UiValue.text(currentIcon.get()));
-            view.tooltip("icon", BaniraComponent.get().transClientAuto("custom_quick_action_select_icon"));
+            view.tooltip("icon", selectionTitle == null ? BaniraComponent.get().transClientAuto("custom_quick_action_select_icon") : selectionTitle);
             ownBinding(view.onValue("icon", value -> {
                 if (boundTo(view) && icons.stream().anyMatch(option -> option.value().equals(value.asText())))
                     selectedIcon.accept(value.asText());
@@ -125,8 +135,8 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
             view.text("status", BaniraComponent.get().transClientAuto("config_editor_client_scope"));
             view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
             view.draft("search", query);
-            view.text("search_hint", BaniraComponent.get().transClientAuto("custom_quick_action_search_hint"));
-            view.tooltip("search", BaniraComponent.get().transClientAuto("custom_quick_action_search_hint"));
+            view.text("search_hint", searchHint == null ? BaniraComponent.get().transClientAuto("custom_quick_action_search_hint") : searchHint);
+            view.tooltip("search", searchHint == null ? BaniraComponent.get().transClientAuto("custom_quick_action_search_hint") : searchHint);
             ownBinding(view.onDraft("search", value -> {
                 if (boundTo(view)) query(value);
             }));

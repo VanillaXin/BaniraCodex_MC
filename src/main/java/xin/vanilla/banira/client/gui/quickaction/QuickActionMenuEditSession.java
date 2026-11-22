@@ -16,6 +16,10 @@ final class QuickActionMenuEditSession {
         return targetKey;
     }
 
+    void rename(QuickActionLayout layout, String label) {
+        layout.setMenuItemLabel(targetKey, label);
+    }
+
     boolean isHidden(QuickActionLayout layout) {
         return layout.hiddenMenuItemIds().contains(targetKey);
     }

@@ -109,7 +109,8 @@ repositories {
 }
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
-dependencies { baniraMinimapLibraries "maven.modrinth:xaeros-minimap:PnU8xBsV" }
+dependencies {
+baniraMinimapLibraries "maven.modrinth:xaeros-minimap:PnU8xBsV" }
 // Generated compile inputs must survive clean.
 def minimapLibraryDirectory = file(".gradle/banira/minimap-compile-libraries/${loader_type}-${minecraft_version}")
 minimapLibraryDirectory.mkdirs()
@@ -136,6 +137,7 @@ configurations.configureEach { configuration ->
 repositories { flatDir { dirs minimapLibraryDirectory } }
 
 dependencies {
+
     compileOnly fg.deobf("curse.maven:ftb-chunks-forge-314906:5710631")
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:PnU8xBsV")
     compileOnly fg.deobf("banira.optional:xaerolib-forge-1.19.2:1.7.3")
@@ -271,3 +273,7 @@ apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/embedded-compiler.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

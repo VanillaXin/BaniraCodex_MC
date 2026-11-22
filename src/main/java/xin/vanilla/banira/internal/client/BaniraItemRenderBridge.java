@@ -37,7 +37,8 @@ public final class BaniraItemRenderBridge {
             try {
                 // 装饰层必须越过缩放后的立体方块模型，不能依赖模型内部的深度状态。
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
-                itemRenderer.renderGuiItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+                itemRenderer.renderGuiItemDecorations(font, stack, x, y, "");
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(new com.mojang.blaze3d.vertex.PoseStack(), font, String.valueOf(stack.getCount()), x, y, 16);
             } finally {
                 itemRenderer.blitOffset = originalBlitOffset;
             }

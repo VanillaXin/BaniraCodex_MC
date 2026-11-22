@@ -79,6 +79,7 @@ repositories {
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
 dependencies {
+
     baniraMinimapLibraries "maven.modrinth:xaeros-minimap:irjR7dHk"
     baniraMinimapLibraries "maven.modrinth:journeymap:CtFE7hwT"
 }
@@ -104,6 +105,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
+
     compileOnly files(minimapCompilerLibraries)
     compileOnly "maven.modrinth:xaeros-minimap:irjR7dHk"
     compileOnly "maven.modrinth:journeymap:CtFE7hwT"
@@ -131,6 +133,7 @@ dependencies {
 }
 
 dependencies {
+
     runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     implementation "net.neoforged:neoforge:${neo_version}"
 
@@ -245,3 +248,7 @@ apply from: "gradle/publish-local-fingerprint.gradle"
 apply from: "gradle/embedded-compiler.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

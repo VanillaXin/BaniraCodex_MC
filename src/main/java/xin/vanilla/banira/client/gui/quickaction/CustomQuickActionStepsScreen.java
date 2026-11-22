@@ -84,8 +84,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         if (uiSession == null) {
             List<NavigationUiSession.Action> tools = new ArrayList<>();
             tools.add(action("details", isMenuItem() ? "custom_quick_action_menu_details" : "custom_quick_action_edit_details", this::openDefinitionEditor));
-            tools.add(action("add_command", "custom_quick_action_add_command", () -> addStep(QuickActionStepType.COMMAND)));
-            tools.add(action("add_screen", "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
+            tools.add(action("add_step", "custom_quick_action_add_step", () -> addStep(QuickActionStepType.COMMAND)));
             if (!isMenuItem()) tools.add(action("add_menu", "custom_quick_action_add_menu", this::addMenuItem));
             tools.add(action("save", "save", this::save));
             tools.add(action("cancel", "cancel", this::onClose));
@@ -181,30 +180,22 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         listX = panelX + PAD;
         listY = panelY + PAD + TOP_H + 4;
         listW = panelW - PAD * 2 - SCROLL_W - 3;
-        int bottomRows = isMenuItem() ? 1 : 2;
+        int bottomRows = 2;
         int listH = panelH - PAD * 3 - TOP_H - (BOTTOM_H * bottomRows + (bottomRows - 1) * 5);
         visibleRows = Math.max(1, listH / (ROW_H + ROW_GAP));
         scrollIndex = Math.max(0, Math.min(scrollIndex, Math.max(0, rowCount() - visibleRows)));
 
-        int topButtonW = (listW - 6) / 3;
+        int topButtonW = isMenuItem() ? listW : (listW - 3) / 2;
         addWidget(button("details", listX, panelY + PAD, topButtonW, TOP_H,
                 isMenuItem() ? "custom_quick_action_menu_details" : "custom_quick_action_edit_details",
                 this::openDefinitionEditor));
-        if (isMenuItem()) {
-            addWidget(button("add_command", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
-                    "custom_quick_action_add_command", () -> addStep(QuickActionStepType.COMMAND)));
-            addWidget(button("add_screen", listX + (topButtonW + 3) * 2, panelY + PAD, topButtonW, TOP_H,
-                    "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
-        } else {
+        if (!isMenuItem()) {
             iconButton = button("icon", listX + topButtonW + 3, panelY + PAD, topButtonW, TOP_H,
                     "custom_quick_action_select_icon", this::selectIcon);
             iconButton.leadingIconRenderer((stack, x, y, size) ->
                     CustomQuickActionManager.resolveIcon(definition)
                             .render(stack, x, y, size));
             addWidget(iconButton);
-            addWidget(button("add_command", listX + (topButtonW + 3) * 2, panelY + PAD,
-                    topButtonW, TOP_H, "custom_quick_action_add_command",
-                    () -> addStep(QuickActionStepType.COMMAND)));
         }
 
         rows.clear();
@@ -242,10 +233,10 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         int gap = 5;
         int saveY = panelY + panelH - PAD - BOTTOM_H;
         int half = (listW - gap) / 2;
+        int addY = saveY - BOTTOM_H - gap;
+        addWidget(button("add_step", listX, addY, isMenuItem() ? listW : half, BOTTOM_H,
+                "custom_quick_action_add_step", () -> addStep(QuickActionStepType.COMMAND)));
         if (!isMenuItem()) {
-            int addY = saveY - BOTTOM_H - gap;
-            addWidget(button("add_screen", listX, addY, half, BOTTOM_H,
-                    "custom_quick_action_add_screen", () -> addStep(QuickActionStepType.SCREEN)));
             addWidget(button("add_menu", listX + half + gap, addY, half, BOTTOM_H,
                     "custom_quick_action_add_menu", this::addMenuItem));
         }
@@ -445,6 +436,7 @@ final class CustomQuickActionStepsScreen extends BaniraScreen implements UiNativ
         }
         CustomQuickActionStep step = currentSteps().get(index);
         String value = step.getValue() == null ? "" : step.getValue();
+        if (step.getType() == QuickActionStepType.SCREEN) value = QuickActionScreenTarget.summary(value);
         return (index + 1) + ". " + CustomQuickActionEditor.t("custom_quick_action_step_type_"
                 + step.getType().name().toLowerCase()).content() + " · "
                 + CustomQuickActionEditor.t("custom_quick_action_condition_"

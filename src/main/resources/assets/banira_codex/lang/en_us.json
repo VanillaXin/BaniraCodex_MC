@@ -454,5 +454,18 @@
   "word.banira_codex.tag_list_row_hint": "Double-click to edit · Right-click to copy",
   "word.banira_codex.tag_list_undo_tooltip": "Undo clear",
   "word.banira_codex.vanilla_xin": "Vanilla Xin",
-  "word.banira_codex.virtual_op": "Manage virtual OP permissions"
+  "word.banira_codex.virtual_op": "Manage virtual OP permissions",
+  "word.banira_codex.custom_quick_action_add_step": "Add step",
+  "word.banira_codex.quick_screen_title": "Select screen",
+  "word.banira_codex.quick_screen_loading": "Scanning mod screens...",
+  "word.banira_codex.quick_screen_failed": "Screen scan failed",
+  "word.banira_codex.quick_screen_registered": "Registered entries",
+  "word.banira_codex.quick_screen_context_required": "Requires a dedicated context; cannot open directly",
+  "word.banira_codex.quick_screen_constructor": "Constructor",
+  "word.banira_codex.quick_screen_argument": "Argument",
+  "word.banira_codex.quick_screen_invalid_argument": "Check argument",
+  "word.banira_codex.quick_screen_search": "Search mod, screen title or class name",
+  "word.banira_codex.quick_screen_mod": "Mod category",
+  "word.banira_codex.quick_screen_all": "All mods",
+  "word.banira_codex.quick_screen_open_failed": "Cannot open screen; check its arguments or current context"
 }

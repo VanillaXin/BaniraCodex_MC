@@ -106,6 +106,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     runtimeOnly fg.deobf("maven.modrinth:spark:9NSIbttL")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 

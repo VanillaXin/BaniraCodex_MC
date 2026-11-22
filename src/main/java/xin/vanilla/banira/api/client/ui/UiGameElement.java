@@ -17,6 +17,20 @@ public final class UiGameElement {
     private final int fontSize, pressed;
     private final boolean wrap;
     private final EnumSeason season;
+    private String badge;
+
+    /**
+     * Returns a new descriptor; an empty badge explicitly suppresses the default item count.
+     */
+    public UiGameElement withBadge(String value) {
+        UiGameElement result = new UiGameElement(kind, option, effect, text, fontSize, wrap, season, pressed);
+        result.badge = value == null ? null : value.substring(0, Math.min(128, value.length()));
+        return result;
+    }
+
+    public String badge() {
+        return badge;
+    }
 
     private UiGameElement(Kind kind, DropdownOption option, EffectInstance effect, String text, int fontSize, boolean wrap, EnumSeason season, int pressed) {
         this.kind = kind;

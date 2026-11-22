@@ -56,6 +56,7 @@ repositories {
 }
 
 dependencies {
+
     modCompileOnly "maven.modrinth:xaeros-minimap:PTqhBV8t"
     modCompileOnly "maven.modrinth:journeymap:Dk3AKHGe"
     modCompileOnly "curse.maven:ftb-chunks-fabric-472657:6160245"
@@ -110,6 +111,7 @@ dependencies {
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
 dependencies {
+
     baniraMinimapLibraries "maven.modrinth:xaeros-minimap:PTqhBV8t"
     baniraMinimapLibraries "maven.modrinth:journeymap:Dk3AKHGe"
 }
@@ -135,6 +137,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
+
     modCompileOnly files(minimapCompilerLibraries)
 }
 
@@ -277,3 +280,7 @@ apply from: "gradle/spark-profile-report.gradle"
 
 apply from: 'gradle/aui-contract.gradle'
 apply from: 'gradle/aui-validation-output.gradle'
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

@@ -38,7 +38,8 @@ public final class BaniraItemRenderBridge {
             try {
                 // 原版装饰内部还会前移 200；这里确保最终深度高于缩放物品模型。
                 graphics.pose().translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH);
-                graphics.renderItemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+                graphics.renderItemDecorations(font, stack, x, y, "");
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(graphics, font, String.valueOf(stack.getCount()), x, y, 16);
                 graphics.flush();
             } finally {
                 graphics.pose().popPose();

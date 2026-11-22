@@ -234,7 +234,8 @@ public class ItemWidget extends BaseWidget {
             try {
                 // 原版装饰内部还会前移 200；这里确保最终深度高于缩放物品模型。
                 pose.translate(0, 0, ITEM_DECORATION_FOREGROUND_DEPTH);
-                graphics.renderItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+                graphics.renderItemDecorations(font, itemStack, x, y, "");
+                IconBadge.draw(graphics, font, String.valueOf(itemStack.getCount()), x, y, 16);
                 graphics.flush();
             } finally {
                 pose.popPose();

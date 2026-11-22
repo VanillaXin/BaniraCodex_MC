@@ -109,6 +109,7 @@ repositories {
 configurations.create('baniraMinimapLibraries') { transitive = false }
 configurations.create('minimapContract') { transitive = false }
 dependencies {
+
     baniraMinimapLibraries "maven.modrinth:xaeros-minimap:dB6E0CY9"
     baniraMinimapLibraries "maven.modrinth:journeymap:HWDC99DO"
     minimapContract "maven.modrinth:xaeros-minimap:dB6E0CY9"
@@ -142,6 +143,7 @@ configurations.configureEach { configuration ->
 }
 repositories { flatDir { dirs minimapLibraryDirectory } }
 dependencies {
+
     compileOnly fg.deobf("maven.modrinth:xaeros-minimap:dB6E0CY9")
     compileOnly fg.deobf("banira.optional:xaerolib-forge-1.20.1:1.7.3")
     compileOnly fg.deobf("maven.modrinth:journeymap:HWDC99DO")
@@ -176,6 +178,7 @@ configurations {
 }
 
 dependencies {
+
     auiContract "com.sighs:ApricityUI-forge-1.20.1:${aui_version}"
     runtimeOnly fg.deobf("maven.modrinth:spark:4FXHDE9F")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
@@ -301,4 +304,9 @@ apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
 
 dependencies {
+
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
 }

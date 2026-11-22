@@ -453,5 +453,18 @@
   "word.banira_codex.tag_list_row_hint": "双击编辑 · 右键复制",
   "word.banira_codex.tag_list_undo_tooltip": "撤销清空",
   "word.banira_codex.vanilla_xin": "香草芯",
-  "word.banira_codex.virtual_op": "管理虚拟OP权限"
+  "word.banira_codex.virtual_op": "管理虚拟OP权限",
+  "word.banira_codex.custom_quick_action_add_step": "添加步骤",
+  "word.banira_codex.quick_screen_title": "选择窗口",
+  "word.banira_codex.quick_screen_loading": "正在扫描模组窗口...",
+  "word.banira_codex.quick_screen_failed": "窗口扫描失败",
+  "word.banira_codex.quick_screen_registered": "已注册入口",
+  "word.banira_codex.quick_screen_context_required": "需要专用上下文，无法直接打开",
+  "word.banira_codex.quick_screen_constructor": "构造方法",
+  "word.banira_codex.quick_screen_argument": "参数",
+  "word.banira_codex.quick_screen_invalid_argument": "请检查参数",
+  "word.banira_codex.quick_screen_search": "搜索模组、窗口名称或类名",
+  "word.banira_codex.quick_screen_mod": "模组分类",
+  "word.banira_codex.quick_screen_all": "全部模组",
+  "word.banira_codex.quick_screen_open_failed": "无法打开窗口，请检查参数或当前环境"
 }

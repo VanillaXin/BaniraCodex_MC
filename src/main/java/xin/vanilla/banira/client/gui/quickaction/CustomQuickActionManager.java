@@ -266,14 +266,27 @@ public final class CustomQuickActionManager {
             BaniraQuickActionScreenFactory factory = screenFactories.get(idOrClass);
             Object created = factory != null ? factory.create(parent) : reflectScreen(idOrClass, parent);
             Screen target = created instanceof Screen ? (Screen) created : null;
-            if (target != null) Minecraft.getInstance().setScreen(target);
+            if (target == null) throw new IllegalArgumentException("Screen factory returned no screen");
+            Minecraft.getInstance().setScreen(target);
         } catch (Throwable throwable) {
             LOGGER.warn("Failed to open quick-action screen {}", idOrClass, throwable);
+            Minecraft minecraft = Minecraft.getInstance();
+            if (parent != null) minecraft.setScreen(parent);
+            if (minecraft.player != null) minecraft.gui.setOverlayMessage(
+                    xin.vanilla.banira.BaniraComponent.get().transClientAuto("quick_screen_open_failed").toVanilla(), false);
         }
     }
 
     private static Screen reflectScreen(String className, Screen parent) throws Exception {
-        Class<?> type = Class.forName(className, true, CustomQuickActionManager.class.getClassLoader());
+        QuickActionScreenTarget target = QuickActionScreenTarget.decode(className);
+        if (target != null) {
+            Class<?> type = Class.forName(target.className, false, CustomQuickActionManager.class.getClassLoader());
+            if (!Screen.class.isAssignableFrom(type) || java.lang.reflect.Modifier.isAbstract(type.getModifiers()))
+                throw new IllegalArgumentException(target.className + " is not a concrete Screen");
+            Constructor<?> constructor = type.getConstructor(target.parameterTypes());
+            return (Screen) constructor.newInstance(target.values());
+        }
+        Class<?> type = Class.forName(className, false, CustomQuickActionManager.class.getClassLoader());
         if (!Screen.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException(className + " is not a Screen");
         }

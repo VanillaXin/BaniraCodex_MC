@@ -14,12 +14,18 @@ public class NavigationUiSession implements UiPageSession {
         private final String id;
         private final Component label;
         private final Runnable open, delete;
+        private final boolean enabled;
 
         public Action(String id, Component label, Runnable open, Runnable delete) {
+            this(id, label, open, delete, true);
+        }
+
+        public Action(String id, Component label, Runnable open, Runnable delete, boolean enabled) {
             this.id = Objects.requireNonNull(id, "id");
             this.label = Objects.requireNonNull(label, "label");
             this.open = Objects.requireNonNull(open, "open");
             this.delete = delete;
+            this.enabled = enabled;
         }
 
         public String id() {
@@ -31,7 +37,11 @@ public class NavigationUiSession implements UiPageSession {
         }
 
         public void open() {
-            open.run();
+            if (enabled) open.run();
+        }
+
+        public boolean enabled() {
+            return enabled;
         }
     }
 
@@ -143,8 +153,9 @@ public class NavigationUiSession implements UiPageSession {
                 rowBindings.put(row, owned);
                 Action action = snapshot.get(index);
                 row.text("open", action.label);
+                row.enabled("open", action.enabled);
                 owned.own(row.onAction("open", () -> {
-                    if (NavigationUiSession.this.view == view) action.open();
+                    if (NavigationUiSession.this.view == view && action.enabled) action.open();
                 }));
                 if (action.delete != null) {
                     row.text("delete", BaniraComponent.get().literal("\u00d7"));

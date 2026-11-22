@@ -83,21 +83,21 @@ final class CustomQuickActionEditor {
     static InputFormScreen.Args stepArgs(Screen parent, CustomQuickActionStep source, QuickActionExecutionMode mode,
                                          Consumer<CustomQuickActionStep> accepted, java.util.Collection<String> screenIds) {
         CustomQuickActionStep draft = copy(source);
-        List<DropdownOption> targets = new ArrayList<>();
-        for (String id : screenIds) targets.add(new DropdownOption(id));
-        if (targets.isEmpty()) targets.add(new DropdownOption(""));
-
-        InputFormScreen.Widget value = new InputFormScreen.Widget().name("value")
-                .title(t(draft.getType() == QuickActionStepType.COMMAND
-                        ? "custom_quick_action_command" : "custom_quick_action_screen"))
-                .tooltip(t(draft.getType() == QuickActionStepType.COMMAND
-                        ? "custom_quick_action_command_hint" : "custom_quick_action_screen_hint"))
-                .defaultValue(draft.getValue()).allowEmpty(false).regex(".{1,1024}").maxLength(1024);
-        if (draft.getType() == QuickActionStepType.SCREEN) {
-            value.type(InputFormScreen.WidgetType.DROPDOWN)
-                    .dropdownOptionEntries(targets)
-                    .dropdownInputMode(DropdownInputMode.EDITABLE);
-        }
+        String[] target = {draft.getType() == QuickActionStepType.SCREEN ? draft.getValue() : ""};
+        InputFormScreen.Widget command = new InputFormScreen.Widget().name("command")
+                .title(t("custom_quick_action_command")).tooltip(t("custom_quick_action_command_hint"))
+                .defaultValue(draft.getType() == QuickActionStepType.COMMAND ? draft.getValue() : "")
+                .allowEmpty(false).regex(".{1,1024}").maxLength(1024)
+                .visibleWhen(result -> "COMMAND".equals(result.value("type")));
+        InputFormScreen.Widget screen = new InputFormScreen.Widget().name("screen")
+                .title(t("custom_quick_action_screen")).tooltip(t("custom_quick_action_screen_hint"))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .defaultValue(QuickActionScreenTarget.summary(target[0])).allowEmpty(false).maxLength(16384)
+                .visibleWhen(result -> "SCREEN".equals(result.value("type")))
+                .picker((owner, callback) -> new QuickActionScreenPicker(owner, target[0], screenIds, value -> {
+                    target[0] = value;
+                    callback.accept(QuickActionScreenTarget.summary(value));
+                }));
 
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
@@ -106,12 +106,13 @@ final class CustomQuickActionEditor {
                         options(QuickActionStepType.values(), "step_type")))
                 .addWidget(dropdown("condition", "custom_quick_action_step_condition",
                         draft.getCondition().name(), options(QuickActionStepCondition.values(), "condition")))
-                .addWidget(value)
+                .addWidget(command)
+                .addWidget(screen)
                 .setCallback(result -> {
                     draft.setType(valueOf(QuickActionStepType.class, result.value("type"), draft.getType()))
                             .setCondition(valueOf(QuickActionStepCondition.class, result.value("condition"),
                                     QuickActionStepCondition.ALWAYS))
-                            .setValue(result.value("value").trim());
+                            .setValue(draft.getType() == QuickActionStepType.SCREEN ? target[0] : result.value("command").trim());
                     accepted.accept(draft);
                     result.runningResult("");
                 });

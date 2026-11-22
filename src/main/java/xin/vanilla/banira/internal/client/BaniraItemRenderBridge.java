@@ -37,7 +37,8 @@ public final class BaniraItemRenderBridge {
             graphics.pose().pushMatrix();
             try {
                 graphics.nextStratum();
-                graphics.itemDecorations(font, stack, x, y, String.valueOf(stack.getCount()));
+                graphics.itemDecorations(font, stack, x, y, "");
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(graphics, font, String.valueOf(stack.getCount()), x, y, 16);
             } finally {
                 graphics.pose().popMatrix();
             }

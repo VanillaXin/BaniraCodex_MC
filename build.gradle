@@ -75,6 +75,7 @@ configurations.create('legacyFtbContract') {
 }
 
 dependencies {
+
     // Bytecode fixtures only; never load this legacy mod in the game or test JVM.
     legacyFtbContract 'curse.maven:ftb-library-fabric-438495:5631428'
     compileOnly "maven.modrinth:xaeros-minimap:DVSdniw4"
@@ -134,6 +135,7 @@ dependencies {
 
 configurations.create('baniraMinimapLibraries') { transitive = false }
 dependencies {
+
     baniraMinimapLibraries "maven.modrinth:xaeros-minimap:DVSdniw4"
     baniraMinimapLibraries "maven.modrinth:journeymap:tHO89MsT"
 }
@@ -159,6 +161,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
+
     compileOnly files(minimapCompilerLibraries)
 }
 
@@ -305,3 +308,7 @@ apply from: 'gradle/aui-contract.gradle'
 apply from: 'gradle/aui-validation-output.gradle'
 
 apply from: 'gradle/fabric-patch-compatibility.gradle'
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

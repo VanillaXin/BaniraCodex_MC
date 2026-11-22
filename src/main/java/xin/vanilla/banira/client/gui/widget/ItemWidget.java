@@ -208,7 +208,8 @@ public class ItemWidget extends BaseWidget {
             pose.pushMatrix();
             try {
                 graphics.nextStratum();
-                graphics.itemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+                graphics.itemDecorations(font, itemStack, x, y, "");
+                IconBadge.draw(graphics, font, String.valueOf(itemStack.getCount()), x, y, 16);
                 graphics.nextStratum();
             } finally {
                 pose.popMatrix();

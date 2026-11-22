@@ -1643,7 +1643,7 @@ public final class QuickActionOverlay {
             Screen parent = mc().screen;
             if (parent == null) return;
             resetInteractionState();
-            CustomQuickActionEditor.openMenuLabel(parent, layout.menuItemLabel(session.targetKey()), label -> {
+            CustomQuickActionEditor.openMenuLabel(parent, menuTargetLabel(session.targetKey()), label -> {
                 session.rename(layout, label);
                 invalidateContextMenuCache();
                 markSave();
@@ -1671,6 +1671,19 @@ public final class QuickActionOverlay {
             markSave();
         }, selected.menuIcon));
         return rows;
+    }
+
+    private String menuTargetLabel(String targetKey) {
+        for (QuickActionEntry entry : QuickActionRegistry.get().allEntriesInOrder()) {
+            if (entryMenuKey(entry).equals(targetKey))
+                return layout.menuItemLabel(targetKey, entry.label().toVanilla().getString());
+            for (int index = 0; index < entry.contextMenuItems.size(); index++) {
+                QuickActionContextMenuItem item = entry.contextMenuItems.get(index);
+                if (item != null && itemMenuKey(entry, item, index).equals(targetKey))
+                    return layout.menuItemLabel(targetKey, item.getLabel().toVanilla().getString());
+            }
+        }
+        return layout.menuItemLabel(targetKey);
     }
 
     private boolean menuTargetExists(String targetKey) {

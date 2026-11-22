@@ -224,7 +224,8 @@ public class ItemWidget extends BaseWidget {
             // 在原版装饰层深度之上绘制数量，避免立体方块模型覆盖文字。
             try {
                 itemRenderer.blitOffset = originalBlitOffset + ITEM_DECORATION_DEPTH_OFFSET;
-                itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, String.valueOf(itemStack.getCount()));
+                itemRenderer.renderGuiItemDecorations(font, itemStack, x, y, "");
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(new com.mojang.blaze3d.vertex.PoseStack(), font, String.valueOf(itemStack.getCount()), x, y, 16);
             } finally {
                 itemRenderer.blitOffset = originalBlitOffset;
             }

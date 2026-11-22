@@ -62,6 +62,7 @@ repositories {
 }
 
 dependencies {
+
     modCompileOnly("dev.ftb.mods:ftb-chunks-fabric:1605.3.4-build.220") { transitive = false }
     modCompileOnly "maven.modrinth:xaeros-minimap:L9dtgutr"
     modCompileOnly "maven.modrinth:journeymap:E1z7XbIe"
@@ -115,7 +116,8 @@ repositories {
 }
 
 configurations.create('baniraMinimapCompilerLibraries') { transitive = false }
-dependencies { baniraMinimapCompilerLibraries "maven.modrinth:xaeros-minimap:L9dtgutr" }
+dependencies {
+baniraMinimapCompilerLibraries "maven.modrinth:xaeros-minimap:L9dtgutr" }
 def minimapCompilerLibraries = providers.provider {
     // Generated compile inputs must survive clean.
     def directory = file(".gradle/banira/minimap-compile-libraries/${loader_type}-${minecraft_version}")
@@ -139,6 +141,7 @@ def minimapCompilerLibraries = providers.provider {
     return libraries
 }
 dependencies {
+
     modCompileOnly files(minimapCompilerLibraries)
 }
 
@@ -277,3 +280,7 @@ apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"
 
 apply from: 'gradle/aui-contract.gradle'
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

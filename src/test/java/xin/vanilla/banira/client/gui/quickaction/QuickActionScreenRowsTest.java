@@ -65,6 +65,60 @@ public class QuickActionScreenRowsTest {
         assertEquals("Options\nOne [one]\none.gui.OptionsScreen", options.tooltip());
     }
 
+    @Test
+    public void singleClickSelectsAndConfirmationCanBeConsumedOnlyOnce() {
+        assertNull(model.confirm());
+        assertFalse(model.click(options, 10));
+        assertSame(options, model.selection());
+        assertSame(options, model.confirm());
+        assertNull(model.confirm());
+        assertFalse(model.click(options, 20));
+        assertNull(model.selection());
+    }
+
+    @Test
+    public void doubleClickRequiresTwoQuickClicksOnTheSameItem() {
+        QuickActionScreenRows.Item controls = item("One [one]", "Controls", "one.gui.Controls", "");
+        assertFalse(model.click(options, 10));
+        assertFalse(model.click(controls, 80));
+        assertFalse(model.click(controls, 500));
+        assertTrue(model.click(controls, 700));
+        assertSame(controls, model.confirm());
+    }
+
+    @Test
+    public void unavailableRowsCannotReplaceTheSelection() {
+        assertFalse(model.click(menu, 10));
+        assertNull(model.selection());
+        assertFalse(model.click(options, 50));
+        assertFalse(model.click(menu, 75));
+        assertSame(options, model.selection());
+    }
+
+    @Test
+    public void confirmationCannotTargetAnItemHiddenBySearchOrCollapse() {
+        model.rows(items, "Options", false);
+        model.click(options, 10);
+        model.rows(items, "Menu", false);
+        assertNull(model.confirm());
+        model.rows(items, "Options", false);
+        model.click(options, 20);
+        model.toggle(options.group);
+        model.rows(items, "Options", false);
+        assertNull(model.confirm());
+    }
+
+    @Test
+    public void changingFilterKeepsAVisibleChoiceButBreaksTheDoubleClickSequence() {
+        model.rows(items, "Options", false);
+        assertFalse(model.click(options, 10));
+        model.resetClick();
+        model.rows(items, "Options", true);
+        assertSame(options, model.selection());
+        assertFalse(model.click(options, 20));
+        assertTrue(model.click(options, 30));
+    }
+
     private QuickActionScreenRows.Item item(String group, String title, String details, String reason) {
         return new QuickActionScreenRows.Item(details, group, title, details, reason, () -> {
         });

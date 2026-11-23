@@ -35,6 +35,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     private boolean loading = true, failed;
     private boolean hideUnavailable;
     private ButtonWidget filterButton;
+    private ButtonWidget confirmButton;
     private TooltipWidget filterTooltip;
     private int offset;
     private final List<ButtonWidget> buttons = new ArrayList<>();
@@ -82,7 +83,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
                 }));
             } else {
                 QuickActionScreenRows.Item item = row.item;
-                result.add(new PickerAction(item.id, item.title, item.tooltip(), false, false, item.selectable(), item.select));
+                result.add(new PickerAction(item.id, item.title, item.tooltip(), false, false, item.selectable(), () -> click(item)));
             }
         }
         return result;
@@ -110,8 +111,24 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     }
 
     private void toggleFilter() {
+        groups.resetClick();
         hideUnavailable = !hideUnavailable;
         refreshRows(true);
+    }
+
+    private void click(QuickActionScreenRows.Item item) {
+        if (groups.click(item, System.nanoTime() / 1_000_000L)) confirm();
+        else refreshRows(false);
+    }
+
+    private void confirm() {
+        QuickActionScreenRows.Item choice = groups.confirm();
+        if (choice != null) choice.select.run();
+    }
+
+    private boolean selected(PickerAction action) {
+        QuickActionScreenRows.Item choice = groups.selection();
+        return choice != null && !action.group && choice.id.equals(action.id());
     }
 
     private String scanStatusKey() {
@@ -147,6 +164,10 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
             ownBinding(view.onAction("filter_unavailable", () -> {
                 if (boundTo(view)) toggleFilter();
             }));
+            view.text("confirm", BaniraComponent.get().transClientAuto("confirm"));
+            ownBinding(view.onAction("confirm", () -> {
+                if (boundTo(view)) confirm();
+            }));
         }
 
         @Override
@@ -156,8 +177,14 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         }
 
         private void update(boolean resetScroll) {
-            if (pickerView != null) updateChrome(pickerView);
             refreshList(resetScroll);
+            if (pickerView != null) updateChrome(pickerView);
+        }
+
+        @Override
+        public void query(String text) {
+            super.query(text);
+            if (pickerView != null) updateChrome(pickerView);
         }
 
         private void updateChrome(UiView view) {
@@ -165,6 +192,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
             view.tooltip("filter_unavailable", BaniraComponent.get().transClientAuto(filterHintKey()));
             String status = scanStatusKey();
             view.text("status", status.isEmpty() ? BaniraComponent.get().literal("") : BaniraComponent.get().transClientAuto(status));
+            view.enabled("confirm", groups.selection() != null);
         }
 
         @Override
@@ -185,7 +213,8 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         @Override
         protected String rowClass(Action action) {
             PickerAction picker = (PickerAction) action;
-            return "config-navigation " + (picker.group ? "screen-group" : picker.enabled() ? "screen-choice" : "screen-unavailable");
+            return "config-navigation " + (picker.group ? "screen-group" : picker.enabled() ? "screen-choice" : "screen-unavailable")
+                    + (selected(picker) ? " config-selected" : "");
         }
 
         @Override
@@ -206,6 +235,14 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
     private void choose(QuickActionScreenCatalog.Entry entry) {
         if (entry.constructors.isEmpty()) return;
+        if (entry.constructors.size() == 1) {
+            QuickActionScreenCatalog.Constructor only = entry.constructors.get(0);
+            if (only.parent || only.types.length == 0) {
+                finish(only.parent ? entry.className
+                        : new QuickActionScreenTarget(entry.className, only.types, new String[0]).encode());
+                return;
+            }
+        }
         QuickActionScreenTarget prior;
         try {
             prior = QuickActionScreenTarget.decode(initial);
@@ -306,6 +343,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
                 font.width(CustomQuickActionEditor.t("quick_screen_all").content())) + 14;
         int filterX = width - LEFT - filterWidth;
         int footerY = height - FOOTER_HEIGHT;
+        int footerButtonWidth = Math.min(80, Math.max(1, (width - 2 * LEFT) / 3));
         InputWidget search = new InputWidget(this);
         search.id("search");
         search.bounds(new ScreenCoordinate(LEFT, SEARCH_Y, Math.max(1, filterX - LEFT - 6), ROW_HEIGHT));
@@ -326,10 +364,16 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         addWidget(filterButton);
         ButtonWidget close = new ButtonWidget(this);
         close.id("close");
-        close.bounds(new ScreenCoordinate(width - LEFT - 44, footerY, 44, ROW_HEIGHT));
+        close.bounds(new ScreenCoordinate(LEFT, footerY, footerButtonWidth, ROW_HEIGHT));
         close.text(CustomQuickActionEditor.t("cancel").content());
         close.onClick(button -> onClose());
         addWidget(close);
+        confirmButton = new ButtonWidget(this);
+        confirmButton.id("confirm");
+        confirmButton.bounds(new ScreenCoordinate(width - LEFT - footerButtonWidth, footerY, footerButtonWidth, ROW_HEIGHT));
+        confirmButton.text(CustomQuickActionEditor.t("confirm").content());
+        confirmButton.onClick(button -> confirm());
+        addWidget(confirmButton);
         buttons.clear();
         headers.clear();
         tooltips.clear();
@@ -369,6 +413,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
     private void updateRows() {
         if (scrollbar == null) return;
+        confirmButton.enabled(groups.selection() != null);
         int maxOffset = Math.max(0, nativeRows.size() - buttons.size());
         offset = Math.max(0, Math.min(offset, maxOffset));
         scrollbar.maxValue(maxOffset).value(offset);
@@ -396,6 +441,10 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
                 button.textMaxWidth(maxWidth);
                 tooltips.get(i).text(QuickActionTextLayout.wrap(action.tooltip, Math.max(40, Math.min(320, width - 24)), font::width));
                 button.enabled(action.enabled());
+                boolean marked = selected(action);
+                button.bgColor(marked ? getEffectiveTheme().buttonBgFocused() : getEffectiveTheme().buttonBg());
+                button.borderColor(marked ? getEffectiveTheme().borderFocused() : getEffectiveTheme().buttonBorder());
+                button.hoverBorderColor(marked ? getEffectiveTheme().borderFocused() : getEffectiveTheme().buttonBorderHover());
                 button.onClick(clicked -> action.open());
             }
         }
@@ -415,8 +464,12 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         String title = CustomQuickActionEditor.t("quick_screen_title").content();
         font.draw(graphics, title, (width - font.width(title)) / 2f, 27, getEffectiveTheme().textPrimary());
         String status = scanStatusKey();
-        if (!status.isEmpty()) {
-            font.draw(graphics, CustomQuickActionEditor.t(status).content(), LEFT, height - FOOTER_HEIGHT + 6, getEffectiveTheme().textSecondary());
+        if (!status.isEmpty() && confirmButton != null) {
+            int available = (int) confirmButton.x() * 2 - width - 12;
+            if (available >= font.width("...")) {
+                String message = QuickActionTextLayout.ellipsize(CustomQuickActionEditor.t(status).content(), available, font::width);
+                font.draw(graphics, message, (width - font.width(message)) / 2f, height - FOOTER_HEIGHT + 6, getEffectiveTheme().textSecondary());
+            }
         }
         if (!loading && !failed && nativeRows.isEmpty()) {
             font.draw(graphics, CustomQuickActionEditor.t("quick_screen_empty").content(), LEFT, LIST_Y + 5, getEffectiveTheme().textSecondary());

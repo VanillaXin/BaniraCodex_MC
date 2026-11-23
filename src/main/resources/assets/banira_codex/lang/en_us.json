@@ -466,7 +466,10 @@
   "word.banira_codex.quick_screen_argument": "Argument",
   "word.banira_codex.quick_screen_invalid_argument": "Check argument",
   "word.banira_codex.quick_screen_search": "Search mod, screen title or class name",
-  "word.banira_codex.quick_screen_mod": "Mod category",
-  "word.banira_codex.quick_screen_all": "All mods",
+  "word.banira_codex.quick_screen_hide_unavailable": "Hide unavailable",
+  "word.banira_codex.quick_screen_show_unavailable": "Show unavailable",
+  "word.banira_codex.quick_screen_only_usable": "Usable only",
+  "word.banira_codex.quick_screen_all": "All",
+  "word.banira_codex.quick_screen_empty": "No matching screens",
   "word.banira_codex.quick_screen_open_failed": "Cannot open screen; check its arguments or current context"
 }

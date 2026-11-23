@@ -7,7 +7,10 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Predicate;
 
 public final class AuiCapabilityContract {
     private static final String ROOT = "com/sighs/apricityui/";
@@ -19,6 +22,35 @@ public final class AuiCapabilityContract {
 
     private static final class ClientMembers {
         private static final List<Member> VALUES = members();
+    }
+
+    public static Result inspectClient(ClassLoader loader, Predicate<String> modLoaded) {
+        if (!modLoaded.test("apricityui")) return new Result(false, "ApricityUI is not loaded");
+        if (!modLoaded.test("rhino")) return new Result(false, "Rhino is not loaded");
+        Result api = inspect(loader);
+        if (!api.compatible()) return api;
+        return scriptsAvailable(loader) ? api : new Result(false, "ApricityUI cannot run page scripts with the installed Rhino");
+    }
+
+    static boolean scriptsAvailable(ClassLoader loader) {
+        try {
+            Class.forName("dev.latvian.mods.rhino.Context", false, loader);
+            for (String name : Arrays.asList("ScriptRuntimeSupport", "ApricityScriptSupport")) {
+                Class<?> support;
+                try {
+                    support = Class.forName("com.sighs.apricityui.script." + name, false, loader);
+                } catch (ClassNotFoundException missing) {
+                    continue;
+                }
+                Method available = support.getMethod("rhinoAvailable");
+                return Modifier.isStatic(available.getModifiers())
+                        && available.getReturnType() == boolean.class
+                        && Boolean.TRUE.equals(available.invoke(null));
+            }
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError unavailable) {
+            return false;
+        }
+        return false;
     }
 
     public static Result inspect(ClassLoader loader) {

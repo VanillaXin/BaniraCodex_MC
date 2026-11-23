@@ -466,7 +466,7 @@
   "word.banira_codex.quick_screen_hide_unavailable": "隐藏不可选项",
   "word.banira_codex.quick_screen_show_unavailable": "显示不可选项",
   "word.banira_codex.quick_screen_only_usable": "仅可选",
-  "word.banira_codex.quick_screen_show_all": "显示全部",
+  "word.banira_codex.quick_screen_all": "全部",
   "word.banira_codex.quick_screen_empty": "没有匹配的窗口",
   "word.banira_codex.quick_screen_open_failed": "无法打开窗口，请检查参数或当前环境"
 }

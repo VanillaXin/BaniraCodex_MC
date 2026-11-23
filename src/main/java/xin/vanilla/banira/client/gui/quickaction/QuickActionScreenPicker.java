@@ -102,7 +102,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     }
 
     private String filterKey() {
-        return hideUnavailable ? "quick_screen_show_all" : "quick_screen_only_usable";
+        return hideUnavailable ? "quick_screen_only_usable" : "quick_screen_all";
     }
 
     private String filterHintKey() {
@@ -303,7 +303,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     @Override
     protected void initWidgets() {
         int filterWidth = Math.max(font.width(CustomQuickActionEditor.t("quick_screen_only_usable").content()),
-                font.width(CustomQuickActionEditor.t("quick_screen_show_all").content())) + 14;
+                font.width(CustomQuickActionEditor.t("quick_screen_all").content())) + 14;
         int filterX = width - LEFT - filterWidth;
         int footerY = height - FOOTER_HEIGHT;
         InputWidget search = new InputWidget(this);

@@ -40,6 +40,22 @@ public final class FormUiSession implements UiPageSession {
     private final Map<UiView, Integer> boundIndices = new LinkedHashMap<>();
     private FieldPresentation presentation;
     private boolean commonPresentation;
+    private boolean dialogLayout;
+
+    public void useDialogLayout() {
+        dialogLayout = true;
+    }
+
+    private boolean stacked() {
+        return dialogLayout || args.isStackedLayout();
+    }
+
+    private void fitDialog() {
+        if (!dialogLayout || !(view instanceof xin.vanilla.banira.internal.client.ui.UiDomView dom)) return;
+        boolean title = args.getHeaderTitle() != null || args.getTitle() != null;
+        view.enabled("title", title);
+        dom.panelHeight("form_panel", (title ? 62 : 44) + Math.min(120, visibleIndices.size()) * 38);
+    }
 
     public interface FieldPresentation {
         int rowHeight();
@@ -119,7 +135,10 @@ public final class FormUiSession implements UiPageSession {
         for (UiOwnedResources owned : rowBindings.values()) owned.close();
         rowBindings.clear();
         boundIndices.clear();
-        if (view != null) bindRows(view);
+        if (view != null) {
+            bindRows(view);
+            fitDialog();
+        }
     }
 
     public String error() {
@@ -351,7 +370,8 @@ public final class FormUiSession implements UiPageSession {
     public void bind(UiView view) {
         bind(view, new CommonFieldPresentation());
         commonPresentation = true;
-        if (args.isStackedLayout()) {
+        if (stacked()) {
+            fitDialog();
             updateStatus();
             return;
         }
@@ -378,17 +398,17 @@ public final class FormUiSession implements UiPageSession {
 
     private final class CommonFieldPresentation implements FieldPresentation {
         public int rowHeight() {
-            if (args.isStackedLayout()) return 38;
+            if (stacked()) return 38;
             return args.getWidgets().stream().anyMatch(InputFormScreen.Widget::wideInput) ? 48 : 28;
         }
 
         public String rowClass(int index) {
-            if (args.isStackedLayout()) return "stacked-field";
+            if (stacked()) return "stacked-field";
             return args.getWidgets().get(index).wideInput() ? "player-config-field wide-input-field" : "player-config-field";
         }
 
         public void bind(UiView row, int index, InputFormScreen.Widget widget) {
-            if (!args.isStackedLayout() && widget.tooltip() != null)
+            if (!stacked() && widget.tooltip() != null)
                 row.text("description", widget.tooltip().toComponent());
         }
 

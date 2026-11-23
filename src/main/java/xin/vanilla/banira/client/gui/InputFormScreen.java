@@ -101,6 +101,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     @Override
     public UiPageSpec uiPage() {
         if (!auiCompatible()) return null;
+        if (!args.isStackedLayout()) uiSession.useDialogLayout();
         captureUiState(uiState);
         if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
                 args.isStackedLayout() ? "banira_codex/ui/stacked-form.html" : "banira_codex/ui/form.html",

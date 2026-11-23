@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
@@ -21,6 +22,7 @@ import xin.vanilla.banira.common.enums.EnumSeason;
 import xin.vanilla.banira.internal.client.BaniraClientAccess;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -31,14 +33,44 @@ public final class NotificationStyleInteractionHelper {
     }
 
     public static boolean tryClickStyle(Minecraft mc, Style style) {
-        if (style == null || style.getClickEvent() == null) {
+        ClickEvent event = style == null ? null : style.getClickEvent();
+        if (event == null || event.getAction() == ClickEvent.Action.OPEN_FILE) {
             return false;
         }
         Screen screen = mc.screen;
+        if (event.getAction() == ClickEvent.Action.OPEN_URL) {
+            return showLinkConfirmation(mc, screen, event.getValue());
+        }
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(mc, style.getClickEvent());
+        return handleClickInGame(mc, event);
+    }
+
+    private static boolean showLinkConfirmation(Minecraft mc, Screen parent, String value) {
+        if (Screen.hasShiftDown() || !mc.options.chatLinks || value == null) {
+            return false;
+        }
+        URI uri;
+        try {
+            uri = new URI(value);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+        } catch (URISyntaxException ignored) {
+            return false;
+        }
+        if (uri.getHost() == null) {
+            return false;
+        }
+        mc.setScreen(new ConfirmLinkScreen(confirmed -> {
+            if (confirmed) {
+                Util.getPlatform().openUri(uri);
+            }
+            mc.setScreen(parent);
+        }, uri.toString(), false));
+        return true;
     }
 
     private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
@@ -46,17 +78,6 @@ public final class NotificationStyleInteractionHelper {
             return false;
         }
         switch (event.getAction()) {
-            case OPEN_URL:
-                if (!mc.options.chatLinks) {
-                    return false;
-                }
-                try {
-                    URI uri = new URI(event.getValue());
-                    Util.getPlatform().openUri(uri);
-                    return true;
-                } catch (Exception ignored) {
-                    return false;
-                }
             case RUN_COMMAND:
                 if (mc.player == null) {
                     return false;

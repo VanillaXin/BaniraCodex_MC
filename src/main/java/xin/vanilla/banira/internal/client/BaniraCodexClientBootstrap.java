@@ -7,6 +7,7 @@ import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.Identifier;
 import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.api.client.event.BaniraClientTickEvent;
 import xin.vanilla.banira.client.event.BaniraClientEventHub;
 import xin.vanilla.banira.client.gui.CodexNavigationScreen;
@@ -54,10 +55,9 @@ public final class BaniraCodexClientBootstrap {
 
     private static boolean probeAui() {
         ClassLoader loader = BaniraCodexClientBootstrap.class.getClassLoader();
-        if (loader.getResource("com/sighs/apricityui/screen/ApricityScreen.class") == null) return false;
-        AuiCapabilityContract.Result result = AuiCapabilityContract.inspect(loader);
+        AuiCapabilityContract.Result result = AuiCapabilityContract.inspectClient(loader, BaniraEnvironment::isModLoaded);
         if (!result.compatible()) {
-            LOGGER.warn("AUI capability mismatch; native interfaces remain active: {}", result.mismatch());
+            LOGGER.warn("AUI unavailable; native interfaces remain active: {}", result.mismatch());
         }
         return result.compatible();
     }

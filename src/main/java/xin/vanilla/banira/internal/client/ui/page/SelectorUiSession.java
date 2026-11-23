@@ -346,6 +346,7 @@ public final class SelectorUiSession implements UiPageSession {
         view.text("submit", tr("submit"));
         view.text("cancel", tr("cancel"));
         view.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
+        view.text("search_hint", tr("search_" + kind.name().toLowerCase(Locale.ROOT)));
         view.draft("search", query);
         bindings.own(view.onDraft("search", text -> {
             if (this.view == view) query(text);
@@ -402,7 +403,7 @@ public final class SelectorUiSession implements UiPageSession {
                 icon = new ItemStack(Items.END_CRYSTAL);
                 break;
         }
-        return UiGameElement.option(new DropdownOption(operation, icon, null));
+        return UiGameElement.option(new DropdownOption(operation, icon, null)).withBadge("");
     }
 
     private static final class Row {
@@ -490,16 +491,19 @@ public final class SelectorUiSession implements UiPageSession {
                 UiOwnedResources owned = new UiOwnedResources();
                 rowBindings.put(row, owned);
                 Row value = rows.get(index);
-                row.text("open", BaniraComponent.get().literal(value.title));
+                boolean grid = kind == Kind.ITEM;
+                row.text("open", BaniraComponent.get().literal(grid ? "" : value.title));
                 row.tooltip("open", BaniraComponent.get().literal(value.tooltip));
-                row.gameElement("icon", value.icon);
-                row.text("label", BaniraComponent.get().literal(value.displayId));
+                row.gameElement("icon", value.icon.withBadge(""), new xin.vanilla.banira.client.data.ScreenCoordinate(
+                        grid ? 1 : 3, grid ? 1 : 2, 16, 16));
+                if (!grid) row.text("label", BaniraComponent.get().literal(value.displayId));
                 owned.own(row.onAction("open", () -> {
                     if (view == root) select(value.id);
                 }));
             }
         };
-        view.rows("fields", new UiCommonRows(provider, 40, "common-choice"), 120);
+        if (kind == Kind.ITEM) view.rows("fields", new UiCommonRows(provider, 19, "selector-tile", 9), 117);
+        else view.rows("fields", new UiCommonRows(provider, 22, "selector-line"), 120);
     }
 
     private void updateSelection() {
@@ -510,6 +514,7 @@ public final class SelectorUiSession implements UiPageSession {
         view.text("selection", BaniraComponent.get().literal(description));
         view.tooltip("selection", BaniraComponent.get().literal(description));
         view.text("error", BaniraComponent.get().literal(error));
+        view.enabled("error", !error.isEmpty());
         view.enabled("submit", !submitted && !submitting);
         if (kind == Kind.ITEM) {
             view.gameElement("selected_icon", UiGameElement.option(new DropdownOption("selected", item(), null)));
@@ -532,7 +537,7 @@ public final class SelectorUiSession implements UiPageSession {
         }
         view.text("mode", BaniraComponent.get().literal(""));
         view.gameElement("mode", UiGameElement.option(new DropdownOption("mode", new ItemStack(kind == Kind.ADVANCEMENT
-                ? mode ? Items.MAP : Items.BOOK : mode ? Items.CHEST : Items.COMPASS), null)));
+                ? mode ? Items.MAP : Items.BOOK : mode ? Items.CHEST : Items.COMPASS), null)).withBadge(""));
         view.tooltip("mode", tr(kind == Kind.ITEM ? mode ? "item_display_mode_inventory" : "item_display_mode_all"
                 : kind == Kind.EFFECT ? mode ? "effect_display_mode_player" : "effect_display_mode_all"
                 : mode ? "advancement_display_mode_icon" : "advancement_display_mode_all", resultCount));

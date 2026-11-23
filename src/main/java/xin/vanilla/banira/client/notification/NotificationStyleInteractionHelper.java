@@ -2,6 +2,7 @@ package xin.vanilla.banira.client.notification;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -21,6 +22,7 @@ import xin.vanilla.banira.internal.client.BaniraClientRuntime;
 import xin.vanilla.banira.internal.client.BaniraVanillaNotificationBridge;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -31,14 +33,44 @@ public final class NotificationStyleInteractionHelper {
     }
 
     public static boolean tryClickStyle(Style style) {
-        if (style == null || style.getClickEvent() == null) {
+        ClickEvent event = style == null ? null : style.getClickEvent();
+        if (event == null || event.getAction() == ClickEvent.Action.OPEN_FILE) {
             return false;
         }
         Screen screen = BaniraClientRuntime.currentScreen();
+        if (event.getAction() == ClickEvent.Action.OPEN_URL) {
+            return showLinkConfirmation(screen, event.getValue());
+        }
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(style.getClickEvent());
+        return handleClickInGame(event);
+    }
+
+    private static boolean showLinkConfirmation(Screen parent, String value) {
+        if (InputStateManager.isShiftPressingStatic() || !BaniraVanillaNotificationBridge.chatLinksEnabled() || value == null) {
+            return false;
+        }
+        URI uri;
+        try {
+            uri = new URI(value);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+        } catch (URISyntaxException ignored) {
+            return false;
+        }
+        if (uri.getHost() == null) {
+            return false;
+        }
+        BaniraClientRuntime.setScreen(new ConfirmLinkScreen(confirmed -> {
+            if (confirmed) {
+                Util.getPlatform().openUri(uri);
+            }
+            BaniraClientRuntime.setScreen(parent);
+        }, uri.toString(), false));
+        return true;
     }
 
     private static boolean handleClickInGame(ClickEvent event) {
@@ -46,17 +78,6 @@ public final class NotificationStyleInteractionHelper {
             return false;
         }
         switch (event.getAction()) {
-            case OPEN_URL:
-                if (!BaniraVanillaNotificationBridge.chatLinksEnabled()) {
-                    return false;
-                }
-                try {
-                    URI uri = new URI(event.getValue());
-                    Util.getPlatform().openUri(uri);
-                    return true;
-                } catch (Exception ignored) {
-                    return false;
-                }
             case RUN_COMMAND:
                 return BaniraVanillaNotificationBridge.runCommand(event.getValue());
             case SUGGEST_COMMAND:

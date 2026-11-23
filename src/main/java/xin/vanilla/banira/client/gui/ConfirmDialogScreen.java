@@ -120,24 +120,24 @@ public final class ConfirmDialogScreen extends BaniraScreen implements UiNativeP
         int buttonWidth = (contentWidth - BUTTON_GAP) / 2;
         int buttonY = cardY + CARD_HEIGHT - CARD_PADDING - BUTTON_HEIGHT;
 
-        ButtonWidget cancel = new ButtonWidget(this);
-        cancel.id("cancel");
-        cancel.bounds(new ScreenCoordinate(cardX + CARD_PADDING, buttonY, buttonWidth, BUTTON_HEIGHT));
-        cancel.text(args.cancelText() != null
-                ? args.cancelText()
-                : BaniraComponent.get().transClientAuto("cancel"));
-        cancel.onClick(button -> cancel());
-        addWidget(cancel);
-
         ButtonWidget confirm = new ButtonWidget(this);
         confirm.id("confirm");
-        confirm.bounds(new ScreenCoordinate(cardX + CARD_PADDING + buttonWidth + BUTTON_GAP,
-                buttonY, buttonWidth, BUTTON_HEIGHT));
+        confirm.bounds(new ScreenCoordinate(cardX + CARD_PADDING, buttonY, buttonWidth, BUTTON_HEIGHT));
         confirm.text(args.confirmText() != null
                 ? args.confirmText()
                 : BaniraComponent.get().transClientAuto("confirm"));
         confirm.onClick(button -> confirm());
         addWidget(confirm);
+
+        ButtonWidget cancel = new ButtonWidget(this);
+        cancel.id("cancel");
+        cancel.bounds(new ScreenCoordinate(cardX + CARD_PADDING + buttonWidth + BUTTON_GAP,
+                buttonY, buttonWidth, BUTTON_HEIGHT));
+        cancel.text(args.cancelText() != null
+                ? args.cancelText()
+                : BaniraComponent.get().transClientAuto("cancel"));
+        cancel.onClick(button -> cancel());
+        addWidget(cancel);
     }
 
     @Override

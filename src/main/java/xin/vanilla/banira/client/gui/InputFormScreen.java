@@ -102,9 +102,11 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
     @Override
     public UiPageSpec uiPage() {
         if (!auiCompatible()) return null;
+        if (!args.isStackedLayout()) uiSession.useDialogLayout();
         captureUiState(uiState);
         if (uiPage == null) uiPage = new UiPageSpec(uiSurfaceId(),
-                "banira_codex/ui/form.html", uiSession, previous -> this, this::getEffectiveTheme);
+                args.isStackedLayout() ? "banira_codex/ui/stacked-form.html" : "banira_codex/ui/form.html",
+                uiSession, previous -> this, this::getEffectiveTheme);
         return uiPage;
     }
 
@@ -511,6 +513,7 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
          */
         @Nullable
         private Text headerTitle;
+        private boolean stackedLayout;
         private List<Widget> widgets = new ArrayList<>();
         private Consumer<Results> callback;
         private Supplier<Boolean> invisible = () -> false;

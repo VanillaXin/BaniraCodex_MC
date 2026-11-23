@@ -15,6 +15,20 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.LongSupplier;
 
 public class UiDomView extends NativeUiView {
+    private final Map<String, Integer> panelHeights = new HashMap<>();
+
+    public void panelHeight(String id, int height) {
+        if (!live()) return;
+        panelHeights.put(id, height);
+        applyPanelHeight(id, height);
+    }
+
+    private void applyPanelHeight(String id, int height) {
+        if (dom == null) return;
+        UiDomAccess.Node panel = dom.find(id);
+        if (panel != null) panel.attribute("style", "height:" + height + "px");
+    }
+
     private UiDomAccess dom;
     private final UiDomView root;
     private final UiDomAccess.Node scope;
@@ -77,6 +91,10 @@ public class UiDomView extends NativeUiView {
         root.onFailure = Objects.requireNonNull(handler, "handler");
     }
 
+    public String exchangePageScript(String channel, String request) {
+        return scope == null && dom != null && live() ? dom.exchangePageScript(channel, request) : null;
+    }
+
     public void scrollRestoration(BooleanSupplier ready, DoubleUnaryOperator request) {
         if (scope != null || layoutRestored) throw new IllegalStateException("Scroll restoration already owned");
         scrollReady = Objects.requireNonNull(ready, "ready");
@@ -121,6 +139,7 @@ public class UiDomView extends NativeUiView {
             }));
         }
         if (theme != null) changed("theme");
+        panelHeights.forEach(this::applyPanelHeight);
         for (String id : controls.keySet()) changed(id);
         for (String id : texts.keySet()) changed(id);
         for (String id : tooltips.keySet()) changed(id);
@@ -215,7 +234,7 @@ public class UiDomView extends NativeUiView {
         if (rowProviders.containsKey(id)) {
             VirtualRows old = lists.remove(id);
             double independentPosition = old != null && !old.tracksPageScroll
-                    ? old.restored ? old.scroller.scrollTop() / old.rowHeight : old.initialPosition : state().listPosition(prefix + id);
+                    ? (old.restored ? old.scroller.scrollTop() / old.rowHeight : old.initialPosition) * old.columns : state().listPosition(prefix + id);
             if (old != null) old.close();
             UiDomAccess.Node container = node(id);
             if (container != null) lists.put(id, new VirtualRows(id, container, independentPosition));
@@ -277,8 +296,8 @@ public class UiDomView extends NativeUiView {
                 if (capture != null) capture.clear();
                 if (controls.containsKey(id)) dismissOverlay();
             }
-            if (scope != null && nodes.containsKey("pick")) {
-                if (enabled.get(id)) nodes.get("pick").removeAttribute("disabled");
+            if (scope != null && id.equals("input") && nodes.containsKey("pick")) {
+                if (enabled.getOrDefault("pick", enabled.get(id))) nodes.get("pick").removeAttribute("disabled");
                 else nodes.get("pick").attribute("disabled", "");
             }
         }
@@ -392,7 +411,7 @@ public class UiDomView extends NativeUiView {
             pick.gameElement(select && !textTools ? UiGameElement.preset(ButtonWidget.PresetStyle.ARROW_DOWN) : null);
             pick.tooltip(texts.containsKey("label") ? texts.get("label").toVanilla().getString() : "");
             listen("pick:control", pick, "click", event -> {
-                if (!enabled.getOrDefault(id, true)) return;
+                if (!enabled.getOrDefault("pick", enabled.getOrDefault(id, true))) return;
                 event.consume();
                 if (control.kind() == UiControlSpec.Kind.SELECT) openSelection(id, node, control);
                 else if (control.kind() == UiControlSpec.Kind.COLOR) {
@@ -814,6 +833,7 @@ public class UiDomView extends NativeUiView {
         final double initialPosition;
         final UiRowLayout presentation;
         final int rowHeight;
+        final int columns;
         final boolean tracksPageScroll;
 
         VirtualRows(String id, UiDomAccess.Node container, double independentPosition) {
@@ -821,13 +841,15 @@ public class UiDomView extends NativeUiView {
             this.container = container;
             presentation = rowProviders.get(id) instanceof UiRowLayout ? (UiRowLayout) rowProviders.get(id) : null;
             rowHeight = presentation == null ? 48 : presentation.rowHeight();
+            columns = presentation instanceof UiRowPresentation layout ? layout.columns() : 1;
             if (rowHeight < 12 || rowHeight > 256) throw new IllegalArgumentException("Invalid UI row height");
+            if (columns < 1 || columns > 12) throw new IllegalArgumentException("Invalid UI column count");
             tracksPageScroll = presentation == null || presentation.tracksPageScroll();
             UiDomAccess.Node content = dom.find(presentation == null ? "content" : presentation.scrollerId());
             scroller = content != null ? content : container;
             if (content != null) scroller.clipChildren();
             window = new UiRowWindow(rowProviders.get(id), rowLimits.get(id));
-            initialPosition = tracksPageScroll ? state().rowPosition() : independentPosition;
+            initialPosition = (tracksPageScroll ? state().rowPosition() : independentPosition) / columns;
             restoring = initialPosition > 0;
             top = dom.create("div");
             bottom = dom.create("div");
@@ -853,7 +875,7 @@ public class UiDomView extends NativeUiView {
             if (!restored) {
                 restoring = true;
                 // A viewport can have dimensions before the virtual spacers enter the engine's scroll metrics.
-                if (scroller.scrollHeight() + .5 < window.total() * (double) rowHeight) return;
+                if (scroller.scrollHeight() + .5 < bandCount(window.total()) * (double) rowHeight) return;
                 double target = Math.max(0, Math.min(initialPosition * rowHeight,
                         scroller.scrollHeight() - scroller.clientHeight()));
                 scroller.scrollTop(target);
@@ -881,7 +903,7 @@ public class UiDomView extends NativeUiView {
                         scroller.scrollTop(Math.max(0, scroller.scrollTop() + delta));
                         if (tracksPageScroll) {
                             state().scrollOffset(scroller.scrollTop());
-                            state().rowPosition(scroller.scrollTop() / rowHeight);
+                            state().rowPosition(scroller.scrollTop() * columns / rowHeight);
                         }
                         update();
                     }
@@ -898,18 +920,18 @@ public class UiDomView extends NativeUiView {
             if (updating) return;
             updating = true;
             try {
-                int next = Math.max(0, Math.min((int) (scroller.scrollTop() / rowHeight), Math.max(0, window.total() - 1)));
+                int next = Math.max(0, Math.min((int) (scroller.scrollTop() / rowHeight), Math.max(0, bandCount(window.total()) - 1)));
                 if (restored && tracksPageScroll) {
                     state().scrollOffset(scroller.scrollTop());
-                    state().rowPosition(scroller.scrollTop() / rowHeight);
+                    state().rowPosition(scroller.scrollTop() * columns / rowHeight);
                 } else if (restored) {
-                    state().listPosition(prefix + id, scroller.scrollTop() / rowHeight);
+                    state().listPosition(prefix + id, scroller.scrollTop() * columns / rowHeight);
                 }
                 if (next == first && !force) return;
                 first = next;
-                window.moveTo(first);
-                top.attribute("style", "height:" + (first * (long) rowHeight) + "px;flex-shrink:0");
-                int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / rowHeight) + 2));
+                window.moveTo(first * columns);
+                spacer(top, first);
+                int count = Math.min(window.realizedCount(), Math.max(1, (int) Math.ceil(scroller.clientHeight() / rowHeight) + 2) * columns);
                 while (rows.size() > count) {
                     UiDomView row = rows.remove(rows.size() - 1);
                     row.close();
@@ -930,10 +952,10 @@ public class UiDomView extends NativeUiView {
                     }
                     row.textTools = presentation != null && presentation.textTools();
                     if (presentation != null)
-                        row.scope.attribute("class", "row " + presentation.rowClass(first + index));
+                        row.scope.attribute("class", "row " + presentation.rowClass(window.first() + index));
                     window.bind(index, row);
                 }
-                bottom.attribute("style", "height:" + Math.max(0L, (window.total() - first - count) * (long) rowHeight) + "px;flex-shrink:0");
+                spacer(bottom, Math.max(0, bandCount(window.total()) - first - bandCount(count)));
                 container.append(bottom);
                 if (count > 0 && restored && tracksPageScroll) state().scrollAnchor(window.key(0));
             } finally {
@@ -941,10 +963,19 @@ public class UiDomView extends NativeUiView {
             }
         }
 
+        private int bandCount(int items) {
+            return (items + columns - 1) / columns;
+        }
+
+        private void spacer(UiDomAccess.Node node, int bands) {
+            node.attribute("style", "height:" + (bands * (long) rowHeight) + "px;flex-shrink:0"
+                    + (columns > 1 ? ";width:100%" : ""));
+        }
+
         @Override
         public void close() {
             if (restored && !tracksPageScroll)
-                state().listPosition(prefix + id, scroller.scrollTop() / rowHeight);
+                state().listPosition(prefix + id, scroller.scrollTop() * columns / rowHeight);
             try {
                 wheel.close();
                 scrolling.close();

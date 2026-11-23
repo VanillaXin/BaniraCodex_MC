@@ -1,0 +1,55 @@
+.native-dialog-root {
+    display:flex; align-items:center; justify-content:center; padding:16px;
+    font-family:default; color:var(--text,#252d28);
+}
+.native-dialog {
+    min-width:0; min-height:0; padding:8px 10px 10px;
+    border:0; border-radius:6px; background:var(--surface,#f3f5f4);
+}
+.native-title {
+    flex:0 0 18px; min-width:0; line-height:18px; text-align:center;
+    font-size:10px; color:var(--text,#252d28);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.native-dialog .content { min-width:0; min-height:0; padding:0 3px 0 0; }
+.native-dialog button,.native-dialog input {
+    height:22px; min-height:22px; font-family:default; font-size:9px; line-height:12px;
+    color:var(--text,#252d28);
+}
+.native-dialog button {
+    min-width:0; padding:0 5px; white-space:nowrap;
+    background:var(--button,#edf1ef); border:1px solid var(--button-border,#cbd3ce);
+}
+.native-dialog button:hover {
+    background:var(--hover,#e0ede7); border-color:var(--button-hover-border,#398674);
+}
+.native-dialog input {
+    padding:1px 5px; background:var(--input,#ffffff); border:1px solid var(--border,#cbd3ce);
+}
+.native-dialog input:focus { border-color:var(--focus,#398674); }
+.native-dialog button:disabled,.native-dialog input:disabled {
+    background:var(--disabled,#edf1ef); color:var(--disabled-text,#637168);
+}
+.native-dialog .native-footer {
+    justify-content:space-between; padding:0; margin-top:6px;
+    background:transparent; border:0;
+}
+.native-dialog .native-footer button { flex:0 1 80px; height:24px; min-height:24px; }
+.stacked-form {
+    max-width:284px; height:176px; max-height:100%; padding:6px 10px 8px;
+    background:var(--native-panel,#f3f5f4);
+}
+.stacked-form .stacked-field { position:relative; display:block; padding:0; }
+.stacked-field>.label {
+    position:absolute; left:0; right:0; top:1px; height:12px; min-height:12px;
+    line-height:12px; color:var(--text,#252d28);
+}
+.stacked-field>.editor { position:absolute; left:0; right:0; top:14px; height:17px; gap:2px; }
+.stacked-form .stacked-field .input,.stacked-form .stacked-field .tool { height:17px; min-height:17px; }
+.stacked-form .stacked-field .input:disabled {
+    background:var(--input,#ffffff); color:var(--text,#252d28); border-color:var(--border,#cbd3ce);
+}
+.stacked-field .tool { width:28px; min-width:28px; max-width:28px; flex:0 0 28px; }
+.stacked-field>.paragraph { display:none; }
+.stacked-form #error { flex-shrink:0; max-height:24px; }
+.stacked-form #error:disabled { display:none; }

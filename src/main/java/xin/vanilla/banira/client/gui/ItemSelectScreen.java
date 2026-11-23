@@ -267,8 +267,8 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
         int btnY = listY + listH + 4;
         int btnAreaW = this.panelW - PANEL_MARGIN * 2 - SCROLL_W - scrollGap;
         int btnW = (btnAreaW - PANEL_MARGIN) / 2;
-        int cancelX = this.panelLeft + PANEL_MARGIN;
-        int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
+        int submitX = this.panelLeft + PANEL_MARGIN;
+        int cancelX = submitX + btnW + PANEL_MARGIN;
 
         searchInputWidget = new InputWidget(this);
         searchInputWidget.id("search_input");
@@ -391,19 +391,19 @@ public class ItemSelectScreen extends BaniraScreen implements UiNativePage {
         scrollbarWidget.addScrollHoverArea(new ScreenCoordinate(listX, listY, listW, listH));
         addWidget(scrollbarWidget);
 
-        ButtonWidget cancelButtonWidget = new ButtonWidget(this);
-        cancelButtonWidget.id("cancel");
-        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
-        addWidget(cancelButtonWidget);
-
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
         submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> uiSession.submitNative());
         addWidget(submitButtonWidget);
+
+        ButtonWidget cancelButtonWidget = new ButtonWidget(this);
+        cancelButtonWidget.id("cancel");
+        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        addWidget(cancelButtonWidget);
 
         updateSearchResults();
     }

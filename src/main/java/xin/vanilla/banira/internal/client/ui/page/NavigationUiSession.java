@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class NavigationUiSession implements UiPageSession {
-    public static final class Action {
+    public static class Action {
         private final String id;
         private final Component label;
         private final Runnable open, delete;

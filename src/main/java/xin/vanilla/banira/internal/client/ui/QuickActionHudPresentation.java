@@ -48,8 +48,7 @@ public final class QuickActionHudPresentation implements AutoCloseable {
             String accent = HudDrawList.css(part.accent());
             switch (part.kind()) {
                 case SLOT ->
-                        style += "background:" + (part.empty() ? "transparent" : HudDrawList.css(part.background()))
-                                + ";border:" + units + "px " + (part.empty() ? "dashed " : "solid ")
+                        style += "background:transparent;border:" + units + "px " + (part.empty() ? "dashed " : "solid ")
                                 + (part.active() ? accent : HudDrawList.css(part.border())) + ";border-radius:" + 2 * units + "px;";
                 case MENU -> style += "background:" + HudDrawList.css(part.background()) + ";border:" + units
                         + "px solid " + HudDrawList.css(part.border()) + ";border-radius:" + 3 * units + "px;";

@@ -11,12 +11,11 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public final class QuickActionEditUiSession extends NavigationUiSession {
+public class QuickActionEditUiSession extends NavigationUiSession {
     private final Set<String> toolIds = new HashSet<>();
     private List<DropdownOption> icons;
     private Supplier<String> currentIcon;
     private Consumer<String> selectedIcon;
-    private Component selectionTitle;
     private Component searchHint;
     private final Component heading;
     private Supplier<Component> context;
@@ -38,18 +37,38 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
     }
 
     public void query(String text) {
-        UiView owner = currentView;
-        if (owner == null || !boundTo(owner)) return;
         String next = text == null ? "" : text;
         if (query.equals(next)) return;
         query = next;
-        if (owner.state() != null) {
+        refreshList(true);
+    }
+
+    protected final void refreshList(boolean resetScroll) {
+        UiView owner = currentView;
+        if (owner == null || !boundTo(owner)) return;
+        if (resetScroll && owner.state() != null) {
             owner.state().rowPosition(0);
             owner.state().scrollOffset(0);
             owner.state().scrollAnchor("");
         }
         refreshRows();
         if (!owner.nativeView()) updateEntries(owner);
+    }
+
+    protected String rowClass(Action action) {
+        return "config-navigation";
+    }
+
+    protected void bindRowDetails(UiView row, Action action) {
+        row.tooltip("open", action.label());
+    }
+
+    protected Component emptyLabel() {
+        return BaniraComponent.get().transClientAuto(toolIds.contains("save") ? "custom_quick_action_step_empty" : "custom_quick_action_empty");
+    }
+
+    protected String entryCount() {
+        return visibleActions().size() + " / " + actions().size();
     }
 
     @Override
@@ -71,7 +90,7 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
             }
 
             public String rowClass(int index) {
-                return "config-navigation";
+                return QuickActionEditUiSession.this.rowClass(snapshot.get(index));
             }
 
             public boolean textTools() {
@@ -89,7 +108,7 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
             public void bind(UiView row, int index) {
                 if (!boundTo(owner)) return;
                 provider.bind(row, index);
-                row.tooltip("open", snapshot.get(index).label());
+                bindRowDetails(row, snapshot.get(index));
             }
         };
     }
@@ -98,10 +117,6 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
         icons = new ArrayList<>(options);
         currentIcon = Objects.requireNonNull(current, "current");
         selectedIcon = Objects.requireNonNull(selected, "selected");
-    }
-
-    public void selectionTitle(Component title) {
-        selectionTitle = title;
     }
 
     public void searchHint(Component hint) {
@@ -120,7 +135,7 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
             view.enabled("icon", true);
             view.control("icon", new UiControlSpec(UiControlSpec.Kind.SELECT, 128, "", false, icons, DropdownInputMode.SELECTION_ONLY));
             view.value("icon", UiValue.text(currentIcon.get()));
-            view.tooltip("icon", selectionTitle == null ? BaniraComponent.get().transClientAuto("custom_quick_action_select_icon") : selectionTitle);
+            view.tooltip("icon", BaniraComponent.get().transClientAuto("custom_quick_action_select_icon"));
             ownBinding(view.onValue("icon", value -> {
                 if (boundTo(view) && icons.stream().anyMatch(option -> option.value().equals(value.asText())))
                     selectedIcon.accept(value.asText());
@@ -159,8 +174,8 @@ public final class QuickActionEditUiSession extends NavigationUiSession {
         Component breadcrumb = context == null ? heading : context.get();
         view.text("breadcrumb", breadcrumb == null || breadcrumb.isEmpty() ? heading : breadcrumb);
         view.tooltip("breadcrumb", breadcrumb == null || breadcrumb.isEmpty() ? heading : breadcrumb);
-        view.text("entry_count", BaniraComponent.get().literal(visibleActions().size() + " / " + actions().size()));
-        view.text("empty", BaniraComponent.get().transClientAuto(toolIds.contains("save") ? "custom_quick_action_step_empty" : "custom_quick_action_empty"));
+        view.text("entry_count", BaniraComponent.get().literal(entryCount()));
+        view.text("empty", emptyLabel());
         view.enabled("empty", visibleActions().isEmpty());
     }
 

@@ -650,14 +650,14 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
 
         submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
-        submitButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
+        submitButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
         submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> handleSubmit());
         addWidget(submitButtonWidget);
 
         cancelButtonWidget = new ButtonWidget(this);
         cancelButtonWidget.id("cancel");
-        cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
+        cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
         cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
         cancelButtonWidget.onClick(b -> onClose());
         addWidget(cancelButtonWidget);
@@ -995,8 +995,8 @@ public class InputFormScreen extends BaniraScreen implements UiNativePage {
             layoutVisibility = uiSession.visibilityVersion();
             int listHeight = layoutForm();
             int maxScroll = Math.max(0, listHeight - listAreaHeight);
-            submitButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
-            cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
+            submitButtonWidget.bounds(new ScreenCoordinate(contentLeft, btnY, 80, BTN_H));
+            cancelButtonWidget.bounds(new ScreenCoordinate(contentLeft + inputW - 80, btnY, 80, BTN_H));
             scrollbarWidget.maxValue(maxScroll);
             scrollbarWidget.visibleSize(listAreaHeight);
             scrollbarWidget.visible(scrollMode && maxScroll > 0);

@@ -465,7 +465,10 @@
   "word.banira_codex.quick_screen_argument": "参数",
   "word.banira_codex.quick_screen_invalid_argument": "请检查参数",
   "word.banira_codex.quick_screen_search": "搜索模组、窗口名称或类名",
-  "word.banira_codex.quick_screen_mod": "模组分类",
-  "word.banira_codex.quick_screen_all": "全部模组",
+  "word.banira_codex.quick_screen_hide_unavailable": "隐藏不可选项",
+  "word.banira_codex.quick_screen_show_unavailable": "显示不可选项",
+  "word.banira_codex.quick_screen_only_usable": "仅可选",
+  "word.banira_codex.quick_screen_all": "全部",
+  "word.banira_codex.quick_screen_empty": "没有匹配的窗口",
   "word.banira_codex.quick_screen_open_failed": "无法打开窗口，请检查参数或当前环境"
 }

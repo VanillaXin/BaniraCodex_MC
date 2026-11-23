@@ -50,6 +50,25 @@ public final class AuiDocumentAccess implements UiDomAccess, AutoCloseable {
     private boolean closed;
     private int count;
 
+    @Override
+    public String exchangePageScript(String channel, String request) {
+        if (!current()) return null;
+        Element endpoint = document.getElementById(channel);
+        if (endpoint == null || !"1".equals(endpoint.getAttribute("data-ready"))) return null;
+        endpoint.removeAttribute("data-response");
+        endpoint.setAttribute("data-request", request);
+        try {
+            endpoint.dispatchEvent(new com.sighs.apricityui.event.Event(endpoint, channel));
+            String response = endpoint.getAttribute("data-response");
+            if (response == null || response.isEmpty())
+                throw new IllegalStateException("No response from page script: " + channel);
+            return response;
+        } finally {
+            endpoint.removeAttribute("data-request");
+            endpoint.removeAttribute("data-response");
+        }
+    }
+
     public AuiDocumentAccess(Document document, Object screen) {
         this(document, () -> Minecraft.getInstance().screen == screen);
     }

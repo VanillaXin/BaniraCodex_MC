@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
 import xin.vanilla.banira.client.util.DialogUtils;
 import xin.vanilla.banira.client.util.GLFWKeyUtils;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.internal.client.ui.UiDomView;
 import xin.vanilla.banira.internal.client.ui.UiOwnedResources;
 import xin.vanilla.banira.internal.client.ui.UiRowPresentation;
 
@@ -40,6 +41,22 @@ public final class FormUiSession implements UiPageSession {
     private final Map<UiView, Integer> boundIndices = new LinkedHashMap<>();
     private FieldPresentation presentation;
     private boolean commonPresentation;
+    private boolean dialogLayout;
+
+    public void useDialogLayout() {
+        dialogLayout = true;
+    }
+
+    private boolean stacked() {
+        return dialogLayout || args.isStackedLayout();
+    }
+
+    private void fitDialog() {
+        if (!dialogLayout || !(view instanceof UiDomView)) return;
+        boolean title = args.getHeaderTitle() != null || args.getTitle() != null;
+        view.enabled("title", title);
+        ((UiDomView) view).panelHeight("form_panel", (title ? 62 : 44) + Math.min(120, visibleIndices.size()) * 38);
+    }
 
     public interface FieldPresentation {
         int rowHeight();
@@ -119,7 +136,10 @@ public final class FormUiSession implements UiPageSession {
         for (UiOwnedResources owned : rowBindings.values()) owned.close();
         rowBindings.clear();
         boundIndices.clear();
-        if (view != null) bindRows(view);
+        if (view != null) {
+            bindRows(view);
+            fitDialog();
+        }
     }
 
     public String error() {
@@ -351,6 +371,11 @@ public final class FormUiSession implements UiPageSession {
     public void bind(UiView view) {
         bind(view, new CommonFieldPresentation());
         commonPresentation = true;
+        if (stacked()) {
+            fitDialog();
+            updateStatus();
+            return;
+        }
         lombok.var title = args.getHeaderTitle() != null ? args.getHeaderTitle() : args.getTitle();
         String namespace = title == null ? null : title.toComponent().modId();
         if ((namespace == null || namespace.isEmpty()) && args.getTitle() != null)
@@ -374,15 +399,18 @@ public final class FormUiSession implements UiPageSession {
 
     private final class CommonFieldPresentation implements FieldPresentation {
         public int rowHeight() {
+            if (stacked()) return 38;
             return args.getWidgets().stream().anyMatch(InputFormScreen.Widget::wideInput) ? 48 : 28;
         }
 
         public String rowClass(int index) {
+            if (stacked()) return "stacked-field";
             return args.getWidgets().get(index).wideInput() ? "player-config-field wide-input-field" : "player-config-field";
         }
 
         public void bind(UiView row, int index, InputFormScreen.Widget widget) {
-            if (widget.tooltip() != null) row.text("description", widget.tooltip().toComponent());
+            if (!stacked() && widget.tooltip() != null)
+                row.text("description", widget.tooltip().toComponent());
         }
 
         public void update(UiView row, int index, InputFormScreen.Widget widget, String draft, String validation) {
@@ -468,6 +496,7 @@ public final class FormUiSession implements UiPageSession {
                     }
                 }));
                 if (widget.type() == InputFormScreen.WidgetType.FILE || widget.type() == InputFormScreen.WidgetType.PICKER) {
+                    row.enabled("pick", !widget.disabled());
                     owned.own(row.onAction("pick", () -> {
                         if (FormUiSession.this.view == view) pick(index);
                     }));

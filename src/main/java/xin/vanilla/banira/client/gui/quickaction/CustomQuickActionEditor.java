@@ -102,6 +102,7 @@ final class CustomQuickActionEditor {
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
                 .setHeaderTitle(t("custom_quick_action_step_edit_title"))
+                .setStackedLayout(true)
                 .addWidget(dropdown("type", "custom_quick_action_step_type", draft.getType().name(),
                         options(QuickActionStepType.values(), "step_type")))
                 .addWidget(dropdown("condition", "custom_quick_action_step_condition",

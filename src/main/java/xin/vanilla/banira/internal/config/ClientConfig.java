@@ -26,8 +26,8 @@ import java.util.List;
         generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class ClientConfig implements ConfigData {
 
-    @ConfigEntry.Gui.Tooltip(zh_cn = "使用AUI显示模组界面与HUD",
-            en_us = "Use AUI for mod interfaces and HUDs")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "需要客户端加载 ApricityUI 和兼容的 Rhino；否则继续使用原生界面",
+            en_us = "Requires ApricityUI and compatible Rhino on the client; otherwise native interfaces remain active")
     private boolean useAui = false;
 
     @ConfigEntry.Gui.Tooltip(zh_cn = "GUI主题样式：\nAUTO与界面「自动」一致时按日历季节；\n可固定为春夏秋冬之一以覆盖日历",

@@ -20,6 +20,12 @@ import java.util.*;
 import java.util.function.Consumer;
 
 final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage {
+    private static final int LEFT = 26;
+    private static final int SEARCH_Y = 45;
+    private static final int LIST_Y = 73;
+    private static final int ROW_HEIGHT = CollapsiblePanelWidget.DEFAULT_HEADER_HEIGHT;
+    private static final int ROW_STRIDE = 24;
+    private static final int FOOTER_HEIGHT = 46;
     private final Screen parent;
     private final Consumer<String> accepted;
     private final String initial;
@@ -29,8 +35,10 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     private boolean loading = true, failed;
     private boolean hideUnavailable;
     private ButtonWidget filterButton;
+    private TooltipWidget filterTooltip;
     private int offset;
     private final List<ButtonWidget> buttons = new ArrayList<>();
+    private final List<CollapsiblePanelWidget> headers = new ArrayList<>();
     private final List<TooltipWidget> tooltips = new ArrayList<>();
     private ScrollbarWidget scrollbar;
     private PickerSession session;
@@ -68,13 +76,13 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         for (QuickActionScreenRows.Row row : groups.rows(items, query, hideUnavailable)) {
             if (row.item == null) {
                 String label = (row.expanded ? "\u25be  " : "\u25b8  ") + row.group;
-                result.add(new PickerAction("@group:" + row.group, label, row.group, true, true, () -> {
+                result.add(new PickerAction("@group:" + row.group, label, row.group, true, row.expanded, true, () -> {
                     groups.toggle(row.group);
                     refreshRows(false);
                 }));
             } else {
                 QuickActionScreenRows.Item item = row.item;
-                result.add(new PickerAction(item.id, item.title, item.tooltip(), false, item.selectable(), item.select));
+                result.add(new PickerAction(item.id, item.title, item.tooltip(), false, false, item.selectable(), item.select));
             }
         }
         return result;
@@ -82,16 +90,22 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
     private static final class PickerAction extends NavigationUiSession.Action {
         private final boolean group;
+        private final boolean expanded;
         private final String tooltip;
 
-        private PickerAction(String id, String label, String tooltip, boolean group, boolean enabled, Runnable open) {
+        private PickerAction(String id, String label, String tooltip, boolean group, boolean expanded, boolean enabled, Runnable open) {
             super(id, BaniraComponent.get().literal(label), open, null, enabled);
             this.group = group;
+            this.expanded = expanded;
             this.tooltip = tooltip;
         }
     }
 
     private String filterKey() {
+        return hideUnavailable ? "quick_screen_show_all" : "quick_screen_only_usable";
+    }
+
+    private String filterHintKey() {
         return hideUnavailable ? "quick_screen_show_unavailable" : "quick_screen_hide_unavailable";
     }
 
@@ -100,8 +114,8 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         refreshRows(true);
     }
 
-    private String statusKey() {
-        return loading ? "quick_screen_loading" : failed ? "quick_screen_failed" : "quick_screen_title";
+    private String scanStatusKey() {
+        return loading ? "quick_screen_loading" : failed ? "quick_screen_failed" : "";
     }
 
     private void refreshRows(boolean resetScroll) {
@@ -110,6 +124,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         if (scrollbar != null) {
             nativeRows = actions(uiSession().query());
             filterButton.text(CustomQuickActionEditor.t(filterKey()).content());
+            filterTooltip.text(CustomQuickActionEditor.t(filterHintKey()));
             updateRows();
         }
     }
@@ -119,7 +134,6 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
         private PickerSession() {
             super(BaniraComponent.get().transClientAuto("quick_screen_title"), Collections::emptyList, Collections.emptyList());
-            context(() -> BaniraComponent.get().transClientAuto(statusKey()));
             searchHint(BaniraComponent.get().transClientAuto("quick_screen_search"));
         }
 
@@ -128,7 +142,8 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
             super.bind(view);
             if (!boundTo(view) || view.nativeView()) return;
             pickerView = view;
-            view.text("filter_unavailable", BaniraComponent.get().transClientAuto(filterKey()));
+            updateChrome(view);
+            view.text("footer_close", BaniraComponent.get().transClientAuto("cancel"));
             ownBinding(view.onAction("filter_unavailable", () -> {
                 if (boundTo(view)) toggleFilter();
             }));
@@ -141,9 +156,15 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         }
 
         private void update(boolean resetScroll) {
-            if (pickerView != null)
-                pickerView.text("filter_unavailable", BaniraComponent.get().transClientAuto(filterKey()));
+            if (pickerView != null) updateChrome(pickerView);
             refreshList(resetScroll);
+        }
+
+        private void updateChrome(UiView view) {
+            view.text("filter_unavailable", BaniraComponent.get().transClientAuto(filterKey()));
+            view.tooltip("filter_unavailable", BaniraComponent.get().transClientAuto(filterHintKey()));
+            String status = scanStatusKey();
+            view.text("status", status.isEmpty() ? BaniraComponent.get().literal("") : BaniraComponent.get().transClientAuto(status));
         }
 
         @Override
@@ -153,7 +174,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
         @Override
         protected xin.vanilla.banira.common.data.Component emptyLabel() {
-            return BaniraComponent.get().transClientAuto(loading || failed ? statusKey() : "quick_screen_empty");
+            return loading || failed ? BaniraComponent.get().literal("") : BaniraComponent.get().transClientAuto("quick_screen_empty");
         }
 
         @Override
@@ -281,9 +302,13 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
     @Override
     protected void initWidgets() {
+        int filterWidth = Math.max(font.width(CustomQuickActionEditor.t("quick_screen_only_usable").content()),
+                font.width(CustomQuickActionEditor.t("quick_screen_show_all").content())) + 14;
+        int filterX = width - LEFT - filterWidth;
+        int footerY = height - FOOTER_HEIGHT;
         InputWidget search = new InputWidget(this);
         search.id("search");
-        search.bounds(new ScreenCoordinate(26, 70, width - 52, 20));
+        search.bounds(new ScreenCoordinate(LEFT, SEARCH_Y, Math.max(1, filterX - LEFT - 6), ROW_HEIGHT));
         search.value(uiSession().query());
         search.text(CustomQuickActionEditor.t("quick_screen_search"));
         search.onTextChanged(value -> {
@@ -293,34 +318,46 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         addWidget(search);
         filterButton = new ButtonWidget(this);
         filterButton.id("filter_unavailable");
-        filterButton.bounds(new ScreenCoordinate(26, 45, Math.min(116, width - 103), 20));
+        filterButton.bounds(new ScreenCoordinate(filterX, SEARCH_Y, filterWidth, ROW_HEIGHT));
         filterButton.onClick(button -> toggleFilter());
+        filterTooltip = new TooltipWidget(this, new ScreenCoordinate(0, 0, filterWidth, ROW_HEIGHT));
+        filterTooltip.popupAtScreenCoords(true);
+        filterButton.addChild(filterTooltip);
         addWidget(filterButton);
         ButtonWidget close = new ButtonWidget(this);
         close.id("close");
-        close.bounds(new ScreenCoordinate(width - 70, 45, 44, 20));
+        close.bounds(new ScreenCoordinate(width - LEFT - 44, footerY, 44, ROW_HEIGHT));
         close.text(CustomQuickActionEditor.t("cancel").content());
         close.onClick(button -> onClose());
         addWidget(close);
         buttons.clear();
+        headers.clear();
         tooltips.clear();
-        int count = Math.max(1, (height - 131) / 25);
+        int count = Math.max(0, (footerY - 6 - LIST_Y) / ROW_STRIDE);
         for (int i = 0; i < count; i++) {
+            int y = LIST_Y + i * ROW_STRIDE;
             ButtonWidget row = new ButtonWidget(this);
             row.id("screen_" + i);
-            row.bounds(new ScreenCoordinate(26, 98 + i * 25, width - 62, 23));
+            row.bounds(new ScreenCoordinate(LEFT, y, width - 62, ROW_HEIGHT));
             TooltipWidget tooltip = new TooltipWidget(this);
             tooltip.id("screen_tip_" + i);
             tooltip.popupAtScreenCoords(true);
-            tooltip.bounds(new ScreenCoordinate(0, 0, width - 62, 23));
+            tooltip.bounds(new ScreenCoordinate(0, 0, width - 62, ROW_HEIGHT));
             row.addChild(tooltip);
             tooltips.add(tooltip);
             buttons.add(row);
             addWidget(row);
+
+            // Reuse the config panel header; expanded children occupy the virtual rows below it.
+            CollapsiblePanelWidget header = CollapsiblePanelWidget.createAutoHeight(this, LEFT, y, width - 62);
+            header.id("group_" + i);
+            header.headerHeight(ROW_HEIGHT).paddingTop(0).paddingBottom(0);
+            headers.add(header);
+            addWidget(header);
         }
         scrollbar = new ScrollbarWidget(this);
         scrollbar.id("scroll");
-        scrollbar.bounds(new ScreenCoordinate(width - 31, 98, 5, count * 25));
+        scrollbar.bounds(new ScreenCoordinate(width - 31, LIST_Y, 5, count * ROW_STRIDE));
         scrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1).visibleSize(count)
                 .onValueChanged(value -> {
                     offset = (int) Math.round(value);
@@ -336,15 +373,23 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         offset = Math.max(0, Math.min(offset, maxOffset));
         scrollbar.maxValue(maxOffset).value(offset);
         for (int i = 0; i < buttons.size(); i++) {
-            ButtonWidget button = buttons.get(i);
             int index = offset + i;
-            button.visible(index < nativeRows.size());
-            if (index < nativeRows.size()) {
-                PickerAction action = nativeRows.get(index);
-                int inset = action.group ? 0 : 12;
+            PickerAction action = index < nativeRows.size() ? nativeRows.get(index) : null;
+            ButtonWidget button = buttons.get(i);
+            CollapsiblePanelWidget header = headers.get(i);
+            boolean isGroup = action != null && action.group;
+            button.visible(action != null && !isGroup);
+            header.visible(isGroup);
+            if (isGroup) {
+                header.onExpandChanged(null);
+                header.text(action.tooltip).tooltip(action.tooltip).expanded(action.expanded);
+                header.bounds(new ScreenCoordinate(LEFT, LIST_Y + i * ROW_STRIDE, width - 62, ROW_HEIGHT));
+                header.onExpandChanged(panel -> action.open());
+            } else if (action != null) {
+                int inset = CollapsiblePanelWidget.DEFAULT_CONTENT_INDENT;
                 int rowWidth = width - 62 - inset;
-                button.bounds(new ScreenCoordinate(26 + inset, 98 + i * 25, rowWidth, 23));
-                tooltips.get(i).bounds(new ScreenCoordinate(0, 0, rowWidth, 23));
+                button.bounds(new ScreenCoordinate(LEFT + inset, LIST_Y + i * ROW_STRIDE, rowWidth, ROW_HEIGHT));
+                tooltips.get(i).bounds(new ScreenCoordinate(0, 0, rowWidth, ROW_HEIGHT));
                 String full = action.label().toVanilla().getString();
                 int maxWidth = Math.max(0, (int) button.bounds().width() - 12);
                 button.text(QuickActionTextLayout.ellipsize(full, maxWidth, font::width));
@@ -367,9 +412,20 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
     @Override
     protected void onRender(MatrixStack graphics, float partialTicks) {
         AbstractGuiUtils.drawRoundedRect(graphics, 16, 16, width - 32, height - 32, 6, 6, 6, 6, getEffectiveTheme().bgSurface());
-        font.draw(graphics, CustomQuickActionEditor.t(statusKey()).content(), 26, 27, getEffectiveTheme().textPrimary());
+        String title = CustomQuickActionEditor.t("quick_screen_title").content();
+        font.draw(graphics, title, (width - font.width(title)) / 2f, 27, getEffectiveTheme().textPrimary());
+        String status = scanStatusKey();
+        if (!status.isEmpty()) {
+            font.draw(graphics, CustomQuickActionEditor.t(status).content(), LEFT, height - FOOTER_HEIGHT + 6, getEffectiveTheme().textSecondary());
+        }
         if (!loading && !failed && nativeRows.isEmpty()) {
-            font.draw(graphics, CustomQuickActionEditor.t("quick_screen_empty").content(), 26, 103, getEffectiveTheme().textSecondary());
+            font.draw(graphics, CustomQuickActionEditor.t("quick_screen_empty").content(), LEFT, LIST_Y + 5, getEffectiveTheme().textSecondary());
+        }
+        for (int i = 0; i < buttons.size() && offset + i < nativeRows.size(); i++) {
+            if (!nativeRows.get(offset + i).group) {
+                int y = LIST_Y + i * ROW_STRIDE - (i == 0 ? 0 : ROW_STRIDE - ROW_HEIGHT);
+                AbstractGuiUtils.fill(graphics, LEFT, y, 1, ROW_STRIDE, getEffectiveTheme().textHint());
+            }
         }
         super.renderWidgets(graphics, partialTicks);
     }

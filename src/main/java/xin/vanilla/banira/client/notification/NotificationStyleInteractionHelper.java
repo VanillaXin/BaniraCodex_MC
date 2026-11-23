@@ -5,6 +5,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,7 @@ import xin.vanilla.banira.client.util.ClientThemeManager;
 import xin.vanilla.banira.common.enums.EnumSeason;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * 通知区域对原版 {@link Style} 的点击与悬停提示处理（与聊天组件行为对齐）
@@ -30,14 +32,35 @@ public final class NotificationStyleInteractionHelper {
     }
 
     public static boolean tryClickStyle(Minecraft mc, Style style) {
-        if (style == null || style.getClickEvent() == null) {
+        ClickEvent event = style == null ? null : style.getClickEvent();
+        if (event == null || event.getAction() == ClickEvent.Action.OPEN_FILE) {
             return false;
         }
         Screen screen = mc.screen;
+        if (event.getAction() == ClickEvent.Action.OPEN_URL) {
+            return showLinkConfirmation(mc, screen, event.getValue());
+        }
         if (screen != null) {
             return screen.handleComponentClicked(style);
         }
-        return handleClickInGame(mc, style.getClickEvent());
+        return handleClickInGame(mc, event);
+    }
+
+    private static boolean showLinkConfirmation(Minecraft mc, Screen parent, String value) {
+        if (Screen.hasShiftDown() || !mc.options.chatLinks().get() || value == null) {
+            return false;
+        }
+        URI uri;
+        try {
+            uri = Util.parseAndValidateUntrustedUri(value);
+        } catch (URISyntaxException ignored) {
+            return false;
+        }
+        if (uri.getHost() == null) {
+            return false;
+        }
+        ConfirmLinkScreen.confirmLinkNow(parent, uri, false);
+        return true;
     }
 
     private static boolean handleClickInGame(Minecraft mc, ClickEvent event) {
@@ -45,17 +68,6 @@ public final class NotificationStyleInteractionHelper {
             return false;
         }
         switch (event.getAction()) {
-            case OPEN_URL:
-                if (!mc.options.chatLinks().get()) {
-                    return false;
-                }
-                try {
-                    URI uri = new URI(event.getValue());
-                    Util.getPlatform().openUri(uri);
-                    return true;
-                } catch (Exception ignored) {
-                    return false;
-                }
             case RUN_COMMAND:
                 if (mc.player == null) {
                     return false;

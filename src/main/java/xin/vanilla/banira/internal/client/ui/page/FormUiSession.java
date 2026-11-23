@@ -468,6 +468,7 @@ public final class FormUiSession implements UiPageSession {
                     }
                 }));
                 if (widget.type() == InputFormScreen.WidgetType.FILE || widget.type() == InputFormScreen.WidgetType.PICKER) {
+                    row.enabled("pick", !widget.disabled());
                     owned.own(row.onAction("pick", () -> {
                         if (FormUiSession.this.view == view) pick(index);
                     }));

@@ -369,7 +369,8 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
 
     private void finish(String value) {
         accepted.accept(value);
-        if (!CommonUiPages.close(this, UiCloseReason.SUBMIT)) {
+        Object presentation = session != null && session.pickerView != null ? session.pickerView.screen() : this;
+        if (!CommonUiPages.close(presentation, UiCloseReason.SUBMIT)) {
             if (session != null) session.close(UiCloseReason.SUBMIT);
             Minecraft.getInstance().setScreen(parent);
         }

@@ -281,8 +281,8 @@ public class UiDomView extends NativeUiView {
                 if (capture != null) capture.clear();
                 if (controls.containsKey(id)) dismissOverlay();
             }
-            if (scope != null && nodes.containsKey("pick")) {
-                if (enabled.get(id)) nodes.get("pick").removeAttribute("disabled");
+            if (scope != null && id.equals("input") && nodes.containsKey("pick")) {
+                if (enabled.getOrDefault("pick", enabled.get(id))) nodes.get("pick").removeAttribute("disabled");
                 else nodes.get("pick").attribute("disabled", "");
             }
         }
@@ -396,7 +396,7 @@ public class UiDomView extends NativeUiView {
             pick.gameElement(select && !textTools ? UiGameElement.preset(ButtonWidget.PresetStyle.ARROW_DOWN) : null);
             pick.tooltip(texts.containsKey("label") ? texts.get("label").toVanilla().getString() : "");
             listen("pick:control", pick, "click", event -> {
-                if (!enabled.getOrDefault(id, true)) return;
+                if (!enabled.getOrDefault("pick", enabled.getOrDefault(id, true))) return;
                 event.consume();
                 if (control.kind() == UiControlSpec.Kind.SELECT) openSelection(id, node, control);
                 else if (control.kind() == UiControlSpec.Kind.COLOR) {

@@ -1,21 +1,23 @@
 <html>
-<head><meta name="aui-viewport" content="mode=gui" /><meta charset="utf-8" /><link rel="stylesheet" href="../shared.css" /><link rel="stylesheet" href="config.css" /></head>
-<body class="config-body">
-<div class="page config-page">
+<head><meta name="aui-viewport" content="mode=gui" /><meta charset="utf-8" /><link rel="stylesheet" href="../shared.css" /><link rel="stylesheet" href="config.css" /><link rel="stylesheet" href="native-pages.css" /></head>
+<body class="config-body native-workspace-root">
+<div class="page native-workspace native-config config-page">
     <div class="header config-header">
         <div id="brand" class="config-brand"></div>
         <div class="config-heading"><div id="title" class="title"></div><div class="config-meta"><div id="filename"></div><div id="origin"></div></div></div>
         <button id="close" class="config-icon"></button>
     </div>
     <div class="config-workspace">
-        <div id="category_content" class="config-sidebar"><div class="config-category-heading"><div id="category_title"></div><div id="category_count"></div></div><div id="categories"></div></div>
         <div class="config-main">
             <div class="search"><input id="search" /><button id="clear_search" class="config-icon"></button></div>
+            <button id="category_toggle" class="fold-toggle" aria-expanded="false" aria-controls="category_content"><span id="category_indicator">&#x25b8;</span><span id="category_title"></span><span id="category_count" class="category-total"></span></button>
+            <div id="category_content" class="config-sidebar" aria-hidden="true"><div id="categories"></div></div>
             <div class="config-breadcrumb"><div id="breadcrumb"></div><div id="entry_count"></div></div>
             <div id="content" class="content"><div id="empty" class="config-empty"></div><div id="fields"></div></div>
         </div>
     </div>
     <div class="footer config-footer"><div id="status"></div><div id="server_actions" class="config-server"><button id="fetch"></button><button id="sync"></button><button id="sync_all"></button></div><button id="save" class="primary"></button></div>
 </div>
+<script src="native-category.js"></script>
 </body>
 </html>

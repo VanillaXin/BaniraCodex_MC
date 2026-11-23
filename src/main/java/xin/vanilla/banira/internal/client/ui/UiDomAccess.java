@@ -27,6 +27,10 @@ public interface UiDomAccess {
 
     boolean current();
 
+    default String exchangePageScript(String channel, String request) {
+        return null;
+    }
+
     default Node nextFocus(boolean reverse) {
         return null;
     }

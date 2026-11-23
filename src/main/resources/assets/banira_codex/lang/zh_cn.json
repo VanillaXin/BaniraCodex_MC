@@ -91,7 +91,7 @@
   "word.banira_codex.config.notificationLogMaxEntries": "通知记录上限",
   "word.banira_codex.config.notificationMergeWindowMs": "重复通知合并窗口",
   "word.banira_codex.config.useAui": "使用AUI界面",
-  "word.banira_codex.config.useAui.description": "使用AUI显示模组界面与HUD",
+  "word.banira_codex.config.useAui.description": "需要客户端加载 ApricityUI 和兼容的 Rhino；否则继续使用原生界面",
   "word.banira_codex.config.useCustomCursor": "自定义指针",
   "word.banira_codex.config_editor_all": "全部配置",
   "word.banira_codex.config_editor_categories": "分类",

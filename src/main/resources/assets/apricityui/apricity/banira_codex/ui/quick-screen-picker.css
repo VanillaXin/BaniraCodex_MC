@@ -1,0 +1,15 @@
+.screen-picker .config-header{justify-content:center}
+.screen-picker #title{width:100%;text-align:center}
+.screen-picker #filter_unavailable{flex:0 0 56px;min-width:56px;height:20px;padding:0 4px;white-space:nowrap}
+.screen-picker .config-footer{flex-wrap:nowrap}
+.screen-picker .config-footer button{min-width:52px}
+.screen-picker .content{padding-top:4px}
+.screen-picker .screen-group>.row-action,.screen-picker .screen-choice>.row-action,.screen-picker .screen-unavailable>.label{left:0;right:0;top:1px;width:100%;height:22px;min-height:22px;max-height:22px;padding:4px 7px;line-height:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen-picker .screen-group>.row-action{background:var(--fold-header,#f4f7f4);color:var(--text,#33423c);border:0;border-left:1px solid var(--fold-line,#cbd3ce);border-radius:0}
+.screen-picker .screen-group>.row-action:hover{background:var(--fold-hover,#e0ede7)}
+.screen-picker .screen-choice,.screen-picker .screen-unavailable{border-left:1px solid var(--fold-line,#cbd3ce)}
+.screen-picker .screen-choice>.row-action,.screen-picker .screen-unavailable>.label{padding-left:17px}
+.screen-picker .screen-choice>.row-action:hover{background:var(--selected,#e0ede7)}
+.screen-picker .screen-choice.config-selected>.row-action{background:var(--selected,#e0ede7);color:var(--ink,#33423c)}
+.screen-picker .screen-unavailable>.row-action{display:none}
+.screen-picker .screen-unavailable>.label{color:var(--muted,#637168);pointer-events:auto}

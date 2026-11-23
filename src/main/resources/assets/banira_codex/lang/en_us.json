@@ -93,7 +93,7 @@
   "word.banira_codex.config.notificationLogMaxEntries": "Notification history limit",
   "word.banira_codex.config.notificationMergeWindowMs": "Duplicate notification window",
   "word.banira_codex.config.useAui": "Use AUI interfaces",
-  "word.banira_codex.config.useAui.description": "Use AUI for mod interfaces and HUDs",
+  "word.banira_codex.config.useAui.description": "Requires ApricityUI and compatible Rhino on the client; otherwise native interfaces remain active",
   "word.banira_codex.config.useCustomCursor": "Custom cursor",
   "word.banira_codex.config_editor_all": "All settings",
   "word.banira_codex.config_editor_categories": "Categories",

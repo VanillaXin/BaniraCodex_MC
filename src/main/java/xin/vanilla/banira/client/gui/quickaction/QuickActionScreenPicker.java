@@ -362,18 +362,18 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         filterTooltip.popupAtScreenCoords(true);
         filterButton.addChild(filterTooltip);
         addWidget(filterButton);
-        ButtonWidget close = new ButtonWidget(this);
-        close.id("close");
-        close.bounds(new ScreenCoordinate(LEFT, footerY, footerButtonWidth, ROW_HEIGHT));
-        close.text(CustomQuickActionEditor.t("cancel").content());
-        close.onClick(button -> onClose());
-        addWidget(close);
         confirmButton = new ButtonWidget(this);
         confirmButton.id("confirm");
-        confirmButton.bounds(new ScreenCoordinate(width - LEFT - footerButtonWidth, footerY, footerButtonWidth, ROW_HEIGHT));
+        confirmButton.bounds(new ScreenCoordinate(LEFT, footerY, footerButtonWidth, ROW_HEIGHT));
         confirmButton.text(CustomQuickActionEditor.t("confirm").content());
         confirmButton.onClick(button -> confirm());
         addWidget(confirmButton);
+        ButtonWidget close = new ButtonWidget(this);
+        close.id("close");
+        close.bounds(new ScreenCoordinate(width - LEFT - footerButtonWidth, footerY, footerButtonWidth, ROW_HEIGHT));
+        close.text(CustomQuickActionEditor.t("cancel").content());
+        close.onClick(button -> onClose());
+        addWidget(close);
         buttons.clear();
         headers.clear();
         tooltips.clear();
@@ -465,7 +465,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         font.draw(graphics, title, (width - font.width(title)) / 2f, 27, getEffectiveTheme().textPrimary());
         String status = scanStatusKey();
         if (!status.isEmpty() && confirmButton != null) {
-            int available = (int) confirmButton.x() * 2 - width - 12;
+            int available = width - 2 * (int) (confirmButton.x() + confirmButton.bounds().width()) - 12;
             if (available >= font.width("...")) {
                 String message = QuickActionTextLayout.ellipsize(CustomQuickActionEditor.t(status).content(), available, font::width);
                 font.draw(graphics, message, (width - font.width(message)) / 2f, height - FOOTER_HEIGHT + 6, getEffectiveTheme().textSecondary());

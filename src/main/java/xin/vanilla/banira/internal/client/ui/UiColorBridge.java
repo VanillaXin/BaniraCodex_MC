@@ -29,6 +29,8 @@ public final class UiColorBridge {
                 + ";--background:" + css(theme.bgPrimary()) + ";--border:" + css(theme.border())
                 + ";--input:" + css(theme.inputBg()) + ";--focus:" + css(theme.borderFocused())
                 + ";--button:" + css(theme.buttonBg()) + ";--hover:" + css(theme.buttonBgHover())
+                + ";--native-panel:" + css(theme.panelBg()) + ";--button-border:" + css(theme.buttonBorder())
+                + ";--button-hover-border:" + css(theme.buttonBorderHover()) + ";--button-focused:" + css(theme.buttonBgFocused())
                 + ";--fold-header:" + css(theme.bgSecondary()) + ";--fold-hover:" + css(theme.bgTertiary())
                 + ";--fold-line:" + css(theme.textHint())
                 + ";--disabled:" + css(theme.bgDisabled()) + ";--disabled-text:" + css(theme.textDisabled())

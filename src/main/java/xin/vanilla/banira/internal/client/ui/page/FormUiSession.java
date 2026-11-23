@@ -351,6 +351,10 @@ public final class FormUiSession implements UiPageSession {
     public void bind(UiView view) {
         bind(view, new CommonFieldPresentation());
         commonPresentation = true;
+        if (args.isStackedLayout()) {
+            updateStatus();
+            return;
+        }
         var title = args.getHeaderTitle() != null ? args.getHeaderTitle() : args.getTitle();
         String namespace = title == null ? null : title.toComponent().modId();
         if ((namespace == null || namespace.isEmpty()) && args.getTitle() != null)
@@ -374,15 +378,18 @@ public final class FormUiSession implements UiPageSession {
 
     private final class CommonFieldPresentation implements FieldPresentation {
         public int rowHeight() {
+            if (args.isStackedLayout()) return 38;
             return args.getWidgets().stream().anyMatch(InputFormScreen.Widget::wideInput) ? 48 : 28;
         }
 
         public String rowClass(int index) {
+            if (args.isStackedLayout()) return "stacked-field";
             return args.getWidgets().get(index).wideInput() ? "player-config-field wide-input-field" : "player-config-field";
         }
 
         public void bind(UiView row, int index, InputFormScreen.Widget widget) {
-            if (widget.tooltip() != null) row.text("description", widget.tooltip().toComponent());
+            if (!args.isStackedLayout() && widget.tooltip() != null)
+                row.text("description", widget.tooltip().toComponent());
         }
 
         public void update(UiView row, int index, InputFormScreen.Widget widget, String draft, String validation) {

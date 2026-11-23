@@ -1,0 +1,7 @@
+.screen-picker #filter_unavailable{flex:0 0 96px;min-width:96px;height:20px;padding:0 4px;white-space:nowrap}
+.screen-picker .screen-group>.row-action,.screen-picker .screen-choice>.row-action,.screen-picker .screen-unavailable>.label{left:0;right:0;top:1px;width:100%;height:22px;min-height:22px;max-height:22px;padding:4px 7px;line-height:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen-picker .screen-group>.row-action{background:var(--panel-soft,#f4f7f4);color:var(--ink,#33423c);border:1px solid var(--line,#e0e7e1)}
+.screen-picker .screen-choice>.row-action,.screen-picker .screen-unavailable>.label{padding-left:17px}
+.screen-picker .screen-choice>.row-action:hover,.screen-picker .screen-group>.row-action:hover{background:var(--selected,#e0ede7)}
+.screen-picker .screen-unavailable>.row-action{display:none}
+.screen-picker .screen-unavailable>.label{color:var(--muted,#637168);pointer-events:auto}

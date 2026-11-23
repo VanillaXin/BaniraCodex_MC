@@ -1,9 +1,14 @@
 package xin.vanilla.banira.client.gui.quickaction;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -11,8 +16,10 @@ import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseClickTracker;
 import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.internal.client.BaniraCodexClientBootstrap;
 import xin.vanilla.banira.internal.client.ui.*;
 import xin.vanilla.banira.internal.client.ui.page.*;
 
@@ -20,6 +27,9 @@ import java.util.*;
 import java.util.function.Consumer;
 
 final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage {
+    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Gson SCRIPT_JSON = new Gson();
+    private static final String SCRIPT_CHANNEL = "banira_picker_script";
     private static final int LEFT = 26;
     private static final int SEARCH_Y = 45;
     private static final int LIST_Y = 73;
@@ -63,6 +73,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
                 String reason = entry.constructors.isEmpty() ? CustomQuickActionEditor.t("quick_screen_context_required").content() : "";
                 items.add(new QuickActionScreenRows.Item(entry.className, entry.mod, title(entry), entry.className, reason, () -> choose(entry)));
             }
+            if (session != null) session.catalogDirty = true;
             refreshRows(false);
         }));
     }
@@ -93,12 +104,18 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         private final boolean group;
         private final boolean expanded;
         private final String tooltip;
+        private final boolean highlighted;
 
         private PickerAction(String id, String label, String tooltip, boolean group, boolean expanded, boolean enabled, Runnable open) {
+            this(id, label, tooltip, group, expanded, enabled, false, open);
+        }
+
+        private PickerAction(String id, String label, String tooltip, boolean group, boolean expanded, boolean enabled, boolean highlighted, Runnable open) {
             super(id, BaniraComponent.get().literal(label), open, null, enabled);
             this.group = group;
             this.expanded = expanded;
             this.tooltip = tooltip;
+            this.highlighted = highlighted;
         }
     }
 
@@ -146,8 +163,21 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         }
     }
 
+    private record ScriptRow(String group, String id, boolean expanded, boolean selected) {
+    }
+
+    private record ScriptProjection(JsonObject state, List<ScriptRow> rows, String confirmed, boolean selected,
+                                    boolean only) {
+    }
+
     private final class PickerSession extends QuickActionEditUiSession {
-        private UiView pickerView;
+        private UiDomView pickerView;
+        private final Map<String, QuickActionScreenRows.Item> catalog = new HashMap<>();
+        private List<Action> projection = Collections.emptyList();
+        private JsonObject checkpoint;
+        private String pickerQuery = "";
+        private boolean initialized, catalogDirty = true, selected, committing;
+        private int waiting;
 
         private PickerSession() {
             super(BaniraComponent.get().transClientAuto("quick_screen_title"), Collections::emptyList, Collections.emptyList());
@@ -157,34 +187,146 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         @Override
         public void bind(UiView view) {
             super.bind(view);
-            if (!boundTo(view) || view.nativeView()) return;
-            pickerView = view;
+            if (!boundTo(view) || !(view instanceof UiDomView dom)) return;
+            pickerView = dom;
+            view.draft("search", pickerQuery);
             updateChrome(view);
             view.text("footer_close", BaniraComponent.get().transClientAuto("cancel"));
             ownBinding(view.onAction("filter_unavailable", () -> {
-                if (boundTo(view)) toggleFilter();
+                if (boundTo(view)) dispatch("filter", "", true);
             }));
             view.text("confirm", BaniraComponent.get().transClientAuto("confirm"));
             ownBinding(view.onAction("confirm", () -> {
-                if (boundTo(view)) confirm();
+                if (boundTo(view)) dispatch("confirm", "", false);
             }));
         }
 
         @Override
         public void detach(UiDetachReason reason) {
             pickerView = null;
+            initialized = false;
+            waiting = 0;
+            selected = false;
+            projection = Collections.emptyList();
             super.detach(reason);
         }
 
         private void update(boolean resetScroll) {
-            refreshList(resetScroll);
-            if (pickerView != null) updateChrome(pickerView);
+            if (initialized) dispatch("sync", "", resetScroll);
+            else if (pickerView != null) updateChrome(pickerView);
         }
 
         @Override
         public void query(String text) {
-            super.query(text);
-            if (pickerView != null) updateChrome(pickerView);
+            String next = text == null ? "" : text;
+            if (pickerQuery.equals(next)) return;
+            pickerQuery = next;
+            update(true);
+        }
+
+        @Override
+        public String query() {
+            return pickerQuery;
+        }
+
+        @Override
+        public void tick() {
+            if (pickerView != null && !initialized && !dispatch("sync", "", false) && ++waiting >= 60) {
+                fallback(new IllegalStateException("Window picker script did not initialize"));
+            }
+        }
+
+        private void fallback(Throwable failure) {
+            if (pickerView == null) return;
+            LOGGER.warn("Window picker script failed; using the native picker", failure);
+            pickerView = null;
+            initialized = false;
+            BaniraCodexClientBootstrap.uiSessions().fallback();
+        }
+
+        private boolean dispatch(String action, String value, boolean resetScroll) {
+            UiDomView view = pickerView;
+            if (view == null || !boundTo(view) || committing) return false;
+            try {
+                JsonObject request = new JsonObject();
+                request.addProperty("action", action);
+                request.addProperty("value", value);
+                request.addProperty("query", pickerQuery);
+                request.addProperty("now", System.nanoTime() / 1_000_000L);
+                request.addProperty("doubleClick", MouseClickTracker.DEFAULT_DOUBLE_CLICK_MS);
+                if (!initialized) {
+                    request.addProperty("init", true);
+                    request.addProperty("only", hideUnavailable);
+                    if (checkpoint != null) request.add("state", checkpoint);
+                }
+                if (!initialized || catalogDirty) request.add("catalog", scriptCatalog());
+                String json = view.exchangePageScript(SCRIPT_CHANNEL, request.toString());
+                if (json == null) {
+                    if (initialized) fallback(new IllegalStateException("Window picker script endpoint disappeared"));
+                    return false;
+                }
+                ScriptProjection answer = SCRIPT_JSON.fromJson(json, ScriptProjection.class);
+                if (answer == null || answer.state == null || answer.rows == null)
+                    throw new IllegalStateException("Invalid picker script result");
+                QuickActionScreenRows.Item choice = null;
+                if (answer.confirmed != null) {
+                    choice = catalog.get(answer.confirmed);
+                    if (choice == null || !choice.selectable()
+                            || !("confirm".equals(action) || "select".equals(action) && answer.confirmed.equals(value))) {
+                        throw new IllegalStateException("Invalid window submission from picker script");
+                    }
+                }
+                List<Action> visible = new ArrayList<>(answer.rows.size());
+                for (ScriptRow row : answer.rows) visible.add(scriptAction(row));
+                projection = visible;
+                checkpoint = answer.state;
+                selected = answer.selected;
+                hideUnavailable = answer.only;
+                initialized = true;
+                catalogDirty = false;
+                refreshList(resetScroll);
+                updateChrome(view);
+                if (choice != null) {
+                    committing = true;
+                    try {
+                        choice.select.run();
+                    } finally {
+                        committing = false;
+                    }
+                }
+                return true;
+            } catch (RuntimeException | LinkageError failure) {
+                fallback(failure);
+                return false;
+            }
+        }
+
+        private JsonArray scriptCatalog() {
+            catalog.clear();
+            JsonArray rows = new JsonArray();
+            for (QuickActionScreenRows.Item item : items) {
+                catalog.put(item.id, item);
+                JsonObject row = new JsonObject();
+                row.addProperty("id", item.id);
+                row.addProperty("group", item.group);
+                row.addProperty("title", item.title);
+                row.addProperty("details", item.details);
+                row.addProperty("selectable", item.selectable());
+                rows.add(row);
+            }
+            return rows;
+        }
+
+        private Action scriptAction(ScriptRow row) {
+            if (row.group != null) {
+                String label = (row.expanded ? "\u25be  " : "\u25b8  ") + row.group;
+                return new PickerAction("@group:" + row.group, label, row.group, true, row.expanded, true, false,
+                        () -> dispatch("fold", row.group, false));
+            }
+            QuickActionScreenRows.Item item = catalog.get(row.id);
+            if (item == null) throw new IllegalStateException("Unknown window in picker script result");
+            return new PickerAction(item.id, item.title, item.tooltip(), false, false, item.selectable(), row.selected,
+                    () -> dispatch("select", item.id, false));
         }
 
         private void updateChrome(UiView view) {
@@ -192,12 +334,12 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
             view.tooltip("filter_unavailable", BaniraComponent.get().transClientAuto(filterHintKey()));
             String status = scanStatusKey();
             view.text("status", status.isEmpty() ? BaniraComponent.get().literal("") : BaniraComponent.get().transClientAuto(status));
-            view.enabled("confirm", groups.selection() != null);
+            view.enabled("confirm", initialized && selected);
         }
 
         @Override
         protected List<Action> visibleActions() {
-            return new ArrayList<>(QuickActionScreenPicker.this.actions(query()));
+            return projection;
         }
 
         @Override
@@ -214,7 +356,7 @@ final class QuickActionScreenPicker extends BaniraScreen implements UiNativePage
         protected String rowClass(Action action) {
             PickerAction picker = (PickerAction) action;
             return "config-navigation " + (picker.group ? "screen-group" : picker.enabled() ? "screen-choice" : "screen-unavailable")
-                    + (selected(picker) ? " config-selected" : "");
+                    + (picker.highlighted ? " config-selected" : "");
         }
 
         @Override

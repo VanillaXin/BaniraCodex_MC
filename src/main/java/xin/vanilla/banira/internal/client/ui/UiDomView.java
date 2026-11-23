@@ -77,6 +77,10 @@ public class UiDomView extends NativeUiView {
         root.onFailure = Objects.requireNonNull(handler, "handler");
     }
 
+    public String exchangePageScript(String channel, String request) {
+        return scope == null && dom != null && live() ? dom.exchangePageScript(channel, request) : null;
+    }
+
     public void scrollRestoration(BooleanSupplier ready, DoubleUnaryOperator request) {
         if (scope != null || layoutRestored) throw new IllegalStateException("Scroll restoration already owned");
         scrollReady = Objects.requireNonNull(ready, "ready");

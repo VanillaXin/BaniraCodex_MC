@@ -778,7 +778,7 @@ public final class QuickActionOverlay {
             }
             if (layout.layoutEditMode() && s == hoveredSlot && (s == 0 || userFilledChrome || dropEmptyHint)) {
                 drawEditModeSlotHoverOutline(stack, xy[0], xy[1], cell, accentRgb);
-            } else if (s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
+            } else if (quickFrame == null && s == hoveredSlot && !layout.layoutEditMode() && (s == 0 || userFilledChrome)) {
                 int hi = (theme.accentHover() & 0xFFFFFF) | 0x44000000;
                 hudFrame.box(xy[0] - 1, xy[1] - 1, cell + 2, cell + 2, hi, 0, 0);
             }

@@ -268,8 +268,8 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
         int btnY = listY + listH + 4;
         int btnAreaW = this.panelW - PANEL_MARGIN * 2 - SCROLL_W - scrollGap;
         int btnW = (btnAreaW - PANEL_MARGIN) / 2;
-        int cancelX = this.panelLeft + PANEL_MARGIN;
-        int submitX = this.panelLeft + PANEL_MARGIN + btnW + PANEL_MARGIN;
+        int submitX = this.panelLeft + PANEL_MARGIN;
+        int cancelX = submitX + btnW + PANEL_MARGIN;
 
 
         // region 输入框
@@ -400,19 +400,19 @@ public class AdvancementSelectScreen extends BaniraScreen implements UiNativePag
         // endregion 进度列表按钮
 
         // region 确认与取消按钮
-        ButtonWidget cancelButtonWidget = new ButtonWidget(this);
-        cancelButtonWidget.id("cancel");
-        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
-        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
-        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
-        addWidget(cancelButtonWidget);
-
         ButtonWidget submitButtonWidget = new ButtonWidget(this);
         submitButtonWidget.id("submit");
         submitButtonWidget.bounds(new ScreenCoordinate(submitX, btnY, btnW, BTN_H));
         submitButtonWidget.text(Text.transAuto(Banira.MOD_ID, "submit"));
         submitButtonWidget.onClick(b -> uiSession.submitNative());
         addWidget(submitButtonWidget);
+
+        ButtonWidget cancelButtonWidget = new ButtonWidget(this);
+        cancelButtonWidget.id("cancel");
+        cancelButtonWidget.bounds(new ScreenCoordinate(cancelX, btnY, btnW, BTN_H));
+        cancelButtonWidget.text(Text.transAuto(Banira.MOD_ID, "cancel"));
+        cancelButtonWidget.onClick(b -> Minecraft.getInstance().setScreen(args.parentScreen()));
+        addWidget(cancelButtonWidget);
         // endregion 确认与取消按钮
 
         updateSearchResults();
